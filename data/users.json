@@ -1,8 +1,9 @@
 [
   {
-    "id": "1",
-    "email": "admin@trading.com",
-    "name": "Admin",
-    "password": "$2a$10$mRo5v8WRZFJvI/KE3wS65eSWM4OIz1jlUizc8T.qKoV4qUTvfCqXa"
+    "id": "user_test_001",
+    "email": "test@example.com",
+    "name": "Test User",
+    "password": "$2a$10$z5rKWvv.UtuV3XqHzaJwnuBwuMluBYpaXsY3LNU1a6Yz4KnkAHxDC",
+    "createdAt": "2026-03-25T23:40:24.389Z"
   }
 ]
