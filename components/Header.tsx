@@ -3,6 +3,7 @@
 import { Moon, Sun, Activity } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
@@ -31,8 +32,22 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Dark Mode Toggle */}
-          <div className="flex items-center space-x-4">
+          {/* Navigation */}
+          <nav className="flex items-center space-x-6">
+            <Link
+              href="/"
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors"
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/news"
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors"
+            >
+              News
+            </Link>
+
+            {/* Dark Mode Toggle */}
             {mounted && (
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -46,7 +61,7 @@ export default function Header() {
                 )}
               </button>
             )}
-          </div>
+          </nav>
         </div>
       </div>
     </header>

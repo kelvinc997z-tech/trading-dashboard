@@ -110,15 +110,6 @@ export default function HomePage() {
     <div className="min-h-screen">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Breaking News Ticker & News Tab */}
-        <section>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-red-500" />
-            Market News
-          </h2>
-          <NewsSection />
-        </section>
-
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
