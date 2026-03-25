@@ -156,24 +156,18 @@ export default function HomePage() {
           {supportedPairs.map(symbol => {
             const data = currentMarkets[symbol as keyof typeof currentMarkets];
             if (!data) return null;
-            const info = symbolInfo[symbol as keyof typeof symbolInfo] || { name: symbol, icon: "💰", color: "bg-gray-100 text-gray-600" };
             const format = (sym: string) => {
               if (sym === "XRP/USD" || sym === "KAS/USDT") return (val: number) => val.toFixed(4);
               return (val: number) => val.toFixed(2);
             };
             const fmt = format(symbol as string);
+            const isPositive = data.change >= 0;
             return (
               <div key={symbol} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className={`p-2 rounded-lg ${info.color}`}><span className="text-lg">{info.icon}</span></div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">{symbol}</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{info.name}</p>
-                  </div>
-                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{symbol}</div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">${fmt(data.price)}</div>
-                <div className={`text-sm font-semibold ${data.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {data.change >= 0 ? '+' : ''}{fmt(data.change)} ({data.changePercent.toFixed(2)}%)
+                <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                  {isPositive ? '+' : ''}{fmt(data.change)}%
                 </div>
               </div>
             );
