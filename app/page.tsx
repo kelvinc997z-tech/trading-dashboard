@@ -31,7 +31,7 @@ export default function HomePage() {
     setIsLoaded(true);
   }, []);
 
-  // Real-time update every 5 seconds
+  // Real-time update every 60 seconds (to respect API rate limits)
   useEffect(() => {
     if (!isLoaded) return;
     const interval = setInterval(() => {
@@ -42,7 +42,7 @@ export default function HomePage() {
         });
         return newMarkets;
       });
-    }, 5000);
+    }, 60000); // 60 seconds
     return () => clearInterval(interval);
   }, [isLoaded]);
 
