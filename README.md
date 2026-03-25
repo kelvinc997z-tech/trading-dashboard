@@ -4,8 +4,8 @@ Real-time trading signals dashboard with live market data, candlestick charts, a
 
 ## Features
 
-- **Real-time Market Data**: Simulated live prices for XAUUSD (Gold) and US Oil (WTI)
-- **TradingView-style Candlestick Chart** using Lightweight Charts
+- **TradingView-powered Charts**: Embedded live charts for XAUUSD (Pepperstone) and US Oil (TVC) directly from TradingView
+- **Real-time Market Data**: Simulated live prices for XAUUSD (around $4570) and US Oil (WTI)
 - **Signal Table**: Displays BUY/SELL signals with Entry, TP, SL
 - **Dark/Light Mode**: Toggle via header button
 - **Responsive Design**: Works on desktop and mobile
@@ -78,9 +78,10 @@ No environment variables required.
 
 ## Notes
 
-- Data is simulated for demo purposes. Prices update every 3 seconds.
+- **Charts**: Powered by TradingView widget (symbol PEPPERSTONE:XAUUSD and TVC:USOIL) – displays real market data from TradingView's feed.
+- **Numeric Prices**: The price cards above the charts use simulated data (for demonstration) with XAUUSD base around $4570. To show actual numeric prices from TradingView requires additional integration with a market data API.
 - Signals are randomly generated. For production, connect to your signal engine or database.
-- The candlestick chart generates random OHLC data based on current price.
+- The chart widget is loaded directly from TradingView's CDN.
 
 ## License
 

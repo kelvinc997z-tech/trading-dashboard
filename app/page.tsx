@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Header from "@/components/Header";
-import ChartPanel from "@/components/ChartPanel";
+import TradingViewChart from "@/components/TradingViewChart";
 import SignalTable, { Signal } from "@/components/SignalTable";
 import { generateMarketData, generateSignal, initialSignals } from "@/lib/mockData";
 
@@ -178,8 +178,11 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Chart */}
-        <ChartPanel symbol="XAUUSD" price={currentXAU.price} change={currentXAU.change} />
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TradingViewChart symbol="PEPPERSTONE:XAUUSD" height={400} />
+          <TradingViewChart symbol="TVC:USOIL" height={400} />
+        </div>
 
         {/* Signal Table */}
         <div>

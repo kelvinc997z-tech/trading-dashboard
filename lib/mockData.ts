@@ -18,7 +18,7 @@ export interface Signal {
 
 // Initial prices around March 2026 levels
 const basePrices: Record<string, number> = {
-  XAUUSD: 2200,
+  XAUUSD: 4570, // Based on 2026 institutional forecasts ($4500-6000 range)
   USOIL: 88,
 };
 
