@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import { KeyRound } from "lucide-react";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
@@ -22,7 +22,6 @@ export default function ResetPasswordPage() {
       setError("No reset token provided");
       setTokenValid(false);
     } else {
-      // Could validate token via API, but we'll just try reset and see if it works; assume valid for now.
       setTokenValid(true);
     }
   }, [token]);
@@ -97,5 +96,13 @@ export default function ResetPasswordPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800"><div className="animate-pulse text-gray-600 dark:text-gray-300">Loading...</div></div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
