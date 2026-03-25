@@ -180,6 +180,7 @@ export default function HomePage() {
         </div>
 
         {/* Charts Grid */}
+        {/* Charts Grid: 2 per row on large screens, 1 on mobile */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TradingViewChart symbol="FOREXCOM:XAUUSD" height={400} />
           <TradingViewChart symbol="FOREXCOM:USOIL" height={400} />
@@ -187,6 +188,7 @@ export default function HomePage() {
           <TradingViewChart symbol="BINANCE:ETHUSDT" height={400} />
           <TradingViewChart symbol="BINANCE:SOLUSDT" height={400} />
           <TradingViewChart symbol="BINANCE:XRPUSDT" height={400} />
+          <TradingViewChart symbol="BINANCE:KASUSDT" height={400} />
         </div>
 
         {/* Signal Table */}

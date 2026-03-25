@@ -23,6 +23,12 @@ const statusColors = {
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
 };
 
+// Determine decimal places based on symbol
+const getDecimalPlaces = (pair: string): number => {
+  const smallPairs = ["XRPUSDT", "KASUSDT"];
+  return smallPairs.includes(pair) ? 4 : 2;
+};
+
 export default function SignalTable({ signals }: SignalTableProps) {
   return (
     <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
