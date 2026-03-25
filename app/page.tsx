@@ -1,84 +1,53 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import Header from "@/components/Header";
 import TradingViewChart from "@/components/TradingViewChart";
 import SignalTable, { Signal } from "@/components/SignalTable";
-import { generateMarketData, generateSignal, initialSignals } from "@/lib/mockData";
+import NewsSection from "@/components/NewsSection";
+import { TrendingUp } from "lucide-react";
 
 export default function HomePage() {
-  const [markets, setMarkets] = useState<Record<string, any>>({});
-  const [signals, setSignals] = useState<Signal[]>(initialSignals);
-  const [stats, setStats] = useState({ total: 0, winRate: 0 });
-  const [isLoaded, setIsLoaded] = useState(false);
+  // Mock prices - stable for demo
+  const currentXAU = { price: 4570.50, change: 12.30, changePercent: 0.27 };
+  const currentOil = { price: 88.45, change: -0.75, changePercent: -0.84 };
 
-  // Initialize market data
-  useEffect(() => {
-    setMarkets({
-      XAUUSD: generateMarketData("XAUUSD"),
-      USOIL: generateMarketData("USOIL"),
-    });
-    setIsLoaded(true);
-  }, []);
-
-  // Real-time update every 3 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMarkets((prev) => {
-        const newMarkets: Record<string, any> = {};
-        Object.keys(prev).forEach((symbol) => {
-          newMarkets[symbol] = generateMarketData(symbol);
-        });
-        return newMarkets;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Generate new signal occasionally
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (Math.random() > 0.7) {
-        const symbol = Math.random() > 0.5 ? "XAUUSD" : "USOIL";
-        const currentPrice = markets[symbol]?.price || (symbol === "XAUUSD" ? 2200 : 88);
-        const newSignal = generateSignal(symbol, currentPrice);
-        setSignals((prev) => [newSignal, ...prev.slice(0, 19)]); // Keep last 20
-      }
-    }, 8000);
-
-    return () => clearInterval(interval);
-  }, [markets]);
-
-  // Update stats
-  useEffect(() => {
-    const total = signals.length;
-    const closed = signals.filter((s) => s.status === "closed");
-    const won = closed.filter((s) => {
-      if (s.type === "BUY") return s.tp < s.sl; // Mock: assume TP hit if status closed and TP < SL for BUY? Actually need real outcome; just mock 60% win
-      return s.tp > s.sl;
-    }).length;
-    const winRate = closed.length > 0 ? Math.round((won / closed.length) * 100) : 0;
-    setStats({ total, winRate });
-  }, [signals]);
-
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-gray-900 dark:text-white text-xl font-semibold animate-pulse">
-          Loading dashboard...
-        </div>
-      </div>
-    );
-  }
-
-  const currentXAU = markets.XAUUSD || { price: 0, change: 0 };
-  const currentOil = markets.USOIL || { price: 0, change: 0 };
+  // Demo signals
+  const demoSignals: Signal[] = [
+    {
+      id: "1",
+      pair: "XAUUSD",
+      type: "BUY",
+      entry: 4570,
+      tp: 4620,
+      sl: 4540,
+      time: new Date().toLocaleTimeString(),
+      status: "active",
+    },
+    {
+      id: "2",
+      pair: "USOIL",
+      type: "SELL",
+      entry: 88.45,
+      tp: 86.50,
+      sl: 90.00,
+      time: new Date().toLocaleTimeString(),
+      status: "active",
+    },
+  ];
 
   return (
     <div className="min-h-screen">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Breaking News Ticker & News Tab */}
+        <section>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <TrendingUp className="w-6 h-6 text-red-500" />
+            Market News
+          </h2>
+          <NewsSection />
+        </section>
+
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
@@ -86,7 +55,7 @@ export default function HomePage() {
               Total Signals
             </h3>
             <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-              {stats.total}
+              {demoSignals.length}
             </p>
           </div>
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
@@ -94,7 +63,7 @@ export default function HomePage() {
               Win Rate
             </h3>
             <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
-              {stats.winRate}%
+              60%
             </p>
           </div>
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
@@ -102,7 +71,7 @@ export default function HomePage() {
               Active Signals
             </h3>
             <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">
-              {signals.filter((s) => s.status === "active").length}
+              {demoSignals.filter((s) => s.status === "active").length}
             </p>
           </div>
         </div>
@@ -124,8 +93,10 @@ export default function HomePage() {
                   }`}
                 >
                   {currentXAU.change >= 0 ? "+" : ""}
-                  {currentXAU.change.toFixed(2)} (
-                  {currentXAU.changePercent.toFixed(2)}%)
+                  {currentXAU.change.toFixed(2)} ({currentXAU.changePercent.toFixed(2)}%)
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Demo price (static)
                 </div>
               </div>
               <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
@@ -155,8 +126,10 @@ export default function HomePage() {
                   }`}
                 >
                   {currentOil.change >= 0 ? "+" : ""}
-                  {currentOil.change.toFixed(2)} (
-                  {currentOil.changePercent.toFixed(2)}%)
+                  {currentOil.change.toFixed(2)} ({currentOil.changePercent.toFixed(2)}%)
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Demo price (static)
                 </div>
               </div>
               <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
@@ -180,8 +153,8 @@ export default function HomePage() {
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TradingViewChart symbol="PEPPERSTONE:XAUUSD" height={400} />
-          <TradingViewChart symbol="TVC:USOIL" height={400} />
+          <TradingViewChart symbol="FOREXCOM:XAUUSD" height={400} />
+          <TradingViewChart symbol="FOREXCOM:USOIL" height={400} />
         </div>
 
         {/* Signal Table */}
@@ -189,12 +162,13 @@ export default function HomePage() {
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             Live Trading Signals
           </h2>
-          <SignalTable signals={signals} />
+          <SignalTable signals={demoSignals} />
         </div>
       </main>
 
       <footer className="max-w-7xl mx-auto px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
         <p>© 2026 TradeSignal Dashboard. Built with Next.js & Tailwind.</p>
+        <p className="mt-1">Charts powered by TradingView | Prices static demo</p>
       </footer>
     </div>
   );
