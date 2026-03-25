@@ -89,30 +89,30 @@ export async function writeSessions(sessions: Session[]) {
 }
 
 export async function createSession(userId: string, expiresInHours = 24): Promise<Session> {
-  const sessions = await readSessions();
+  // Stateless: only create JWT token, do not write to file
   const token = jwt.sign({ userId }, process.env.NEXTAUTH_SECRET || 'fallback-secret', { expiresIn: `${expiresInHours}h` });
   const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000).toISOString();
-  const session: Session = { token, userId, expiresAt };
-  sessions.push(session);
-  await writeSessions(sessions);
-  return session;
+  return { token, userId, expiresAt };
 }
 
 export async function isValidSession(token: string): Promise<Session | null> {
-  const sessions = await readSessions();
-  const session = sessions.find(s => s.token === token);
-  if (!session) return null;
-  if (new Date(session.expiresAt) < new Date()) {
-    // expired, clean up
-    await writeSessions(sessions.filter(s => s.token !== token));
+  try {
+    const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any;
+    if (!decoded || !decoded.userId) return null;
+    // Reconstruct expiresAt from exp (seconds since epoch)
+    const expiresAt = new Date(decoded.exp * 1000).toISOString();
+    // Optionally check if expired (jwt.verify already checks exp)
+    return { token, userId: decoded.userId, expiresAt };
+  } catch (err) {
+    // Invalid signature, expired, etc.
     return null;
   }
-  return session;
 }
 
 export async function deleteSession(token: string) {
-  const sessions = await readSessions();
-  await writeSessions(sessions.filter(s => s.token !== token));
+  // Stateless: nothing to delete
+  // In a real app, you'd need a token blacklist or short expiry
+  // For now, do nothing (client deletes cookie)
 }
 
 // Reset Tokens
