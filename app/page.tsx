@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import TradingViewChart from "@/components/TradingViewChart";
 import SignalTable, { Signal } from "@/components/SignalTable";
-import NewsSection from "@/components/NewsSection";
-import { TrendingUp, Activity } from "lucide-react";
+import { Activity } from "lucide-react";
 import { generateMarketData, generateSignal, supportedPairs, initialSignals } from "@/lib/mockData";
 
 interface MarketData {
@@ -16,33 +16,52 @@ interface MarketData {
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const [markets, setMarkets] = useState<Record<string, MarketData>>({});
   const [signals, setSignals] = useState<Signal[]>(initialSignals);
   const [stats, setStats] = useState({ total: 0, winRate: 0 });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // Fetch mock market data for all pairs (no API call for now)
+  // Check authentication
   useEffect(() => {
+    fetch("/api/me")
+      .then(res => res.json())
+      .then(data => {
+        if (!data.user) {
+          router.replace("/login");
+        } else {
+          setUser(data.user);
+        }
+        setAuthLoading(false);
+      })
+      .catch(() => setAuthLoading(false));
+  }, [router]);
+
+  // Initialize market data
+  useEffect(() => {
+    if (!user) return; // only load markets after user confirmed
     const initialMarkets: Record<string, MarketData> = {};
     supportedPairs.forEach(symbol => {
-      initialMarkets[symbol] = generateMarketData(symbol);
+      initialMarkets[symbol] = generateMarketData(symbol as any);
     });
     setMarkets(initialMarkets);
     setIsLoaded(true);
-  }, []);
+  }, [user]);
 
-  // Real-time update every 60 seconds (to respect API rate limits)
+  // Real-time update every 60 seconds
   useEffect(() => {
     if (!isLoaded) return;
     const interval = setInterval(() => {
       setMarkets(prev => {
         const newMarkets: Record<string, MarketData> = {};
         supportedPairs.forEach(symbol => {
-          newMarkets[symbol] = generateMarketData(symbol);
+          newMarkets[symbol as any] = generateMarketData(symbol as any);
         });
         return newMarkets;
       });
-    }, 60000); // 60 seconds
+    }, 60000);
     return () => clearInterval(interval);
   }, [isLoaded]);
 
@@ -51,7 +70,7 @@ export default function HomePage() {
     if (!isLoaded) return;
     const interval = setInterval(() => {
       if (Math.random() > 0.6) {
-        const symbol = supportedPairs[Math.floor(Math.random() * supportedPairs.length)];
+        const symbol = supportedPairs[Math.floor(Math.random() * supportedPairs.length)] as any;
         const currentPrice = markets[symbol]?.price || (basePriceForSymbol(symbol) || 100);
         const newSignal = generateSignal(symbol, currentPrice);
         setSignals(prev => [newSignal, ...prev.slice(0, 19)]);
@@ -72,39 +91,45 @@ export default function HomePage() {
     setStats({ total, winRate });
   }, [signals]);
 
-  if (!isLoaded) {
+  // Auth guard
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-gray-900 dark:text-white text-xl font-semibold animate-pulse">
-          Loading dashboard...
-        </div>
+        <div className="text-gray-900 dark:text-white text-xl font-semibold animate-pulse">Loading...</div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null; // Will redirect in effect
+  }
+
+  // Helper: base prices for fallback
+  function basePriceForSymbol(symbol: string): number {
+    const base: Record<string, number> = {
+      XAUUSD: 4570,
+      USOIL: 88,
+      "BTC/USD": 68000,
+      "SOL/USD": 170,
+      "ETH/USD": 3500,
+      "XRP/USD": 0.62,
+      "KAS/USD": 0.12,
+    };
+    return base[symbol] || 100;
   }
 
   // Symbol metadata for display
   const symbolInfo: Record<string, { name: string; icon: string; color: string }> = {
     XAUUSD: { name: "Gold (XAUUSD)", icon: "🥇", color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600" },
     USOIL: { name: "US Oil (WTI)", icon: "🛢️", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
-    BTCUSDT: { name: "Bitcoin", icon: "₿", color: "bg-orange-100 dark:bg-orange-900/30 text-orange-600" },
-    SOLUSDT: { name: "Solana", icon: "◎", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600" },
-    ETHUSDT: { name: "Ethereum", icon: "Ξ", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
-    XRPUSDT: { name: "Ripple (XRP)", icon: "✕", color: "bg-gray-100 dark:bg-gray-700 text-gray-600" },
-    KASUSDT: { name: "Kaspa", icon: "Ⓚ", color: "bg-green-100 dark:bg-green-900/30 text-green-600" },
+    "BTC/USD": { name: "Bitcoin", icon: "₿", color: "bg-orange-100 dark:bg-orange-900/30 text-orange-600" },
+    "SOL/USD": { name: "Solana", icon: "◎", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600" },
+    "ETH/USD": { name: "Ethereum", icon: "Ξ", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
+    "XRP/USD": { name: "Ripple (XRP)", icon: "✕", color: "bg-gray-100 dark:bg-gray-700 text-gray-600" },
+    "KAS/USD": { name: "Kaspa", icon: "Ⓚ", color: "bg-green-100 dark:bg-green-900/30 text-green-600" },
   };
 
-  function basePriceForSymbol(symbol: string): number {
-    const base: Record<string, number> = {
-      XAUUSD: 4570,
-      USOIL: 88,
-      BTCUSDT: 68000,
-      SOLUSDT: 170,
-      XRPUSDT: 0.62,
-      ETHUSDT: 3500,
-      KASUSDT: 0.12,
-    };
-    return base[symbol] || 100;
-  }
+  const currentMarkets = markets;
 
   return (
     <div className="min-h-screen">
@@ -113,57 +138,42 @@ export default function HomePage() {
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Total Signals
-            </h3>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-              {stats.total}
-            </p>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Signals</h3>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{stats.total}</p>
           </div>
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Win Rate
-            </h3>
-            <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
-              {stats.winRate}%
-            </p>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Win Rate</h3>
+            <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{stats.winRate}%</p>
           </div>
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Active Signals
-            </h3>
-            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">
-              {signals.filter(s => s.status === "active").length}
-            </p>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Signals</h3>
+            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{signals.filter(s => s.status === "active").length}</p>
           </div>
         </div>
 
         {/* Market Prices Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {supportedPairs.map(symbol => {
-            const data = markets[symbol];
+            const data = currentMarkets[symbol as keyof typeof currentMarkets];
             if (!data) return null;
-            const info = symbolInfo[symbol] || { name: symbol, icon: "💰", color: "bg-gray-100 text-gray-600" };
+            const info = symbolInfo[symbol as keyof typeof symbolInfo] || { name: symbol, icon: "💰", color: "bg-gray-100 text-gray-600" };
+            const format = (sym: string) => {
+              if (sym === "XRP/USD" || sym === "KAS/USD") return (val: number) => val.toFixed(4);
+              return (val: number) => val.toFixed(2);
+            };
+            const fmt = format(symbol as string);
             return (
               <div key={symbol} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow hover:shadow-lg transition-shadow">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className={`p-2 rounded-lg ${info.color}`}>
-                    <span className="text-lg">{info.icon}</span>
-                  </div>
+                  <div className={`p-2 rounded-lg ${info.color}`}><span className="text-lg">{info.icon}</span></div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-                      {symbol}
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {info.name}
-                    </p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">{symbol}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{info.name}</p>
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                  ${data.price.toFixed(symbol.includes('USD') ? 2 : 4)}
-                </div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">${fmt(data.price)}</div>
                 <div className={`text-sm font-semibold ${data.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {data.change >= 0 ? '+' : ''}{data.change.toFixed(symbol.includes('USD') ? 2 : 4)} ({data.changePercent.toFixed(2)}%)
+                  {data.change >= 0 ? '+' : ''}{fmt(data.change)} ({data.changePercent.toFixed(2)}%)
                 </div>
               </div>
             );
@@ -171,7 +181,6 @@ export default function HomePage() {
         </div>
 
         {/* Charts Grid */}
-        {/* Charts Grid: 2 per row on large screens, 1 on mobile */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TradingViewChart symbol="FOREXCOM:XAUUSD" height={400} />
           <TradingViewChart symbol="FOREXCOM:USOIL" height={400} />
@@ -184,16 +193,14 @@ export default function HomePage() {
 
         {/* Signal Table */}
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            Live Trading Signals (All Pairs)
-          </h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Live Trading Signals (All Pairs)</h2>
           <SignalTable signals={signals} />
         </div>
       </main>
 
       <footer className="max-w-7xl mx-auto px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
         <p>© 2026 TradeSignal Dashboard. Built with Next.js & Tailwind.</p>
-        <p className="mt-1">Charts powered by TradingView | Prices update every 5 seconds</p>
+        <p className="mt-1">Charts powered by TradingView | Prices update every 60 seconds</p>
       </footer>
     </div>
   );
