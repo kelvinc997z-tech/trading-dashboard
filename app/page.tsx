@@ -108,12 +108,12 @@ export default function HomePage() {
   function basePriceForSymbol(symbol: string): number {
     const base: Record<string, number> = {
       XAUUSD: 4570,
-      USOIL: 88,
+      "OIL.WTI": 88,
       "BTC/USD": 68000,
       "SOL/USD": 170,
       "ETH/USD": 3500,
       "XRP/USD": 0.62,
-      "KAS/USD": 0.12,
+      "KAS/USDT": 0.12,
     };
     return base[symbol] || 100;
   }
@@ -121,12 +121,12 @@ export default function HomePage() {
   // Symbol metadata for display
   const symbolInfo: Record<string, { name: string; icon: string; color: string }> = {
     XAUUSD: { name: "Gold (XAUUSD)", icon: "🥇", color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600" },
-    USOIL: { name: "US Oil (WTI)", icon: "🛢️", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
+    "OIL.WTI": { name: "OIL WTI TVC", icon: "🛢️", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
     "BTC/USD": { name: "Bitcoin", icon: "₿", color: "bg-orange-100 dark:bg-orange-900/30 text-orange-600" },
     "SOL/USD": { name: "Solana", icon: "◎", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600" },
     "ETH/USD": { name: "Ethereum", icon: "Ξ", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
     "XRP/USD": { name: "Ripple (XRP)", icon: "✕", color: "bg-gray-100 dark:bg-gray-700 text-gray-600" },
-    "KAS/USD": { name: "Kaspa", icon: "Ⓚ", color: "bg-green-100 dark:bg-green-900/30 text-green-600" },
+    "KAS/USDT": { name: "Kaspa (KAS/USDT)", icon: "Ⓚ", color: "bg-green-100 dark:bg-green-900/30 text-green-600" },
   };
 
   const currentMarkets = markets;
@@ -158,7 +158,7 @@ export default function HomePage() {
             if (!data) return null;
             const info = symbolInfo[symbol as keyof typeof symbolInfo] || { name: symbol, icon: "💰", color: "bg-gray-100 text-gray-600" };
             const format = (sym: string) => {
-              if (sym === "XRP/USD" || sym === "KAS/USD") return (val: number) => val.toFixed(4);
+              if (sym === "XRP/USD" || sym === "KAS/USDT") return (val: number) => val.toFixed(4);
               return (val: number) => val.toFixed(2);
             };
             const fmt = format(symbol as string);
@@ -183,12 +183,12 @@ export default function HomePage() {
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TradingViewChart symbol="FOREXCOM:XAUUSD" height={400} />
-          <TradingViewChart symbol="FOREXCOM:USOIL" height={400} />
+          <TradingViewChart symbol="OIL.WTI" height={400} />
           <TradingViewChart symbol="BINANCE:BTCUSDT" height={400} />
           <TradingViewChart symbol="BINANCE:ETHUSDT" height={400} />
           <TradingViewChart symbol="BINANCE:SOLUSDT" height={400} />
           <TradingViewChart symbol="BINANCE:XRPUSDT" height={400} />
-          <TradingViewChart symbol="BINANCE:KASUSDT" height={400} />
+          <TradingViewChart symbol="MEXC:KASUSDT" height={400} />
         </div>
 
         {/* Signal Table */}
