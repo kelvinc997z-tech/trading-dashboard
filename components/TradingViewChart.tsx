@@ -9,6 +9,7 @@ interface TradingViewChartProps {
 
 export default function TradingViewChart({ symbol, height = 500 }: TradingViewChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const widgetId = useRef(`tradingview_widget_${symbol.replace(/[:/]/g, '_')}_${Math.random().toString(36).substr(2, 9)}`);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -36,7 +37,7 @@ export default function TradingViewChart({ symbol, height = 500 }: TradingViewCh
         support_host: 'https://www.tradingview.com',
         with_dates: true,
         height: height,
-        container_id: containerRef.current?.id || 'tradingview_widget',
+        container_id: widgetId.current,
       });
     };
     containerRef.current.appendChild(script);
@@ -59,7 +60,7 @@ export default function TradingViewChart({ symbol, height = 500 }: TradingViewCh
         </p>
       </div>
       <div
-        id="tradingview_widget"
+        id={widgetId.current}
         ref={containerRef}
         style={{ height: `${height}px` }}
       />
