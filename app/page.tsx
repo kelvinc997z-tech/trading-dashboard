@@ -163,12 +163,14 @@ export default function HomePage() {
             const fmt = format(symbol as string);
             const isPositive = data.change >= 0;
             return (
-              <div key={symbol} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow hover:shadow-lg transition-shadow">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{symbol}</div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">${fmt(data.price)}</div>
-                <div className={`text-sm font-semibold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                  {isPositive ? '+' : ''}{fmt(data.change)}%
+              <div key={symbol} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{symbol}</span>
+                  <span className={`text-xs font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                    {isPositive ? '+' : ''}{fmt(data.change)}%
+                  </span>
                 </div>
+                <div className="text-xl font-bold text-gray-900 dark:text-white">${fmt(data.price)}</div>
               </div>
             );
           })}
