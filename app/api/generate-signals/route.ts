@@ -18,7 +18,7 @@ async function fetchTechnicalIndicators(baseUrl: string) {
   return res.json();
 }
 
-function generateSignalFromIndicator(symbol: string, indicator: any) {
+function generateSignalFromIndicator(symbol: string, indicator: any, entryPrice?: number) {
   const { rsi, macd, sma20, sma50, trend, currentPrice } = indicator;
   const now = new Date();
   const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -48,7 +48,8 @@ function generateSignalFromIndicator(symbol: string, indicator: any) {
     type = trend === "bullish" ? "BUY" : trend === "bearish" ? "SELL" : "BUY"; // default BUY for neutral
   }
 
-  const entry = currentPrice;
+  // Use real-time entry price if provided, otherwise fallback to indicator's currentPrice
+  const entry = entryPrice || currentPrice;
   const tp = type === "BUY" ? entry + base.tp : entry - base.tp;
   const sl = type === "BUY" ? entry - base.sl : entry + base.sl;
 
@@ -68,9 +69,19 @@ function generateSignalFromIndicator(symbol: string, indicator: any) {
 export async function GET(request: NextRequest) {
   try {
     const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
-    const indicators = await fetchTechnicalIndicators(baseUrl);
+    // Fetch both technical indicators and real-time market data in parallel
+    const [indicators, marketData] = await Promise.all([
+      fetchTechnicalIndicators(baseUrl),
+      fetch(`${baseUrl}/api/market-data`).then(r => r.json()),
+    ]);
+
     const signals = Object.entries(indicators)
-      .map(([symbol, indicator]: [string, any]) => generateSignalFromIndicator(symbol, indicator))
+      .map(([symbol, indicator]: [string, any]) => {
+        // Use real-time price from marketData if available, otherwise fallback to indicator's currentPrice
+        const realPrice = marketData[symbol]?.price;
+        if (!realPrice) return null;
+        return generateSignalFromIndicator(symbol, indicator, realPrice);
+      })
       .filter(sig => sig !== null);
     return NextResponse.json({ signals });
   } catch (err: any) {
