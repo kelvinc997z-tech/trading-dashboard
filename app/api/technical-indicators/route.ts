@@ -75,19 +75,33 @@ export async function GET(request: Request) {
   const symbolParam = searchParams.get("symbol");
   const symbols = symbolParam ? [symbolParam] : Object.keys(SYMBOL_MAP);
 
-  // No API key? Return dummy data
+  // No API key? Return dummy data as object
   if (!apiKey) {
     console.warn("Alpha Vantage API key not set, using dummy indicators");
-    return NextResponse.json(symbols.map(sym => ({ symbol: sym, ...DUMMY_INDICATORS[sym] })));
+    const dummyObj: Record<string, any> = {};
+    for (const symbol of symbols) {
+      dummyObj[symbol] = DUMMY_INDICATORS[symbol];
+    }
+    return NextResponse.json(dummyObj);
   }
 
-  const results: any[] = [];
+  const results: Record<string, any> = {};
 
   for (const symbol of symbols) {
     try {
       const closes = await fetchTimeSeries(symbol, apiKey);
       if (closes.length < 50) {
-        results.push({ symbol, currentPrice: closes[closes.length - 1], rsi: 0, macd: "neutral", sma20: 0, sma50: 0, trend: "neutral", support: 0, resistance: 0, notes: "Insufficient data" });
+        results[symbol] = {
+          currentPrice: closes[closes.length - 1],
+          rsi: 0,
+          macd: "neutral",
+          sma20: 0,
+          sma50: 0,
+          trend: "neutral",
+          support: 0,
+          resistance: 0,
+          notes: "Insufficient data",
+        };
         continue;
       }
 
@@ -112,10 +126,10 @@ export async function GET(request: Request) {
       else if (rsi > 70) notes += "Overbought. ";
       notes += `Trend ${trend}. MACD ${macdTrend}.`;
 
-      results.push({ symbol, currentPrice: price, rsi, macd: macdTrend, sma20, sma50, trend, support, resistance, notes: notes.trim() || "No signals" });
+      results[symbol] = { currentPrice: price, rsi, macd: macdTrend, sma20, sma50, trend, support, resistance, notes: notes.trim() || "No signals" };
     } catch (err: any) {
       console.error(`Error ${symbol}:`, err.message);
-      results.push({ symbol, ...DUMMY_INDICATORS[symbol] });
+      results[symbol] = DUMMY_INDICATORS[symbol];
     }
   }
 
