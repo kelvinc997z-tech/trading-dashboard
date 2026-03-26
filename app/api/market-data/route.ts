@@ -12,7 +12,7 @@ const SYMBOL_MAP: Record<string, string> = {
   "KAS/USDT": "KAS/USDT",
 };
 
-// Comprehensive dummy prices (when API unavailable)
+// Realistic dummy prices (March 2026 market levels)
 const DUMMY_PRICES: Record<string, { price: number; change: number; changePercent: number }> = {
   "XAUUSD": { price: 4427.50, change: 15.30, changePercent: 0.35 },
   "USOIL": { price: 88.45, change: -1.25, changePercent: -1.39 },
