@@ -58,7 +58,7 @@ export default function MarketOverviewPage() {
       if (!res.ok) throw new Error("Failed to fetch signals");
       const data = await res.json();
       const newSignals = data.signals || [];
-      setSignals( newSignals);
+      setSignals(newSignals);
       storeSignals(newSignals);
     } catch (err: any) {
       console.error(err);
