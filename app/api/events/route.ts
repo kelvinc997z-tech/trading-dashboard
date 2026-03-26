@@ -16,18 +16,19 @@ export async function GET(request: NextRequest) {
   // Send initial data
   const sendInitial = async () => {
     try {
-      const marketRes = await fetch(`${baseUrl}/api/market-data`, {
-        next: { revalidate: 0 },
-      });
-      const marketData = await marketRes.json();
+      const [marketRes, signalsRes, newsRes] = await Promise.all([
+        fetch(`${baseUrl}/api/market-data`, { next: { revalidate: 0 } }),
+        fetch(`${baseUrl}/api/generate-signals`, { next: { revalidate: 0 } }),
+        fetch(`${baseUrl}/api/news-world-monitor`),
+      ]);
 
-      const signalsRes = await fetch(`${baseUrl}/api/generate-signals`, {
-        next: { revalidate: 0 },
-      });
+      const marketData = await marketRes.json();
       const signalsData = await signalsRes.json();
+      const newsData = await newsRes.json();
 
       writer.write(encoder.encode(`event: markets\ndata: ${JSON.stringify(marketData)}\n\n`));
       writer.write(encoder.encode(`event: signals\ndata: ${JSON.stringify(signalsData)}\n\n`));
+      writer.write(encoder.encode(`event: news\ndata: ${JSON.stringify(newsData)}\n\n`));
     } catch (error) {
       console.error("SSE initial error:", error);
     }
@@ -38,18 +39,19 @@ export async function GET(request: NextRequest) {
   // Poll every 60 seconds and send updates
   const interval = setInterval(async () => {
     try {
-      const marketRes = await fetch(`${baseUrl}/api/market-data`, {
-        next: { revalidate: 0 },
-      });
-      const marketData = await marketRes.json();
+      const [marketRes, signalsRes, newsRes] = await Promise.all([
+        fetch(`${baseUrl}/api/market-data`, { next: { revalidate: 0 } }),
+        fetch(`${baseUrl}/api/generate-signals`, { next: { revalidate: 0 } }),
+        fetch(`${baseUrl}/api/news-world-monitor`),
+      ]);
 
-      const signalsRes = await fetch(`${baseUrl}/api/generate-signals`, {
-        next: { revalidate: 0 },
-      });
+      const marketData = await marketRes.json();
       const signalsData = await signalsRes.json();
+      const newsData = await newsRes.json();
 
       writer.write(encoder.encode(`event: markets\ndata: ${JSON.stringify(marketData)}\n\n`));
       writer.write(encoder.encode(`event: signals\ndata: ${JSON.stringify(signalsData)}\n\n`));
+      writer.write(encoder.encode(`event: news\ndata: ${JSON.stringify(newsData)}\n\n`));
     } catch (error) {
       console.error("SSE interval error:", error);
     }

@@ -39,12 +39,30 @@ export default function NewsSection() {
         if (activeTab === "forex") apiCategory = "forex";
         if (activeTab === "economic") apiCategory = "stock";
 
-        const res = await fetch(`/api/news?category=${apiCategory}`);
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setNews(data);
+        // Fetch from both Finnhub and World Monitor in parallel
+        const [finnhubRes, worldMonitorRes] = await Promise.all([
+          fetch(`/api/news?category=${apiCategory}`),
+          fetch(`/api/news-world-monitor`),
+        ]);
+
+        const finnhubData = await finnhubRes.json();
+        const worldMonitorData = await worldMonitorRes.json();
+
+        // Combine and deduplicate by title (simple approach)
+        const allNews = Array.isArray(finnhubData) ? [...finnhubData] : [];
+        if (Array.isArray(worldMonitorData)) {
+          // Avoid duplicates by checking title similarity
+          for (const wm of worldMonitorData) {
+            const exists = allNews.some(n => 
+              n.title.toLowerCase().substring(0, 30) === wm.title.toLowerCase().substring(0, 30)
+            );
+            if (!exists) allNews.push(wm);
+          }
+        }
+
+        if (allNews.length > 0) {
+          setNews(allNews);
         } else {
-          // Fallback to mock if API returns error
           setNews(getMockNews());
         }
       } catch (error) {
