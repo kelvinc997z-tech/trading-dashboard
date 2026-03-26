@@ -14,6 +14,11 @@ export interface User {
   name: string;
   password: string; // hashed
   createdAt: string;
+  subscription_tier: 'free' | 'pro';
+  subscription_status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete' | 'incomplete_expired';
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
+  current_period_end?: string;
 }
 
 export interface Session {
@@ -40,7 +45,16 @@ export async function readUsers(): Promise<User[]> {
   await ensureDataDir();
   try {
     const data = await fs.readFile(usersFile, 'utf-8');
-    return JSON.parse(data);
+    const users = JSON.parse(data);
+    // Ensure backward compatibility: add defaults for missing fields
+    return users.map((u: any) => ({
+      ...u,
+      subscription_tier: u.subscription_tier || 'free',
+      subscription_status: u.subscription_status || 'active',
+      stripe_customer_id: u.stripe_customer_id || null,
+      stripe_subscription_id: u.stripe_subscription_id || null,
+      current_period_end: u.current_period_end || null,
+    }));
   } catch {
     return [];
   }
@@ -66,6 +80,8 @@ export async function createUser(email: string, name: string, password: string):
     name,
     password: hashedPassword,
     createdAt: new Date().toISOString(),
+    subscription_tier: 'free',
+    subscription_status: 'active',
   };
   users.push(newUser);
   await writeUsers(users);
@@ -153,4 +169,34 @@ export async function consumeResetToken(token: string): Promise<ResetToken | nul
   tokens.splice(index, 1);
   await writeResetTokens(tokens);
   return resetToken;
+}
+
+// Subscription Management
+export async function updateUserSubscription(
+  userId: string,
+  updates: Partial<Pick<User, 'subscription_tier' | 'subscription_status' | 'stripe_customer_id' | 'stripe_subscription_id' | 'current_period_end'>>
+): Promise<User | null> {
+  const users = await readUsers();
+  const userIndex = users.findIndex(u => u.id === userId);
+  if (userIndex === -1) return null;
+  
+  users[userIndex] = { ...users[userIndex], ...updates };
+  await writeUsers(users);
+  return users[userIndex];
+}
+
+export async function getUserSubscription(userId: string): Promise<{ tier: string; status: string; current_period_end?: string } | null> {
+  const users = await readUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user) return null;
+  return {
+    tier: user.subscription_tier,
+    status: user.subscription_status,
+    current_period_end: user.current_period_end,
+  };
+}
+
+export async function isProUser(userId: string): Promise<boolean> {
+  const sub = await getUserSubscription(userId);
+  return sub?.tier === 'pro' && sub?.status === 'active';
 }

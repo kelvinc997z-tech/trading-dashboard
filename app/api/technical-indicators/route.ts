@@ -1,4 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { promises as fs } from "fs";
+import path from "path";
+import { isValidSession, readUsers } from "@/lib/db";
 
 // Force dynamic rendering to avoid static generation errors
 export const dynamic = "force-dynamic";
@@ -14,6 +17,8 @@ const SYMBOL_MAP: Record<string, string> = {
   "XRP/USD": "XRP/USD",
   "KAS/USDT": "KAS/USDT",
 };
+
+const FREE_PAIRS = ["XAUUSD", "USOIL", "BTC/USD"];
 
 const DUMMY_INDICATORS: Record<string, any> = {
   "XAUUSD": { currentPrice: 4427.50, rsi: 45, macd: "buy", sma20: 4410, sma50: 4400, trend: "bullish", support: 4400, resistance: 4450, notes: "Moderate bullish trend" },
@@ -69,11 +74,38 @@ async function fetchTimeSeries(symbol: string, apiKey: string): Promise<number[]
   return closes;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  // Authenticate user
+  const cookieHeader = request.headers.get('cookie');
+  if (!cookieHeader) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  const match = cookieHeader.match(/session=([^;]+)/);
+  if (!match) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  const token = match[1];
+  const session = await isValidSession(token);
+  if (!session) {
+    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+  }
+
+  // Get user's tier to restrict pairs
+  const users = await readUsers();
+  const user = users.find(u => u.id === session.userId);
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+  const isPro = user.subscription_tier === "pro" && user.subscription_status === "active";
+  const allowedSymbols = isPro ? Object.keys(SYMBOL_MAP) : FREE_PAIRS;
+
   const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
   const { searchParams } = new URL(request.url);
   const symbolParam = searchParams.get("symbol");
-  const symbols = symbolParam ? [symbolParam] : Object.keys(SYMBOL_MAP);
+  const requestedSymbols = symbolParam ? [symbolParam] : allowedSymbols;
+
+  // Only serve allowed symbols
+  const symbols = requestedSymbols.filter(s => allowedSymbols.includes(s));
 
   // No API key? Return dummy data as object
   if (!apiKey) {

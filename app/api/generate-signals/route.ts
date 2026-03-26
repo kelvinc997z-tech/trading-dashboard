@@ -10,14 +10,6 @@ const SYMBOL_LABELS: Record<string, string> = {
   "KAS/USDT": "Kaspa",
 };
 
-async function fetchTechnicalIndicators(baseUrl: string) {
-  const res = await fetch(`${baseUrl}/api/technical-indicators`, {
-    next: { revalidate: 10 },
-  });
-  if (!res.ok) throw new Error("Failed to fetch technical indicators");
-  return res.json();
-}
-
 function generateSignalFromIndicator(symbol: string, indicator: any, entryPrice?: number) {
   const { rsi, macd, sma20, sma50, trend, currentPrice } = indicator;
   const now = new Date();
@@ -69,10 +61,14 @@ function generateSignalFromIndicator(symbol: string, indicator: any, entryPrice?
 export async function GET(request: NextRequest) {
   try {
     const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
-    // Fetch both technical indicators and real-time market data in parallel
+    const cookieHeader = request.headers.get('cookie');
+    const headers: Record<string, string> = {};
+    if (cookieHeader) headers['cookie'] = cookieHeader;
+
+    // Fetch both technical indicators and real-time market data in parallel, forwarding session
     const [indicators, marketData] = await Promise.all([
-      fetchTechnicalIndicators(baseUrl),
-      fetch(`${baseUrl}/api/market-data`).then(r => r.json()),
+      fetch(`${baseUrl}/api/technical-indicators`, { headers }).then(r => r.json()),
+      fetch(`${baseUrl}/api/market-data`, { headers }).then(r => r.json()),
     ]);
 
     const signals = Object.entries(indicators)

@@ -1,4 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { promises as fs } from "fs";
+import path from "path";
+import { isValidSession, readUsers } from "@/lib/db";
 
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
 
@@ -12,10 +15,17 @@ const SYMBOL_MAP: Record<string, string> = {
   "KAS/USDT": "KAS/USDT",
 };
 
-// Realistic dummy prices (March 2026 market levels)
+// Free plan pairs restriction
+const FREE_PAIRS = ["XAUUSD", "USOIL", "BTC/USD"];
+
+// Cache file location
+const dataDir = path.join(process.cwd(), 'data');
+const cacheFile = path.join(dataDir, 'market_data_cache.json');
+
+// Realistic market prices (March 2026 - based on current market levels)
 const DUMMY_PRICES: Record<string, { price: number; change: number; changePercent: number }> = {
-  "XAUUSD": { price: 4427.50, change: 15.30, changePercent: 0.35 },
-  "USOIL": { price: 88.45, change: -1.25, changePercent: -1.39 },
+  "XAUUSD": { price: 2350.75, change: 12.50, changePercent: 0.53 },
+  "USOIL": { price: 82.45, change: -1.25, changePercent: -1.49 },
   "BTC/USD": { price: 68500.00, change: 1250.00, changePercent: 1.86 },
   "ETH/USD": { price: 3850.00, change: 85.00, changePercent: 2.26 },
   "SOL/USD": { price: 175.20, change: 8.45, changePercent: 5.07 },
@@ -23,14 +33,33 @@ const DUMMY_PRICES: Record<string, { price: number; change: number; changePercen
   "KAS/USDT": { price: 0.1200, change: 0.0050, changePercent: 4.35 },
 };
 
-export async function GET() {
+async function getCache(): Promise<{ timestamp: number; data: Record<string, any> } | null> {
+  try {
+    await fs.mkdir(dataDir, { recursive: true });
+    const raw = await fs.readFile(cacheFile, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function setCache(data: Record<string, any>) {
+  try {
+    await fs.mkdir(dataDir, { recursive: true });
+    await fs.writeFile(cacheFile, JSON.stringify({ timestamp: Date.now(), data }));
+  } catch (err) {
+    console.error("Failed to write cache:", err);
+  }
+}
+
+async function fetchMarketDataFromAPI(): Promise<Record<string, { price: number; change: number; changePercent: number }>> {
   const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
   const results: Record<string, { price: number; change: number; changePercent: number }> = {};
 
   // If no API key, return all dummy data immediately
   if (!apiKey) {
     console.warn("Alpha Vantage API key not configured, using dummy data");
-    return NextResponse.json(DUMMY_PRICES);
+    return DUMMY_PRICES;
   }
 
   const fetchPromises = Object.entries(SYMBOL_MAP).map(async ([originalSymbol, avSymbol]) => {
@@ -87,5 +116,76 @@ export async function GET() {
     }
   });
 
-  return NextResponse.json(results);
+  return results;
+}
+
+export async function GET(request: NextRequest) {
+  // 1. Authenticate user
+  const cookieHeader = request.headers.get('cookie');
+  if (!cookieHeader) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  const match = cookieHeader.match(/session=([^;]+)/);
+  if (!match) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  const token = match[1];
+  const session = await isValidSession(token);
+  if (!session) {
+    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+  }
+
+  // 2. Get user's subscription tier
+  const users = await readUsers();
+  const user = users.find(u => u.id === session.userId);
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const isPro = user.subscription_tier === "pro" && user.subscription_status === "active";
+  const FREE_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
+  // 3. Determine which pairs to return (free users only get 3 pairs)
+  const allowedPairs = isPro ? Object.keys(SYMBOL_MAP) : FREE_PAIRS;
+
+  // 4. Cache logic for free users
+  let cached: { timestamp: number; data: Record<string, any> } | null = null;
+  if (!isPro) {
+    cached = await getCache();
+    const now = Date.now();
+    if (cached && (now - cached.timestamp) < FREE_CACHE_TTL) {
+      // Return cached data filtered to free pairs
+      const filtered: Record<string, { price: number; change: number; changePercent: number }> = {};
+      for (const pair of allowedPairs) {
+        if (cached.data[pair]) filtered[pair] = cached.data[pair];
+      }
+      // If cache missing some pairs, fill with dummy
+      for (const pair of allowedPairs) {
+        if (!filtered[pair] && DUMMY_PRICES[pair]) {
+          filtered[pair] = DUMMY_PRICES[pair];
+        }
+      }
+      return NextResponse.json(filtered);
+    }
+  }
+
+  // 5. Fetch fresh data (if pro or cache expired)
+  const freshData = await fetchMarketDataFromAPI();
+  
+  // Update cache for free users
+  if (!isPro) {
+    await setCache(freshData);
+  }
+
+  // 6. Filter to allowed pairs
+  const result: Record<string, { price: number; change: number; changePercent: number }> = {};
+  for (const pair of allowedPairs) {
+    if (freshData[pair]) {
+      result[pair] = freshData[pair];
+    } else if (DUMMY_PRICES[pair]) {
+      result[pair] = DUMMY_PRICES[pair];
+    }
+  }
+
+  return NextResponse.json(result);
 }
