@@ -104,8 +104,9 @@ export default function SignalsPage() {
         if (parsed.type === "markets") {
           setMarkets(parsed.data);
         } else if (parsed.type === "signals") {
-          setSignals(parsed.data);
-          storeSignals(parsed.data);
+          const newSignals = parsed.data.signals || parsed.data;
+          setSignals(newSignals);
+          storeSignals(newSignals);
         }
       } catch (e) {
         console.error("SSE parse error:", e);
@@ -118,14 +119,10 @@ export default function SignalsPage() {
     eventSource.onerror = () => {
       console.error("SSE error, falling back to polling");
       eventSource.close();
-      // Fallback polling every 60s
+      // Fallback polling every 60s using existing fetch functions
       const interval = setInterval(() => {
-        fetch("/api/market-data").then(r => r.json()).then(setMarkets).catch(console.error);
-        fetch("/api/generate-signals").then(r => r.json()).then(sData => {
-          const newSignals = sData.signals || [];
-          setSignals(newSignals);
-          storeSignals(newSignals);
-        }).catch(console.error);
+        fetchMarketData();
+        fetchGenerateSignals();
       }, 60000);
       return () => clearInterval(interval);
     };
@@ -133,7 +130,7 @@ export default function SignalsPage() {
     return () => {
       eventSource.close();
     };
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-close signals based on current market prices
   useEffect(() => {
@@ -274,4 +271,3 @@ export default function SignalsPage() {
     </div>
   );
 }
-// fix loading state

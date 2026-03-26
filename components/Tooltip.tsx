@@ -25,6 +25,7 @@ export default function Tooltip({ content, children, position = "top" }: Tooltip
     right: "border-r-gray-700 border-t-transparent border-b-transparent border-l-transparent",
   };
 
+  // Dark mode aware tooltip
   return (
     <div 
       className="relative inline-block"
@@ -34,10 +35,10 @@ export default function Tooltip({ content, children, position = "top" }: Tooltip
       {children}
       {visible && (
         <div className={`absolute z-50 ${positions[position]}`}>
-          <div className="bg-gray-800 text-white text-xs rounded px-2 py-1 max-w-xs whitespace-normal">
+          <div className="bg-gray-900 dark:bg-gray-100 text-gray-100 dark:text-gray-900 text-xs rounded-lg px-3 py-2 max-w-xs whitespace-normal shadow-xl border border-gray-700 dark:border-gray-300">
             {content}
           </div>
-          <div className={`absolute w-0 h-0 border-4 ${arrows[position]} ${position === "top" ? "bottom-0 left-1/2 -translate-x-1/2 border-t-gray-800" : position === "bottom" ? "top-0 left-1/2 -translate-x-1/2 border-b-gray-800" : position === "left" ? "right-0 top-1/2 -translate-y-1/2 border-l-gray-800" : "left-0 top-1/2 -translate-y-1/2 border-r-gray-800"}`}></div>
+          <div className={`absolute w-0 h-0 border-4 ${arrows[position]} ${position === "top" ? "bottom-0 left-1/2 -translate-x-1/2 border-t-gray-900 dark:border-t-gray-100" : position === "bottom" ? "top-0 left-1/2 -translate-x-1/2 border-b-gray-900 dark:border-b-gray-100" : position === "left" ? "right-0 top-1/2 -translate-y-1/2 border-l-gray-900 dark:border-l-gray-100" : "left-0 top-1/2 -translate-y-1/2 border-r-gray-900 dark:border-r-gray-100"}`}></div>
         </div>
       )}
     </div>
