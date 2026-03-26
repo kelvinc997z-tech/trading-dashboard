@@ -56,17 +56,6 @@ export default function HomePage() {
       .catch(() => setAuthLoading(false));
   }, [router]);
 
-  const fetchMarketData = async () => {
-    try {
-      const res = await fetch("/api/market-data");
-      if (!res.ok) throw new Error("Failed to fetch market data");
-      const data = await res.json();
-      setMarkets(data);
-    } catch (error) {
-      console.error("Error fetching market data:", error);
-    }
-  };
-
   const fetchGenerateSignals = async () => {
     try {
       const res = await fetch("/api/generate-signals");
