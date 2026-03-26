@@ -79,8 +79,8 @@ export async function POST(request: NextRequest) {
         await updateUserSubscription(user.id, {
           subscription_tier: "free",
           subscription_status: "canceled",
-          stripe_subscription_id: null,
-          current_period_end: null,
+          stripe_subscription_id: undefined,
+          current_period_end: undefined,
         });
         console.log(`User ${user.id} subscription cancelled, downgraded to free`);
         break;
