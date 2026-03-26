@@ -79,14 +79,36 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [markets, isLoaded]);
 
+  // Auto-close signals based on current market prices
+  useEffect(() => {
+    if (!isLoaded) return;
+    setSignals(prev => prev.map(signal => {
+      if (signal.status !== "active") return signal;
+      const price = markets[signal.pair as keyof typeof markets]?.price;
+      if (!price) return signal;
+
+      if (signal.type === "BUY") {
+        if (price >= signal.tp) {
+          return { ...signal, status: "closed", result: "win" };
+        } else if (price <= signal.sl) {
+          return { ...signal, status: "closed", result: "lose" };
+        }
+      } else { // SELL
+        if (price <= signal.tp) {
+          return { ...signal, status: "closed", result: "win" };
+        } else if (price >= signal.sl) {
+          return { ...signal, status: "closed", result: "lose" };
+        }
+      }
+      return signal;
+    }));
+  }, [markets, isLoaded]);
+
   // Update stats
   useEffect(() => {
     const total = signals.length;
     const closed = signals.filter(s => s.status === "closed");
-    const won = closed.filter(s => {
-      if (s.type === "BUY") return s.tp > s.sl;
-      return s.tp < s.sl;
-    }).length;
+    const won = closed.filter(s => s.result === "win").length;
     const winRate = closed.length > 0 ? Math.round((won / closed.length) * 100) : 0;
     setStats({ total, winRate });
   }, [signals]);

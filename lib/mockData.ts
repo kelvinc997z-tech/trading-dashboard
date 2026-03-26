@@ -14,6 +14,7 @@ export interface Signal {
   sl: number;
   time: string;
   status: "active" | "closed" | "pending";
+  result?: "win" | "lose";
 }
 
 // Base prices (realistic 2026 forecasts)
