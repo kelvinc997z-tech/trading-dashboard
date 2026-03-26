@@ -7,7 +7,7 @@ import TradingViewChart from "@/components/TradingViewChart";
 import SignalTable, { Signal } from "@/components/SignalTable";
 import SignalTabs from "@/components/SignalTabs";
 import { Activity } from "lucide-react";
-import { generateMarketData, generateSignal, supportedPairs, initialSignals } from "@/lib/mockData";
+import { generateSignal, supportedPairs, initialSignals } from "@/lib/mockData";
 
 interface MarketData {
   symbol: string;
@@ -26,6 +26,18 @@ export default function HomePage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "active" | "closed">("all");
 
+  // Fetch market data from Twelve Data API
+  const fetchMarketData = async () => {
+    try {
+      const res = await fetch("/api/market-data");
+      if (!res.ok) throw new Error("Failed to fetch market data");
+      const data = await res.json();
+      setMarkets(data);
+    } catch (error) {
+      console.error("Error fetching market data:", error);
+    }
+  };
+
   // Check authentication
   useEffect(() => {
     fetch("/api/me")
@@ -43,27 +55,14 @@ export default function HomePage() {
 
   // Initialize market data
   useEffect(() => {
-    if (!user) return; // only load markets after user confirmed
-    const initialMarkets: Record<string, MarketData> = {};
-    supportedPairs.forEach(symbol => {
-      initialMarkets[symbol] = generateMarketData(symbol as any);
-    });
-    setMarkets(initialMarkets);
-    setIsLoaded(true);
+    if (!user) return;
+    fetchMarketData().then(() => setIsLoaded(true));
   }, [user]);
 
   // Real-time update every 60 seconds
   useEffect(() => {
     if (!isLoaded) return;
-    const interval = setInterval(() => {
-      setMarkets(prev => {
-        const newMarkets: Record<string, MarketData> = {};
-        supportedPairs.forEach(symbol => {
-          newMarkets[symbol as any] = generateMarketData(symbol as any);
-        });
-        return newMarkets;
-      });
-    }, 60000);
+    const interval = setInterval(fetchMarketData, 60000);
     return () => clearInterval(interval);
   }, [isLoaded]);
 
