@@ -23,7 +23,7 @@ export async function GET() {
   const fetchPromises = Object.entries(SYMBOL_MAP).map(async ([originalSymbol, avSymbol]) => {
     try {
       const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(avSymbol)}&apikey=${apiKey}`;
-      const res = await fetch(url, { next: { revalidate: 30 } }); // cache 30s
+      const res = await fetch(url, { next: { revalidate: 300 } }); // cache 5 menit (Alpha Vantage rate limit)
       if (!res.ok) {
         console.error(`Failed to fetch ${avSymbol}: ${res.status}`);
         return null;
