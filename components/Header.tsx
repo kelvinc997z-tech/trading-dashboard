@@ -45,6 +45,8 @@ export default function Header() {
           {/* Navigation */}
           <nav className="flex items-center space-x-6">
             <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors">Dashboard</Link>
+            <Link href="/market-overview" className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors">Market</Link>
+            <Link href="/technical-summary" className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors">Technical</Link>
             <Link href="/news" className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors">News</Link>
 
             {!loadingUser && (
