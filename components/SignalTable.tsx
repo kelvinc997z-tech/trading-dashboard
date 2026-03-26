@@ -11,6 +11,7 @@ export interface Signal {
   sl: number;
   time: string;
   status: "active" | "closed" | "pending";
+  result?: "win" | "lose";
 }
 
 interface SignalTableProps {
