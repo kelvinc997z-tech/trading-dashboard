@@ -56,12 +56,21 @@ export default function MarketOverviewPage() {
       if (!res.ok) throw new Error("Failed to fetch signals");
       const data = await res.json();
       const newSignals = data.signals || [];
-      setSignals(newSignals);
+      setSignals( newSignals);
       storeSignals(newSignals);
     } catch (err: any) {
-      // Keep existing signals if fetch fails
       console.error(err);
     }
+  };
+
+  const handleCloseSignal = (id: string) => {
+    setSignals(prev => {
+      const updated = prev.map(sig => 
+        sig.id === id ? { ...sig, status: "closed" as const } : sig
+      );
+      storeSignals(updated);
+      return updated;
+    });
   };
 
   useEffect(() => {
@@ -200,7 +209,10 @@ export default function MarketOverviewPage() {
         {activeTab === "signals" && (
           <div>
             <SignalTabs signals={signals} activeTab={signalTab} onTabChange={setSignalTab} />
-            <SignalTable signals={signalTab === "all" ? signals : signals.filter(s => s.status === signalTab)} />
+            <SignalTable 
+              signals={signalTab === "all" ? signals : signals.filter(s => s.status === signalTab)} 
+              onClose={handleCloseSignal} 
+            />
           </div>
         )}
 
