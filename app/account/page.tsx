@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, XCircle, Calendar, CreditCard, crown, logout } from "lucide-react";
+import { CheckCircle, XCircle, Calendar, CreditCard, Crown, LogOut } from "lucide-react";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -96,7 +96,7 @@ export default function AccountPage() {
             onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 hover:bg-red-200 dark:hover:bg-red-900/50 transition"
           >
-            <logout className="w-4 h-4" />
+            <LogOut className="w-4 h-4" />
             Logout
           </button>
         </div>
@@ -136,7 +136,7 @@ export default function AccountPage() {
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Subscription</h2>
             {isPro && (
               <span className="flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full text-sm font-semibold">
-                <crown className="w-4 h-4" /> Pro
+                <Crown className="w-4 h-4" /> Pro
               </span>
             )}
             {!isPro && (
