@@ -32,17 +32,21 @@ export default function TechnicalSummaryPage() {
   const router = useRouter();
   const [techSummaries, setTechSummaries] = useState<TechnicalSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchTechnicalData = async () => {
     try {
+      setError(null);
       const res = await fetch("/api/technical-indicators");
       if (!res.ok) throw new Error("Failed to fetch technical indicators");
       const data = await res.json();
       setTechSummaries(data.sort((a: TechnicalSummary, b: TechnicalSummary) => a.symbol.localeCompare(b.symbol)));
     } catch (err: any) {
-      console.error(err);
+      setError((err as Error).message);
     } finally {
       setLoading(false);
+      setLastUpdated(new Date());
     }
   };
 
@@ -95,6 +99,22 @@ export default function TechnicalSummaryPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-gray-900 dark:text-white text-xl font-semibold animate-pulse">Loading technical summary...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center">
+          <div className="text-red-600 dark:text-red-400 text-xl font-semibold mb-4">Error: {error}</div>
+          <button
+            onClick={fetchTechnicalData}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -176,8 +196,9 @@ export default function TechnicalSummaryPage() {
           ))}
         </div>
 
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          Technical indicators computed from Alpha Vantage daily time series. Data updates every minute.
+        <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+          <span>Technical indicators computed from Alpha Vantage daily time series.</span>
+          {lastUpdated && <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>}
         </div>
       </main>
     </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import SignalTable, { Signal } from "@/components/SignalTable";
 import SignalTabs from "@/components/SignalTabs";
+import SignalTableSkeleton from "@/components/SignalTableSkeleton";
 import { Activity } from "lucide-react";
 import { getStoredSignals, storeSignals } from "@/lib/localStorage";
 import { calculateWinRate } from "@/lib/signalUtils";
@@ -129,7 +130,15 @@ export default function MarketOverviewPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-red-600 dark:text-red-400 text-xl font-semibold">Error: {error}</div>
+        <div className="text-center">
+          <div className="text-red-600 dark:text-red-400 text-xl font-semibold mb-4">Error: {error}</div>
+          <button
+            onClick={() => { fetchMarketData(); fetchSignals(); }}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -209,15 +218,22 @@ export default function MarketOverviewPage() {
         {activeTab === "signals" && (
           <div>
             <SignalTabs signals={signals} activeTab={signalTab} onTabChange={setSignalTab} />
-            <SignalTable 
-              signals={signalTab === "all" ? signals : signals.filter(s => s.status === signalTab)} 
-              onClose={handleCloseSignal} 
-            />
+            {loading || Object.keys(markets).length === 0 ? (
+              <SignalTableSkeleton rows={5} />
+            ) : (
+              <SignalTable 
+                signals={signalTab === "all" ? signals : signals.filter(s => s.status === signalTab)} 
+                onClose={handleCloseSignal} 
+              />
+            )}
           </div>
         )}
 
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          Data provided by Alpha Vantage. Updates every 60 seconds. Signals auto-close based on price.
+        <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+          <span>Data provided by Alpha Vantage. Signals auto-close based on price.</span>
+          {lastUpdated && (
+            <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+          )}
         </div>
       </main>
     </div>

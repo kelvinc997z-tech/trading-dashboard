@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import SignalTable, { Signal } from "@/components/SignalTable";
 import SignalTabs from "@/components/SignalTabs";
+import SignalTableSkeleton from "@/components/SignalTableSkeleton";
 import { Activity } from "lucide-react";
 import { getStoredSignals, storeSignals } from "@/lib/localStorage";
 import { calculateWinRate } from "@/lib/signalUtils";
@@ -18,28 +19,36 @@ export default function SignalsPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "active" | "closed">("all");
   const [stats, setStats] = useState({ total: 0, winRate: 0 });
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchMarketData = async () => {
     try {
+      setError(null);
       const res = await fetch("/api/market-data");
       if (!res.ok) throw new Error("Failed to fetch market data");
       const data = await res.json();
       setMarkets(data);
-    } catch (error) {
-      console.error("Error fetching market data:", error);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLastUpdated(new Date());
     }
   };
 
   const fetchGenerateSignals = async () => {
     try {
+      setError(null);
       const res = await fetch("/api/generate-signals");
       if (!res.ok) throw new Error("Failed to fetch signals");
       const data = await res.json();
       const newSignals = data.signals || [];
       setSignals(newSignals);
       storeSignals(newSignals);
-    } catch (error) {
-      console.error("Error fetching signals:", error);
+    } catch (err: any) {
+      setError((err as Error).message);
+    } finally {
+      setLastUpdated(new Date());
     }
   };
 
@@ -118,6 +127,22 @@ export default function SignalsPage() {
     );
   }
 
+  if (error && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center">
+          <div className="text-red-600 dark:text-red-400 text-xl font-semibold mb-4">Error: {error}</div>
+          <button
+            onClick={() => { fetchMarketData(); fetchGenerateSignals(); }}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return null;
   }
@@ -145,7 +170,7 @@ export default function SignalsPage() {
         </div>
 
         <SignalTabs signals={signals} activeTab={activeTab} onTabChange={setActiveTab} />
-        <SignalTable signals={filteredSignals} onClose={handleCloseSignal} />
+        {loading ? <SignalTableSkeleton rows={5} /> : <SignalTable signals={filteredSignals} onClose={handleCloseSignal} />}
       </main>
     </div>
   );
