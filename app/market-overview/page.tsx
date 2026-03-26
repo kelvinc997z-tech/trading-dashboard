@@ -6,7 +6,6 @@ import Header from "@/components/Header";
 import SignalTable, { Signal } from "@/components/SignalTable";
 import SignalTabs from "@/components/SignalTabs";
 import SignalTableSkeleton from "@/components/SignalTableSkeleton";
-import { Activity } from "lucide-react";
 import { getStoredSignals, storeSignals } from "@/lib/localStorage";
 import { calculateWinRate } from "@/lib/signalUtils";
 
@@ -251,5 +250,3 @@ export default function MarketOverviewPage() {
       </main>
     </div>
   );
-
-}
