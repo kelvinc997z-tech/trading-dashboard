@@ -8,6 +8,8 @@ import SignalTable, { Signal } from "@/components/SignalTable";
 import SignalTabs from "@/components/SignalTabs";
 import { Activity } from "lucide-react";
 import { generateSignal, supportedPairs, initialSignals } from "@/lib/mockData";
+import { calculateWinRate } from "@/lib/signalUtils";
+import { getStoredSignals, storeSignals } from "@/lib/localStorage";
 
 interface MarketData {
   symbol: string;
@@ -19,12 +21,13 @@ interface MarketData {
 export default function HomePage() {
   const router = useRouter();
   const [markets, setMarkets] = useState<Record<string, MarketData>>({});
-  const [signals, setSignals] = useState<Signal[]>(initialSignals);
+  const [signals, setSignals] = useState<Signal[]>(() => getStoredSignals());
   const [stats, setStats] = useState({ total: 0, winRate: 0 });
   const [isLoaded, setIsLoaded] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "active" | "closed">("all");
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Fetch market data from Twelve Data API
   const fetchMarketData = async () => {
@@ -53,32 +56,47 @@ export default function HomePage() {
       .catch(() => setAuthLoading(false));
   }, [router]);
 
-  // Initialize market data
+  const fetchMarketData = async () => {
+    try {
+      const res = await fetch("/api/market-data");
+      if (!res.ok) throw new Error("Failed to fetch market data");
+      const data = await res.json();
+      setMarkets(data);
+    } catch (error) {
+      console.error("Error fetching market data:", error);
+    }
+  };
+
+  const fetchGenerateSignals = async () => {
+    try {
+      const res = await fetch("/api/generate-signals");
+      if (!res.ok) throw new Error("Failed to fetch signals");
+      const data = await res.json();
+      const newSignals = data.signals || [];
+      setSignals(newSignals);
+      storeSignals(newSignals);
+    } catch (error) {
+      console.error("Error fetching signals:", error);
+    }
+  };
+
+  // Initialize after auth
   useEffect(() => {
     if (!user) return;
-    fetchMarketData().then(() => setIsLoaded(true));
+    fetchMarketData();
+    fetchGenerateSignals();
+    setIsLoaded(true);
   }, [user]);
 
-  // Real-time update every 60 seconds
-  useEffect(() => {
-    if (!isLoaded) return;
-    const interval = setInterval(fetchMarketData, 60000);
-    return () => clearInterval(interval);
-  }, [isLoaded]);
-
-  // Generate new signal occasionally
+  // Polling every 60 seconds
   useEffect(() => {
     if (!isLoaded) return;
     const interval = setInterval(() => {
-      if (Math.random() > 0.6) {
-        const symbol = supportedPairs[Math.floor(Math.random() * supportedPairs.length)] as any;
-        const currentPrice = markets[symbol]?.price || (basePriceForSymbol(symbol) || 100);
-        const newSignal = generateSignal(symbol, currentPrice);
-        setSignals(prev => [newSignal, ...prev.slice(0, 19)]);
-      }
-    }, 10000);
+      fetchMarketData();
+      fetchGenerateSignals();
+    }, 60000);
     return () => clearInterval(interval);
-  }, [markets, isLoaded]);
+  }, [isLoaded]);
 
   // Auto-close signals based on current market prices
   useEffect(() => {
@@ -107,10 +125,7 @@ export default function HomePage() {
 
   // Update stats
   useEffect(() => {
-    const total = signals.length;
-    const closed = signals.filter(s => s.status === "closed");
-    const won = closed.filter(s => s.result === "win").length;
-    const winRate = closed.length > 0 ? Math.round((won / closed.length) * 100) : 0;
+    const { total, winRate } = calculateWinRate(signals);
     setStats({ total, winRate });
   }, [signals]);
 
@@ -156,6 +171,14 @@ export default function HomePage() {
 
   // Filter signals based on active tab
   const filteredSignals = activeTab === "all" ? signals : signals.filter(s => s.status === activeTab);
+
+  const handleCloseSignal = (id: string) => {
+    setSignals(prev => {
+      const updated = prev.map(sig => sig.id === id ? { ...sig, status: "closed" as const } : sig);
+      storeSignals(updated);
+      return updated;
+    });
+  };
 
   return (
     <div className="min-h-screen">
@@ -217,7 +240,7 @@ export default function HomePage() {
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Live Trading Signals (All Pairs)</h2>
           <SignalTabs signals={signals} activeTab={activeTab} onTabChange={setActiveTab} />
-          <SignalTable signals={filteredSignals} />
+          <SignalTable signals={filteredSignals} onClose={handleCloseSignal} />
         </div>
       </main>
 

@@ -16,6 +16,7 @@ export interface Signal {
 
 interface SignalTableProps {
   signals: Signal[];
+  onClose?: (id: string) => void;
 }
 
 const statusColors = {
@@ -44,6 +45,7 @@ export default function SignalTable({ signals }: SignalTableProps) {
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">SL</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+            {onClose && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -63,6 +65,18 @@ export default function SignalTable({ signals }: SignalTableProps) {
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[signal.status]}`}>{signal.status.toUpperCase()}</span>
               </td>
+              {onClose && (
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {signal.status === "active" && (
+                    <button
+                      onClick={() => onClose(signal.id)}
+                      className="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                    >
+                      Close
+                    </button>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

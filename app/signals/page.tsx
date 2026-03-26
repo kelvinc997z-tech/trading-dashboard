@@ -3,20 +3,45 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import SignalTable from "@/components/SignalTable";
+import SignalTable, { Signal } from "@/components/SignalTable";
 import SignalTabs from "@/components/SignalTabs";
 import { Activity } from "lucide-react";
-import { generateMarketData, supportedPairs, initialSignals } from "@/lib/mockData";
+import { getStoredSignals, storeSignals } from "@/lib/localStorage";
+import { calculateWinRate } from "@/lib/signalUtils";
 
 export default function SignalsPage() {
   const router = useRouter();
   const [markets, setMarkets] = useState<Record<string, any>>({});
-  const [signals, setSignals] = useState(initialSignals);
+  const [signals, setSignals] = useState<Signal[]>(() => getStoredSignals());
   const [isLoaded, setIsLoaded] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "active" | "closed">("all");
   const [stats, setStats] = useState({ total: 0, winRate: 0 });
+
+  const fetchMarketData = async () => {
+    try {
+      const res = await fetch("/api/market-data");
+      if (!res.ok) throw new Error("Failed to fetch market data");
+      const data = await res.json();
+      setMarkets(data);
+    } catch (error) {
+      console.error("Error fetching market data:", error);
+    }
+  };
+
+  const fetchGenerateSignals = async () => {
+    try {
+      const res = await fetch("/api/generate-signals");
+      if (!res.ok) throw new Error("Failed to fetch signals");
+      const data = await res.json();
+      const newSignals = data.signals || [];
+      setSignals(newSignals);
+      storeSignals(newSignals);
+    } catch (error) {
+      console.error("Error fetching signals:", error);
+    }
+  };
 
   // Check authentication
   useEffect(() => {
@@ -33,18 +58,25 @@ export default function SignalsPage() {
       .catch(() => setAuthLoading(false));
   }, [router]);
 
-  // Initialize market data (needed for auto-close)
+  // Initialize after auth
   useEffect(() => {
     if (!user) return;
-    const initialMarkets: Record<string, any> = {};
-    supportedPairs.forEach(symbol => {
-      initialMarkets[symbol] = generateMarketData(symbol as any);
-    });
-    setMarkets(initialMarkets);
+    fetchMarketData();
+    fetchGenerateSignals();
     setIsLoaded(true);
   }, [user]);
 
-  // Auto-close signals based on price
+  // Polling every 60 seconds
+  useEffect(() => {
+    if (!isLoaded) return;
+    const interval = setInterval(() => {
+      fetchMarketData();
+      fetchGenerateSignals();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [isLoaded]);
+
+  // Auto-close signals based on current market prices
   useEffect(() => {
     if (!isLoaded) return;
     setSignals(prev => prev.map(signal => {
@@ -53,11 +85,11 @@ export default function SignalsPage() {
       if (!price) return signal;
 
       if (signal.type === "BUY") {
-        if (price >= signal.tp) return { ...signal, status: "closed", result: "win" };
-        if (price <= signal.sl) return { ...signal, status: "closed", result: "lose" };
+        if (price >= signal.tp) return { ...signal, status: "closed", result: "win" as const };
+        if (price <= signal.sl) return { ...signal, status: "closed", result: "lose" as const };
       } else {
-        if (price <= signal.tp) return { ...signal, status: "closed", result: "win" };
-        if (price >= signal.sl) return { ...signal, status: "closed", result: "lose" };
+        if (price <= signal.tp) return { ...signal, status: "closed", result: "win" as const };
+        if (price >= signal.sl) return { ...signal, status: "closed", result: "lose" as const };
       }
       return signal;
     }));
@@ -65,15 +97,18 @@ export default function SignalsPage() {
 
   // Update stats
   useEffect(() => {
-    const total = signals.length;
-    const closed = signals.filter(s => s.status === "closed");
-    const won = closed.filter(s => s.result === "win").length;
-    const winRate = closed.length > 0 ? Math.round((won / closed.length) * 100) : 0;
+    const { total, winRate } = calculateWinRate(signals);
     setStats({ total, winRate });
   }, [signals]);
 
-  // Filter signals based on tab
-  const filteredSignals = activeTab === "all" ? signals : signals.filter(s => s.status === activeTab);
+  // Manual close handler
+  const handleCloseSignal = (id: string) => {
+    setSignals(prev => {
+      const updated = prev.map(sig => sig.id === id ? { ...sig, status: "closed" as const } : sig);
+      storeSignals(updated);
+      return updated;
+    });
+  };
 
   if (authLoading) {
     return (
@@ -87,32 +122,30 @@ export default function SignalsPage() {
     return null;
   }
 
+  const filteredSignals = activeTab === "all" ? signals : signals.filter(s => s.status === activeTab);
+
   return (
     <div className="min-h-screen">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Signals</h3>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{stats.total}</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Trading Signals</h1>
+            <div className="flex gap-4 mt-2 text-sm text-gray-600 dark:text-gray-300">
+              <span>Total Signals: {stats.total}</span>
+              <span>Win Rate: {stats.winRate}%</span>
+            </div>
           </div>
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Win Rate</h3>
-            <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{stats.winRate}%</p>
-          </div>
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Signals</h3>
-            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{signals.filter(s => s.status === "active").length}</p>
-          </div>
+          <button
+            onClick={() => { fetchMarketData(); fetchGenerateSignals(); }}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+          >
+            Refresh Now
+          </button>
         </div>
 
-        {/* Signal Table with Tabs */}
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Trading Signals</h2>
-          <SignalTabs signals={signals} activeTab={activeTab} onTabChange={setActiveTab} />
-          <SignalTable signals={filteredSignals} />
-        </div>
+        <SignalTabs signals={signals} activeTab={activeTab} onTabChange={setActiveTab} />
+        <SignalTable signals={filteredSignals} onClose={handleCloseSignal} />
       </main>
     </div>
   );
