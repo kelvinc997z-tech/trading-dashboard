@@ -37,6 +37,8 @@ export default function MarketOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [sortBy, setSortBy] = useState<"pair" | "time" | "entry">("time");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   const fetchMarketData = async () => {
     try {
@@ -72,6 +74,15 @@ export default function MarketOverviewPage() {
       storeSignals(updated);
       return updated;
     });
+  };
+
+  const handleSort = (by: "pair" | "time" | "entry") => {
+    if (sortBy === by) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(by);
+      setSortDirection("desc");
+    }
   };
 
   useEffect(() => {
@@ -223,7 +234,10 @@ export default function MarketOverviewPage() {
             ) : (
               <SignalTable 
                 signals={signalTab === "all" ? signals : signals.filter(s => s.status === signalTab)} 
-                onClose={handleCloseSignal} 
+                onClose={handleCloseSignal}
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                onSort={handleSort}
               />
             )}
           </div>

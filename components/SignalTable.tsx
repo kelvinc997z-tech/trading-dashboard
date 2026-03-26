@@ -17,6 +17,9 @@ export interface Signal {
 interface SignalTableProps {
   signals: Signal[];
   onClose?: (id: string) => void;
+  sortBy?: "pair" | "time" | "entry";
+  sortDirection?: "asc" | "desc";
+  onSort?: (by: "pair" | "time" | "entry") => void;
 }
 
 const statusColors = {
@@ -26,30 +29,67 @@ const statusColors = {
 };
 
 function formatNumber(symbol: string, value: number): string {
-  if (symbol === "XRP/USD" || symbol === "KAS/USD") {
+  if (symbol === "XRP/USD" || symbol === "KAS/USDT") {
     return value.toFixed(4);
   }
   return value.toFixed(2);
 }
 
-export default function SignalTable({ signals }: SignalTableProps) {
+export default function SignalTable({ signals, onClose, sortBy, sortDirection, onSort }: SignalTableProps) {
+  const sortedSignals = [...signals].sort((a, b) => {
+    if (!sortBy) return 0;
+    let comparison = 0;
+    if (sortBy === "pair") {
+      comparison = a.pair.localeCompare(b.pair);
+    } else if (sortBy === "entry") {
+      comparison = a.entry - b.entry;
+    } else if (sortBy === "time") {
+      const toSeconds = (t: string) => {
+        const [h, m, s] = t.split(":").map(Number);
+        return h * 3600 + m * 60 + s;
+      };
+      comparison = toSeconds(a.time) - toSeconds(b.time);
+    }
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
+
+  const getSortIcon = (column: string) => {
+    if (sortBy !== column) return null;
+    return sortDirection === "asc" ? "↑" : "↓";
+  };
+
   return (
     <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead className="bg-gray-50 dark:bg-gray-900">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pair</th>
+            <th 
+              className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${sortBy === "pair" ? "text-blue-600 dark:text-blue-400" : ""}`}
+              onClick={() => onSort?.("pair")}
+            >
+              Pair {getSortIcon("pair")}
+            </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Signal</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Entry</th>
+            <th 
+              className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${sortBy === "entry" ? "text-blue-600 dark:text-blue-400" : ""}`}
+              onClick={() => onSort?.("entry")}
+            >
+              Entry {getSortIcon("entry")}
+            </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">TP</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">SL</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time</th>
+            <th 
+              className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${sortBy === "time" ? "text-blue-600 dark:text-blue-400" : ""}`}
+              onClick={() => onSort?.("time")}
+            >
+              Time {getSortIcon("time")}
+            </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
             {onClose && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-          {signals.map((signal) => (
+          {sortedSignals.map((signal) => (
             <tr key={signal.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
               <td className="px-6 py-4 whitespace-nowrap"><div className="font-semibold text-gray-900 dark:text-white">{signal.pair}</div></td>
               <td className="px-6 py-4 whitespace-nowrap">

@@ -21,6 +21,8 @@ export default function SignalsPage() {
   const [stats, setStats] = useState({ total: 0, winRate: 0 });
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [sortBy, setSortBy] = useState<"pair" | "time" | "entry">("time");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   const fetchMarketData = async () => {
     try {
@@ -119,6 +121,16 @@ export default function SignalsPage() {
     });
   };
 
+  // Sort handler
+  const handleSort = (by: "pair" | "time" | "entry") => {
+    if (sortBy === by) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(by);
+      setSortDirection("desc");
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
@@ -170,7 +182,15 @@ export default function SignalsPage() {
         </div>
 
         <SignalTabs signals={signals} activeTab={activeTab} onTabChange={setActiveTab} />
-        {loading ? <SignalTableSkeleton rows={5} /> : <SignalTable signals={filteredSignals} onClose={handleCloseSignal} />}
+        {loading ? <SignalTableSkeleton rows={5} /> : (
+          <SignalTable 
+            signals={filteredSignals} 
+            onClose={handleCloseSignal}
+            sortBy={sortBy}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+          />
+        )}
       </main>
     </div>
   );
