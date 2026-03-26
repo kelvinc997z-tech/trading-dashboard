@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUpRight, ArrowDownRight, Clock } from "lucide-react";
+import Tooltip from "./Tooltip";
 
 export interface Signal {
   id: string;
@@ -99,8 +100,16 @@ export default function SignalTable({ signals, onClose, sortBy, sortDirection, o
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-200">${formatNumber(signal.pair, signal.entry)}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-green-600 dark:text-green-400 font-medium">${formatNumber(signal.pair, signal.tp)}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-red-600 dark:text-red-400 font-medium">${formatNumber(signal.pair, signal.sl)}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-green-600 dark:text-green-400 font-medium">
+                <Tooltip content={`Take Profit: ${formatNumber(signal.pair, signal.tp)}`} position="top">
+                  <span className="cursor-help">${formatNumber(signal.pair, signal.tp)}</span>
+                </Tooltip>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-red-600 dark:text-red-400 font-medium">
+                <Tooltip content={`Stop Loss: ${formatNumber(signal.pair, signal.sl)}`} position="top">
+                  <span className="cursor-help">${formatNumber(signal.pair, signal.sl)}</span>
+                </Tooltip>
+              </td>
               <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400 flex items-center gap-1"><Clock className="w-4 h-4" />{signal.time}</td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[signal.status]}`}>{signal.status.toUpperCase()}</span>

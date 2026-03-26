@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import SignalTable, { Signal } from "@/components/SignalTable";
@@ -9,6 +9,7 @@ import SignalTableSkeleton from "@/components/SignalTableSkeleton";
 import { Activity } from "lucide-react";
 import { getStoredSignals, storeSignals } from "@/lib/localStorage";
 import { calculateWinRate } from "@/lib/signalUtils";
+import { useSSE } from "@/hooks/useSSE";
 
 export default function SignalsPage() {
   const router = useRouter();
@@ -69,23 +70,71 @@ export default function SignalsPage() {
       .catch(() => setAuthLoading(false));
   }, [router]);
 
-  // Initialize after auth
+  // Initial fetch (fallback before SSE connects)
   useEffect(() => {
     if (!user) return;
-    fetchMarketData();
-    fetchGenerateSignals();
-    setIsLoaded(true);
+    const init = async () => {
+      try {
+        const mRes = await fetch("/api/market-data");
+        if (mRes.ok) {
+          const mData = await mRes.json();
+          setMarkets(mData);
+        }
+        const sRes = await fetch("/api/generate-signals");
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          const newSignals = sData.signals || [];
+          setSignals(newSignals);
+          storeSignals(newSignals);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+    init();
   }, [user]);
 
-  // Polling every 60 seconds
+  // SSE for real-time updates
   useEffect(() => {
-    if (!isLoaded) return;
-    const interval = setInterval(() => {
-      fetchMarketData();
-      fetchGenerateSignals();
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [isLoaded]);
+    if (!user) return;
+    const handleSSEMessage = (event: MessageEvent) => {
+      try {
+        const parsed = JSON.parse(event.data) as { type: string; data: any };
+        if (parsed.type === "markets") {
+          setMarkets(parsed.data);
+        } else if (parsed.type === "signals") {
+          setSignals(parsed.data);
+          storeSignals(parsed.data);
+        }
+      } catch (e) {
+        console.error("SSE parse error:", e);
+      }
+    };
+
+    const eventSource = new EventSource("/api/events");
+    eventSource.onopen = () => console.log("SSE connected");
+    eventSource.onmessage = handleSSEMessage;
+    eventSource.onerror = () => {
+      console.error("SSE error, falling back to polling");
+      eventSource.close();
+      // Fallback polling every 60s
+      const interval = setInterval(() => {
+        fetch("/api/market-data").then(r => r.json()).then(setMarkets).catch(console.error);
+        fetch("/api/generate-signals").then(r => r.json()).then(sData => {
+          const newSignals = sData.signals || [];
+          setSignals(newSignals);
+          storeSignals(newSignals);
+        }).catch(console.error);
+      }, 60000);
+      return () => clearInterval(interval);
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [user]);
 
   // Auto-close signals based on current market prices
   useEffect(() => {
@@ -131,6 +180,28 @@ export default function SignalsPage() {
     }
   };
 
+  const exportCSV = () => {
+    const headers = ["Pair", "Type", "Entry", "TP", "SL", "Time", "Status", "Result"];
+    const rows = signals.map(s => [
+      s.pair,
+      s.type,
+      s.entry.toFixed(2),
+      s.tp.toFixed(2),
+      s.sl.toFixed(2),
+      s.time,
+      s.status,
+      s.result || ""
+    ]);
+    const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `signals-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
@@ -173,12 +244,21 @@ export default function SignalsPage() {
               <span>Win Rate: {stats.winRate}%</span>
             </div>
           </div>
-          <button
-            onClick={() => { fetchMarketData(); fetchGenerateSignals(); }}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
-          >
-            Refresh Now
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={exportCSV}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium"
+              title="Export signals to CSV"
+            >
+              Export CSV
+            </button>
+            <button
+              onClick={() => { window.location.reload(); }}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
         <SignalTabs signals={signals} activeTab={activeTab} onTabChange={setActiveTab} />

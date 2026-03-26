@@ -161,7 +161,7 @@ export default function MarketOverviewPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Market Overview & Signals</h1>
-            <div className="flex gap-4 mt-2 text-sm text-gray-600 dark:text-gray-300">
+            <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600 dark:text-gray-300">
               <span>Total Signals: {stats.total}</span>
               <span>Win Rate: {stats.winRate}%</span>
             </div>
@@ -200,7 +200,7 @@ export default function MarketOverviewPage() {
         </div>
 
         {activeTab === "market" && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {Object.entries(markets)
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([symbol, data]) => {
