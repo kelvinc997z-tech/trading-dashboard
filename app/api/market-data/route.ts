@@ -1,20 +1,19 @@
 import { NextResponse } from "next/server";
 
-const TWELVE_DATA_BASE = "https://api.twelvedata.com";
-const FINNHUB_BASE = "https://finnhub.io/api/v1";
+const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
 
-const SYMBOLS = [
-  { id: "XAUUSD", twelvedata: "XAU/USD", finnhub: "OANDA:XAUUSD", name: "Gold (XAU/USD)" },
-  { id: "USOIL", twelvedata: "WTI", finnhub: "OANDA:WTICO_USD", name: "US Oil (WTI)" },
-  { id: "BTC/USD", twelvedata: "BTC/USD", finnhub: "BINANCE:BTCUSDT", name: "Bitcoin" },
-  { id: "ETH/USD", twelvedata: "ETH/USD", finnhub: "BINANCE:ETHUSDT", name: "Ethereum" },
-  { id: "SOL/USD", twelvedata: "SOL/USD", finnhub: "BINANCE:SOLUSDT", name: "Solana" },
-  { id: "XRP/USD", twelvedata: "XRP/USD", finnhub: "BINANCE:XRPUSDT", name: "Ripple" },
-  { id: "KAS/USDT", twelvedata: "KAS/USDT", finnhub: "BINANCE:KASUSDT", name: "Kaspa" },
-];
+const SYMBOL_MAP: Record<string, string> = {
+  "XAUUSD": "XAU/USD",
+  "USOIL": "WTI", // WTI crude oil
+  "BTC/USD": "BTC/USD",
+  "ETH/USD": "ETH/USD",
+  "SOL/USD": "SOL/USD",
+  "XRP/USD": "XRP/USD",
+  "KAS/USDT": "KAS/USDT",
+};
 
-// Realistic fallback prices (updated March 2026)
-const FALLBACK_PRICES: Record<string, { price: number; change: number; changePercent: number }> = {
+// Comprehensive dummy prices (when API unavailable)
+const DUMMY_PRICES: Record<string, { price: number; change: number; changePercent: number }> = {
   "XAUUSD": { price: 2350.50, change: 12.30, changePercent: 0.53 },
   "USOIL": { price: 88.45, change: -1.25, changePercent: -1.39 },
   "BTC/USD": { price: 68500.00, change: 1250.00, changePercent: 1.86 },
@@ -25,96 +24,68 @@ const FALLBACK_PRICES: Record<string, { price: number; change: number; changePer
 };
 
 export async function GET() {
-  const twelvedataKey = process.env.TWELVEDATA_API_KEY;
-  const finnhubKey = process.env.FINNHUB_API_KEY;
+  const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
   const results: Record<string, { price: number; change: number; changePercent: number }> = {};
 
-  // Helper: format change percent
-  const formatChange = (val: number) => Math.abs(val);
+  // If no API key, return all dummy data immediately
+  if (!apiKey) {
+    console.warn("Alpha Vantage API key not configured, using dummy data");
+    return NextResponse.json(DUMMY_PRICES);
+  }
 
-  // Try Twelvedata first (best for forex & commodities)
-  if (twelvedataKey) {
+  const fetchPromises = Object.entries(SYMBOL_MAP).map(async ([originalSymbol, avSymbol]) => {
     try {
-      const symbolsParam = SYMBOLS.map(s => s.twelvedata).join(",");
-      const url = `${TWELVE_DATA_BASE}/quote?symbol=${encodeURIComponent(symbolsParam)}&apikey=${twelvedataKey}`;
-      const res = await fetch(url, { next: { revalidate: 30 } }); // 30s cache
-
-      if (res.ok) {
-        const data = await res.json();
-        // Twelvedata returns array of quotes
-        if (Array.isArray(data)) {
-          for (const quote of data) {
-            const symbolObj = SYMBOLS.find(s => s.twelvedata === quote.symbol);
-            if (symbolObj) {
-              const price = parseFloat(quote.close || quote.price || "0");
-              const prevClose = parseFloat(quote.previous_close || quote.precious_close || "0");
-              const change = price - prevClose;
-              const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
-              results[symbolObj.id] = {
-                price: isNaN(price) ? FALLBACK_PRICES[symbolObj.id].price : price,
-                change: isNaN(change) ? FALLBACK_PRICES[symbolObj.id].change : change,
-                changePercent: isNaN(changePercent) ? FALLBACK_PRICES[symbolObj.id].changePercent : changePercent,
-              };
-            }
-          }
-        } else if (data.code) {
-          // Single quote response
-          const symbolObj = SYMBOLS.find(s => s.twelvedata === data.symbol);
-          if (symbolObj) {
-            const price = parseFloat(data.close || data.price || "0");
-            const prevClose = parseFloat(data.previous_close || data.precious_close || "0");
-            const change = price - prevClose;
-            const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
-            results[symbolObj.id] = {
-              price: isNaN(price) ? FALLBACK_PRICES[symbolObj.id].price : price,
-              change: isNaN(change) ? FALLBACK_PRICES[symbolObj.id].change : change,
-              changePercent: isNaN(changePercent) ? FALLBACK_PRICES[symbolObj.id].changePercent : changePercent,
-            };
-          }
-        }
+      const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(avSymbol)}&apikey=${apiKey}`;
+      const res = await fetch(url, { 
+        next: { revalidate: 60 }, // refresh every 60s (matches SSE interval)
+      });
+      
+      if (!res.ok) {
+        console.error(`Failed to fetch ${avSymbol}: ${res.status} ${res.statusText}`);
+        return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
       }
-    } catch (error) {
-      console.error("Twelvedata fetch error:", error);
-    }
-  }
-
-  // If we got all symbols, return
-  if (Object.keys(results).length === SYMBOLS.length) {
-    return NextResponse.json(results);
-  }
-
-  // Try Finnhub for missing symbols or as fallback
-  if (finnhubKey) {
-    for (const symbolObj of SYMBOLS) {
-      if (results[symbolObj.id]) continue; // already have
-
-      try {
-        const url = `${FINNHUB_BASE}/quote?symbol=${encodeURIComponent(symbolObj.finnhub)}&token=${finnhubKey}`;
-        const res = await fetch(url, { next: { revalidate: 30 } });
-        if (res.ok) {
-          const data = await res.json();
-          const price = parseFloat(data.c || "0"); // current price
-          const prevClose = parseFloat(data.pc || "0"); // previous close
-          const change = price - prevClose;
-          const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
-          results[symbolObj.id] = {
-            price: isNaN(price) ? FALLBACK_PRICES[symbolObj.id].price : price,
-            change: isNaN(change) ? FALLBACK_PRICES[symbolObj.id].change : change,
-            changePercent: isNaN(changePercent) ? FALLBACK_PRICES[symbolObj.id].changePercent : changePercent,
-          };
-        }
-      } catch (error) {
-        console.error(`Finnhub fetch error for ${symbolObj.id}:`, error);
+      
+      const data = await res.json();
+      
+      // Check for API limits
+      if (data["Note"] || data.Information) {
+        console.warn(`API limit/info for ${avSymbol}:`, data["Note"] || data.Information);
+        return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
       }
+      
+      const quote = data["Global Quote"];
+      if (!quote) {
+        console.warn(`No quote data for ${avSymbol}, using dummy`);
+        return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
+      }
+      
+      const price = parseFloat(quote["05. price"]);
+      const change = parseFloat(quote["09. change"] || "0");
+      const changePercentStr = quote["10. change percent"]?.replace("%", "") || "0";
+      const changePercent = parseFloat(changePercentStr);
+      
+      return {
+        symbol: originalSymbol,
+        price: isNaN(price) ? DUMMY_PRICES[originalSymbol].price : price,
+        change: isNaN(change) ? DUMMY_PRICES[originalSymbol].change : change,
+        changePercent: isNaN(changePercent) ? DUMMY_PRICES[originalSymbol].changePercent : changePercent,
+      };
+    } catch (err) {
+      console.error(`Exception for ${avSymbol}:`, err);
+      return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
     }
-  }
+  });
 
-  // Fill any remaining missing with fallback
-  for (const symbolObj of SYMBOLS) {
-    if (!results[symbolObj.id]) {
-      results[symbolObj.id] = FALLBACK_PRICES[symbolObj.id];
+  const resultsArr = await Promise.all(fetchPromises);
+  resultsArr.forEach(item => {
+    if (item) {
+      results[item.symbol] = {
+        price: item.price,
+        change: item.change,
+        changePercent: item.changePercent,
+      };
     }
-  }
+  });
 
   return NextResponse.json(results);
 }
