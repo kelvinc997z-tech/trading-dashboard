@@ -261,7 +261,7 @@ export default function SignalsPage() {
         </div>
 
         <SignalTabs signals={signals} activeTab={activeTab} onTabChange={setActiveTab} />
-        {loading ? <SignalTableSkeleton rows={5} /> : (
+        {!isLoaded ? <SignalTableSkeleton rows={5} /> : (
           <SignalTable 
             signals={filteredSignals} 
             onClose={handleCloseSignal}
