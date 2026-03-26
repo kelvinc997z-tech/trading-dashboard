@@ -274,3 +274,4 @@ export default function SignalsPage() {
     </div>
   );
 }
+# fix loading state
