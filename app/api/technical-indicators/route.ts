@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+// Force dynamic rendering to avoid static generation errors
+export const dynamic = "force-dynamic";
+
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
 
 const SYMBOL_MAP: Record<string, string> = {

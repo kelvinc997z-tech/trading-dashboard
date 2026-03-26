@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const SYMBOL_LABELS: Record<string, string> = {
   "XAUUSD": "Gold (XAU/USD)",
@@ -10,8 +10,10 @@ const SYMBOL_LABELS: Record<string, string> = {
   "KAS/USDT": "Kaspa",
 };
 
-async function fetchTechnicalIndicators() {
-  const res = await fetch(`${process.env.ALPHA_VANTAGE_API_KEY ? "" : "http://localhost:3000"}/api/technical-indicators`);
+async function fetchTechnicalIndicators(baseUrl: string) {
+  const res = await fetch(`${baseUrl}/api/technical-indicators`, {
+    next: { revalidate: 10 },
+  });
   if (!res.ok) throw new Error("Failed to fetch technical indicators");
   return res.json();
 }
@@ -63,9 +65,10 @@ function generateSignalFromIndicator(symbol: string, indicator: any) {
   };
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const indicators = await fetchTechnicalIndicators();
+    const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+    const indicators = await fetchTechnicalIndicators(baseUrl);
     const signals = Object.entries(indicators)
       .map(([symbol, indicator]: [string, any]) => generateSignalFromIndicator(symbol, indicator))
       .filter(sig => sig !== null);
