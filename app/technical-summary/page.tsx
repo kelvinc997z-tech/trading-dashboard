@@ -41,7 +41,12 @@ export default function TechnicalSummaryPage() {
       const res = await fetch("/api/technical-indicators");
       if (!res.ok) throw new Error("Failed to fetch technical indicators");
       const data = await res.json();
-      setTechSummaries(data.sort((a: TechnicalSummary, b: TechnicalSummary) => a.symbol.localeCompare(b.symbol)));
+      const summariesArray = Object.entries(data).map(([symbol, indicator]: [string, any]) => ({
+        symbol,
+        ...indicator,
+      })) as TechnicalSummary[];
+      summariesArray.sort((a, b) => a.symbol.localeCompare(b.symbol));
+      setTechSummaries(summariesArray);
     } catch (err: any) {
       setError((err as Error).message);
     } finally {
