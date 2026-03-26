@@ -1,52 +1,55 @@
 import { NextResponse } from "next/server";
 
-const TWELVE_DATA_BASE = "https://api.twelvedata.com";
+const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
 
-const SYMBOLS = [
-  { symbol: "XAUUSD", type: "forex" },
-  { symbol: "USOIL", type: "commodity" },
-  { symbol: "BTC/USD", type: "crypto" },
-  { symbol: "ETH/USD", type: "crypto" },
-  { symbol: "SOL/USD", type: "crypto" },
-  { symbol: "XRP/USD", type: "crypto" },
-  { symbol: "KAS/USDT", type: "crypto" },
-];
+const SYMBOL_MAP: Record<string, string> = {
+  "XAUUSD": "XAU/USD",
+  "USOIL": "WTI", // WTI crude oil
+  "BTC/USD": "BTC/USD",
+  "ETH/USD": "ETH/USD",
+  "SOL/USD": "SOL/USD",
+  "XRP/USD": "XRP/USD",
+  "KAS/USDT": "KAS/USDT",
+};
 
 export async function GET() {
-  const apiKey = process.env.TWELVE_DATA_API_KEY;
+  const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "Twelve Data API key not configured" }, { status: 500 });
+    return NextResponse.json({ error: "Alpha Vantage API key not configured" }, { status: 500 });
   }
 
-  // Build query for multiple symbols (twelvedata supports multiple with 'symbol=...&symbol=...' )
-  const params = new URLSearchParams();
-  params.append("apikey", apiKey);
-  // We'll fetch individually to keep format consistent
   const results: Record<string, { price: number; change: number; changePercent: number }> = {};
 
-  // Use Promise.all for parallel fetch (respect rate limits)
-  const fetchPromises = SYMBOLS.map(async ({ symbol }) => {
+  const fetchPromises = Object.entries(SYMBOL_MAP).map(async ([originalSymbol, avSymbol]) => {
     try {
-      const url = `${TWELVE_DATA_BASE}/quote?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`;
-      const res = await fetch(url, { next: { revalidate: 10 } }); // cache 10s
+      const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(avSymbol)}&apikey=${apiKey}`;
+      const res = await fetch(url, { next: { revalidate: 30 } }); // cache 30s
       if (!res.ok) {
-        console.error(`Failed to fetch ${symbol}: ${res.status}`);
+        console.error(`Failed to fetch ${avSymbol}: ${res.status}`);
         return null;
       }
       const data = await res.json();
-      if (data.code || data.message) {
-        console.error(`Error for ${symbol}:`, data.message);
+      if (data["Note"] || data.Information) {
+        console.error(`API message for ${avSymbol}:`, data["Note"] || data.Information);
         return null;
       }
-      // Fields: "price", "change", "percent_change"
+      const quote = data["Global Quote"];
+      if (!quote) {
+        console.error(`No quote data for ${avSymbol}`);
+        return null;
+      }
+      const price = parseFloat(quote["05. price"]);
+      const change = parseFloat(quote["09. change"] || "0");
+      const changePercentStr = quote["10. change percent"]?.replace("%", "") || "0";
+      const changePercent = parseFloat(changePercentStr);
       return {
-        symbol,
-        price: parseFloat(data.price),
-        change: parseFloat(data.change || "0"),
-        changePercent: parseFloat(data.percent_change || "0"),
+        symbol: originalSymbol,
+        price: isNaN(price) ? 0 : price,
+        change: isNaN(change) ? 0 : change,
+        changePercent: isNaN(changePercent) ? 0 : changePercent,
       };
     } catch (err) {
-      console.error(`Exception for ${symbol}:`, err);
+      console.error(`Exception for ${originalSymbol}:`, err);
       return null;
     }
   });
