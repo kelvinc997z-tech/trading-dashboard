@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+// Ensure route is always dynamic (no static caching)
+export const dynamic = "force-dynamic";
+
 interface NewsItem {
   id: string;
   title: string;
