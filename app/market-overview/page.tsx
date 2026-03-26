@@ -30,6 +30,7 @@ export default function MarketOverviewPage() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [activeTab, setActiveTab] = useState<"market" | "signals">("market");
   const [signalTab, setSignalTab] = useState<"all" | "active" | "closed">("all");
+  const [stats, setStats] = useState({ total: 0, winRate: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +49,7 @@ export default function MarketOverviewPage() {
 
   const fetchSignals = async () => {
     try {
-      const res = await fetch("/api/signals");
+      const res = await fetch("/api/generate-signals");
       if (!res.ok) throw new Error("Failed to fetch signals");
       const data = await res.json();
       setSignals(data.signals || []);
@@ -86,6 +87,15 @@ export default function MarketOverviewPage() {
     }));
   }, [markets]);
 
+  // Calculate stats
+  useEffect(() => {
+    const total = signals.length;
+    const closed = signals.filter(s => s.status === "closed");
+    const won = closed.filter(s => s.result === "win").length;
+    const winRate = closed.length > 0 ? Math.round((won / closed.length) * 100) : 0;
+    setStats({ total, winRate });
+  }, [signals]);
+
   // Check auth
   useEffect(() => {
     fetch("/api/me")
@@ -117,7 +127,13 @@ export default function MarketOverviewPage() {
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Market Overview & Signals</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Market Overview & Signals</h1>
+            <div className="flex gap-4 mt-2 text-sm text-gray-600 dark:text-gray-300">
+              <span>Total Signals: {stats.total}</span>
+              <span>Win Rate: {stats.winRate}%</span>
+            </div>
+          </div>
           <button
             onClick={() => { fetchMarketData(); fetchSignals(); }}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
