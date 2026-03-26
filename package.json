@@ -18,7 +18,8 @@
     "next-themes": "^0.3.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "resend": "^6.9.4"
+    "resend": "^6.9.4",
+    "technicalindicators": "^3.1.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
