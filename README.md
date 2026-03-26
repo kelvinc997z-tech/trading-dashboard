@@ -85,4 +85,4 @@ No environment variables required.
 
 ## License
 
-MIT
+MIT# Trading Dashboard
