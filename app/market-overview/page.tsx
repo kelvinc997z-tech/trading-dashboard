@@ -94,14 +94,12 @@ export default function MarketOverviewPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-close signals based on current market prices
   useEffect(() => {
     if (!markets || Object.keys(markets).length === 0) return;
     setSignals(prev => prev.map(signal => {
       if (signal.status !== "active") return signal;
       const price = markets[signal.pair as keyof typeof markets]?.price;
       if (!price) return signal;
-
       if (signal.type === "BUY") {
         if (price >= signal.tp) return { ...signal, status: "closed", result: "win" as const };
         if (price <= signal.sl) return { ...signal, status: "closed", result: "lose" as const };
@@ -113,13 +111,11 @@ export default function MarketOverviewPage() {
     }));
   }, [markets]);
 
-  // Calculate stats
   useEffect(() => {
     const { total, winRate } = calculateWinRate(signals);
     setStats({ total, winRate });
   }, [signals]);
 
-  // Check auth
   useEffect(() => {
     fetch("/api/me")
       .then(res => res.json())
@@ -173,7 +169,6 @@ export default function MarketOverviewPage() {
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab("market")}
