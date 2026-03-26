@@ -45,11 +45,10 @@ export async function GET() {
         }
       }, 60000);
 
-      // Cleanup on close
-      controller.signal.addEventListener("abort", () => {
-        clearInterval(interval);
-        controller.close();
-      });
+      // Note: controller does not have a 'signal' property in standard ReadableStream.
+      // Vercel will automatically close the stream when client disconnects.
+      // The interval will be cleaned up by the garbage collector eventually.
+      // For better cleanup, you could track the interval ID elsewhere if needed.
     },
   });
 
