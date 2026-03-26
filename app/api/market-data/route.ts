@@ -20,6 +20,12 @@ export async function GET() {
 
   const results: Record<string, { price: number; change: number; changePercent: number }> = {};
 
+  // Fallback dummy prices (use if API fails)
+  const dummyPrices: Record<string, { price: number; change: number; changePercent: number }> = {
+    "KAS/USDT": { price: 0.12, change: 0, changePercent: 0 },
+    "USOIL": { price: 88, change: 0, changePercent: 0 },
+  };
+
   const fetchPromises = Object.entries(SYMBOL_MAP).map(async ([originalSymbol, avSymbol]) => {
     try {
       const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(avSymbol)}&apikey=${apiKey}`;
@@ -50,6 +56,13 @@ export async function GET() {
       };
     } catch (err) {
       console.error(`Exception for ${originalSymbol}:`, err);
+      // Fallback to dummy price if available
+      if (dummyPrices[originalSymbol]) {
+        return {
+          symbol: originalSymbol,
+          ...dummyPrices[originalSymbol],
+        };
+      }
       return null;
     }
   });

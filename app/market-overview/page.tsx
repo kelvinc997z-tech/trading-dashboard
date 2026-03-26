@@ -6,6 +6,8 @@ import Header from "@/components/Header";
 import SignalTable, { Signal } from "@/components/SignalTable";
 import SignalTabs from "@/components/SignalTabs";
 import { Activity } from "lucide-react";
+import { getStoredSignals, storeSignals } from "@/lib/localStorage";
+import { calculateWinRate } from "@/lib/signalUtils";
 
 interface MarketData {
   symbol: string;
@@ -27,12 +29,13 @@ const SYMBOL_LABELS: Record<string, string> = {
 export default function MarketOverviewPage() {
   const router = useRouter();
   const [markets, setMarkets] = useState<Record<string, MarketData>>({});
-  const [signals, setSignals] = useState<Signal[]>([]);
+  const [signals, setSignals] = useState<Signal[]>(() => getStoredSignals());
   const [activeTab, setActiveTab] = useState<"market" | "signals">("market");
   const [signalTab, setSignalTab] = useState<"all" | "active" | "closed">("all");
   const [stats, setStats] = useState({ total: 0, winRate: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchMarketData = async () => {
     try {
@@ -52,8 +55,11 @@ export default function MarketOverviewPage() {
       const res = await fetch("/api/generate-signals");
       if (!res.ok) throw new Error("Failed to fetch signals");
       const data = await res.json();
-      setSignals(data.signals || []);
+      const newSignals = data.signals || [];
+      setSignals(newSignals);
+      storeSignals(newSignals);
     } catch (err: any) {
+      // Keep existing signals if fetch fails
       console.error(err);
     }
   };
@@ -89,10 +95,7 @@ export default function MarketOverviewPage() {
 
   // Calculate stats
   useEffect(() => {
-    const total = signals.length;
-    const closed = signals.filter(s => s.status === "closed");
-    const won = closed.filter(s => s.result === "win").length;
-    const winRate = closed.length > 0 ? Math.round((won / closed.length) * 100) : 0;
+    const { total, winRate } = calculateWinRate(signals);
     setStats({ total, winRate });
   }, [signals]);
 
