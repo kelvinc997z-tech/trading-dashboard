@@ -37,7 +37,7 @@ export async function GET() {
     try {
       const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(avSymbol)}&apikey=${apiKey}`;
       const res = await fetch(url, { 
-        next: { revalidate: 60 }, // refresh every 60s (matches SSE interval)
+        next: { revalidate: 10 }, // refresh every 10s for near real-time
       });
       
       if (!res.ok) {
