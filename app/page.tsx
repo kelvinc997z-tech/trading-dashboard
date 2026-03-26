@@ -108,7 +108,7 @@ export default function HomePage() {
   function basePriceForSymbol(symbol: string): number {
     const base: Record<string, number> = {
       XAUUSD: 4570,
-      "OIL.WTI": 88,
+      USOIL: 88,
       "BTC/USD": 68000,
       "SOL/USD": 170,
       "ETH/USD": 3500,
@@ -121,7 +121,7 @@ export default function HomePage() {
   // Symbol metadata for display
   const symbolInfo: Record<string, { name: string; icon: string; color: string }> = {
     XAUUSD: { name: "Gold (XAUUSD)", icon: "🥇", color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600" },
-    "OIL.WTI": { name: "OIL WTI TVC", icon: "🛢️", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
+    USOIL: { name: "US Oil (WTI)", icon: "🛢️", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
     "BTC/USD": { name: "Bitcoin", icon: "₿", color: "bg-orange-100 dark:bg-orange-900/30 text-orange-600" },
     "SOL/USD": { name: "Solana", icon: "◎", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600" },
     "ETH/USD": { name: "Ethereum", icon: "Ξ", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
@@ -179,7 +179,7 @@ export default function HomePage() {
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TradingViewChart symbol="FOREXCOM:XAUUSD" height={400} />
-          <TradingViewChart symbol="OIL.WTI" height={400} />
+          <TradingViewChart symbol="FOREXCOM:USOIL" height={400} />
           <TradingViewChart symbol="BINANCE:BTCUSDT" height={400} />
           <TradingViewChart symbol="BINANCE:ETHUSDT" height={400} />
           <TradingViewChart symbol="BINANCE:SOLUSDT" height={400} />

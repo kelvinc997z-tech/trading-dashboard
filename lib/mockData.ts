@@ -19,7 +19,7 @@ export interface Signal {
 // Base prices (realistic 2026 forecasts)
 const basePrices: Record<string, number> = {
   XAUUSD: 4570,
-  "OIL.WTI": 88,
+  USOIL: 88,
   "BTC/USD": 68000,
   "SOL/USD": 170,
   "ETH/USD": 3500,
@@ -30,7 +30,7 @@ const basePrices: Record<string, number> = {
 // Volatility per symbol
 const symbolVolatility: Record<string, number> = {
   XAUUSD: 30,
-  "OIL.WTI": 5,
+  USOIL: 5,
   "BTC/USD": 800,
   "SOL/USD": 10,
   "ETH/USD": 150,
@@ -50,7 +50,7 @@ export function generateMarketData(symbol: string): MarketData {
 const getTpSlOffsets = (symbol: string) => {
   switch (symbol) {
     case 'XAUUSD': return { tp: 50, sl: 30 };
-    case 'OIL.WTI': return { tp: 3, sl: 2 };
+    case 'USOIL': return { tp: 3, sl: 2 };
     case 'BTC/USD': return { tp: 1000, sl: 800 };
     case 'SOL/USD': return { tp: 8, sl: 6 };
     case 'ETH/USD': return { tp: 120, sl: 80 };
@@ -85,7 +85,7 @@ export function generateSignal(symbol: string, currentPrice: number): Signal {
 
 export const initialSignals: Signal[] = [
   { id: "1", pair: "XAUUSD", type: "BUY", entry: 4570.50, tp: 4620.50, sl: 4540.50, time: "09:15:23", status: "active" },
-  { id: "2", pair: "OIL.WTI", type: "SELL", entry: 88.45, tp: 85.45, sl: 90.45, time: "10:30:45", status: "active" },
+  { id: "2", pair: "USOIL", type: "SELL", entry: 88.45, tp: 85.45, sl: 90.45, time: "10:30:45", status: "active" },
   { id: "3", pair: "BTC/USD", type: "BUY", entry: 68000, tp: 69000, sl: 67200, time: "11:05:12", status: "active" },
   { id: "4", pair: "SOL/USD", type: "SELL", entry: 170, tp: 162, sl: 176, time: "13:45:00", status: "active" },
   { id: "5", pair: "ETH/USD", type: "BUY", entry: 3500, tp: 3620, sl: 3420, time: "14:20:33", status: "active" },
@@ -95,7 +95,7 @@ export const initialSignals: Signal[] = [
 
 export const supportedPairs = [
   "XAUUSD",
-  "OIL.WTI",
+  "USOIL",
   "BTC/USD",
   "SOL/USD",
   "ETH/USD",
