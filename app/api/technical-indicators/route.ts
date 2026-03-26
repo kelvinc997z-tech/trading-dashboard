@@ -56,7 +56,7 @@ function calculateMACD(closes: number[], fast: number = 12, slow: number = 26, s
 async function fetchTimeSeries(symbol: string, apiKey: string): Promise<number[]> {
   const avSymbol = SYMBOL_MAP[symbol];
   const url = `${ALPHA_VANTAGE_BASE}?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(avSymbol)}&apikey=${apiKey}&outputsize=compact`;
-  const res = await fetch(url);
+  const res = await fetch(url, { next: { revalidate: 300 } }); // cache 5 menit
   if (!res.ok) throw new Error(`Alpha Vantage error: ${res.status}`);
   const data = await res.json();
   const timeSeries = data["Time Series (Daily)"];
