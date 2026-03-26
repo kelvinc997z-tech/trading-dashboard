@@ -13,7 +13,7 @@ const SYMBOL_MAP: Record<string, string> = {
 };
 
 const DUMMY_INDICATORS: Record<string, any> = {
-  "XAUUSD": { currentPrice: 2350.50, rsi: 45, macd: "buy", sma20: 2340, sma50: 2325, trend: "bullish", support: 2330, resistance: 2370, notes: "Moderate bullish trend" },
+  "XAUUSD": { currentPrice: 4427.50, rsi: 45, macd: "buy", sma20: 4410, sma50: 4400, trend: "bullish", support: 4400, resistance: 4450, notes: "Moderate bullish trend" },
   "USOIL": { currentPrice: 88.45, rsi: 55, macd: "neutral", sma20: 87.5, sma50: 86.0, trend: "neutral", support: 86.5, resistance: 90.0, notes: "Consolidating" },
   "BTC/USD": { currentPrice: 68500.00, rsi: 62, macd: "buy", sma20: 67800, sma50: 66500, trend: "bullish", support: 67000, resistance: 69500, notes: "Strong uptrend" },
   "ETH/USD": { currentPrice: 3850.00, rsi: 58, macd: "buy", sma20: 3800, sma50: 3720, trend: "bullish", support: 3780, resistance: 3900, notes: "Momentum buying" },

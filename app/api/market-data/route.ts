@@ -14,7 +14,7 @@ const SYMBOL_MAP: Record<string, string> = {
 
 // Comprehensive dummy prices (when API unavailable)
 const DUMMY_PRICES: Record<string, { price: number; change: number; changePercent: number }> = {
-  "XAUUSD": { price: 2350.50, change: 12.30, changePercent: 0.53 },
+  "XAUUSD": { price: 4427.50, change: 15.30, changePercent: 0.35 },
   "USOIL": { price: 88.45, change: -1.25, changePercent: -1.39 },
   "BTC/USD": { price: 68500.00, change: 1250.00, changePercent: 1.86 },
   "ETH/USD": { price: 3850.00, change: 85.00, changePercent: 2.26 },
