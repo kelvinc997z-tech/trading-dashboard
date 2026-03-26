@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import TradingViewChart from "@/components/TradingViewChart";
 import SignalTable, { Signal } from "@/components/SignalTable";
+import SignalTabs from "@/components/SignalTabs";
 import { Activity } from "lucide-react";
 import { generateMarketData, generateSignal, supportedPairs, initialSignals } from "@/lib/mockData";
 
@@ -23,6 +24,7 @@ export default function HomePage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"all" | "active" | "closed">("all");
 
   // Check authentication
   useEffect(() => {
@@ -153,6 +155,9 @@ export default function HomePage() {
 
   const currentMarkets = markets;
 
+  // Filter signals based on active tab
+  const filteredSignals = activeTab === "all" ? signals : signals.filter(s => s.status === activeTab);
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -209,10 +214,11 @@ export default function HomePage() {
           <TradingViewChart symbol="MEXC:KASUSDT" height={400} />
         </div>
 
-        {/* Signal Table */}
+        {/* Signal Table with Tabs */}
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Live Trading Signals (All Pairs)</h2>
-          <SignalTable signals={signals} />
+          <SignalTabs signals={signals} activeTab={activeTab} onTabChange={setActiveTab} />
+          <SignalTable signals={filteredSignals} />
         </div>
       </main>
 
