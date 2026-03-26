@@ -9,7 +9,6 @@ import SignalTableSkeleton from "@/components/SignalTableSkeleton";
 import { Activity } from "lucide-react";
 import { getStoredSignals, storeSignals } from "@/lib/localStorage";
 import { calculateWinRate } from "@/lib/signalUtils";
-import { useSSE } from "@/hooks/useSSE";
 
 export default function SignalsPage() {
   const router = useRouter();
