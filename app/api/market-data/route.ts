@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { readUsers } from "@/lib/db";
 
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
@@ -142,10 +142,13 @@ export async function GET(request: NextRequest) {
   if (!session) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
+  if (!session.user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
 
   // 2. Get user's subscription tier
   const users = await readUsers();
-  const user = users.find(u => u.id === session.user.id);
+  const user = users.find(u => u.id === session.user!.id);
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }

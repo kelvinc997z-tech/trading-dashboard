@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { readUsers } from "@/lib/db";
 
 // Force dynamic rendering to avoid static generation errors
@@ -94,13 +94,13 @@ async function fetchTimeSeries(symbol: string, apiKey: string): Promise<number[]
 export async function GET(request: NextRequest) {
   // Authenticate with NextAuth
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session || !session.user) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
   // Get user's tier to restrict pairs
   const users = await readUsers();
-  const user = users.find(u => u.id === session.user.id);
+  const user = users.find(u => u.id === session.user!.id);
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }

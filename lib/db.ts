@@ -2,6 +2,11 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { randomBytes } from 'crypto';
+
+function generateVerificationToken(): string {
+  return randomBytes(32).toString('hex');
+}
 
 const dataDir = path.join(process.cwd(), 'data');
 const usersFile = path.join(dataDir, 'users.json');

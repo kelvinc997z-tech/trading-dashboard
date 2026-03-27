@@ -343,50 +343,6 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
-              <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">68%</div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Average Win Rate</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
-              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">1:2.5</div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Average Risk/Reward</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
-              <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">2,500+</div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Signals Generated</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
-              <div className="text-4xl font-bold text-orange-600 dark:text-orange-400 mb-2">15+</div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Active Months</p>
-            </div>
-          </div>
-
-          <div className="mt-12 max-w-3xl mx-auto bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
-            <div className="flex items-start gap-3">
-              <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400 mt-1 flex-shrink-0" />
-              <div>
-                <h4 className="font-bold text-gray-900 dark:text-white mb-2">Important Risk Disclosure</h4>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  Trading involves significant risk. Past performance does not guarantee future results. 
-                  Our signals are educational purposes only and not financial advice. Always do your own 
-                  research and never risk more than you can afford to lose. Win rate and returns are 
-                  based on historical data and may vary. We are not responsible for any losses incurred.
-                </p>
-              </div>
-            </div>
-      {/* Performance Stats */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Performance That Speaks for Itself
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
-              Track record of our signals across various market conditions.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
               <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">
                 <CountUp end={68} suffix="%" />
               </div>
@@ -456,7 +412,7 @@ export default function LandingPage() {
               e.preventDefault();
               const formData = new FormData(e.target as HTMLFormElement);
               const email = formData.get('email') as string;
-              const submitBtn = e.currentTarget.querySelector('button[type="submit"]');
+              const submitBtn = e.currentTarget.querySelector('button[type="submit"]') as HTMLButtonElement | null;
               
               if (submitBtn) {
                 submitBtn.disabled = true;
