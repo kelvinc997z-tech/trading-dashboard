@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BarChart3, TrendingUp, Shield, Zap, Mail, Check, Star, MessageSquare, Award, Lock, CreditCard } from "lucide-react";
+import { ArrowRight, BarChart3, TrendingUp, Shield, Zap, Mail, Check, Star, MessageSquare, Award, Lock, CreditCard, QrCode } from "lucide-react";
 import { CountUp, LiveCounter } from "@/components/LiveStats";
+import ShareButtons from "@/components/ShareButtons";
+import CountdownTimer from "@/components/CountdownTimer";
 
 export default function LandingPage() {
   return (
@@ -507,6 +509,136 @@ export default function LandingPage() {
               No spam, ever. Unsubscribe anytime.
             </p>
           </form>
+
+          {/* Social Share */}
+          <div className="mt-8 pt-6 border-t border-blue-500/30">
+            <ShareButtons 
+              url={process.env.NEXTAUTH_URL || "https://trading-dashboard.vercel.app"}
+              title="Join Trading Dashboard - Professional Trading Signals & Analysis"
+              description="Get real-time trading signals, market data, and technical analysis. Start your free 7-day trial today!"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Limited Time Offer Countdown */}
+      <section className="py-12 bg-gradient-to-r from-red-600 to-orange-600">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Limited Time Offer</h3>
+          <p className="text-red-100 mb-6">Upgrade now and get 50% OFF the first month!</p>
+          <div className="mb-4">
+            <CountdownTimer 
+              targetDate={new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)} // 3 days from now
+            />
+          </div>
+          <p className="text-white/80 text-sm">Offer ends soon. Don't miss out!</p>
+        </div>
+      </section>
+
+      {/* Mobile App Section */}
+      <section className="py-20 bg-gray-50 dark:bg-gray-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Trade On The Go
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                Access your trading dashboard from anywhere with our mobile-optimized interface.
+                No app download required - works on any device with a browser.
+              </p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-500 mt-0.5" />
+                  <span className="text-gray-700 dark:text-gray-300">Fully responsive design</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-500 mt-0.5" />
+                  <span className="text-gray-700 dark:text-gray-300">Real-time push notifications</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-500 mt-0.5" />
+                  <span className="text-gray-700 dark:text-gray-300">Save to home screen</span>
+                </li>
+              </ul>
+              
+              {/* QR Code */}
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg inline-block">
+                <div className="w-48 h-48 bg-white mx-auto flex items-center justify-center border-2 border-gray-200">
+                  <QrCode className="w-40 h-40 text-gray-800" />
+                </div>
+                <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-3">
+                  Scan to open on mobile
+                </p>
+              </div>
+
+              <div className="mt-6 flex gap-4 justify-center">
+                <button className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                  </svg>
+                  App Store
+                </button>
+                <button className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.552l2.633-1.533a1.91 1.91 0 000-2.734L22.088 4.71a1.91 1.91 0 00-2.735-.548l-2.602 1.554-2.528-1.554a1.91 1.91 0 00-2.733.548L5.194 8.547a1.91 1.91 0 010 2.735l2.508 1.555 2.509-1.555a1.91 1.91 0 010-2.734l-2.61-1.534z"/>
+                  </svg>
+                  Google Play
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Powered by Best-in-Class Technology</h3>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                    <BarChart3 className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">TradingView Charts</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Professional charting</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">Alpha Vantage</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Real-time market data</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">Stripe</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Secure payments</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900/30 rounded-full flex items-center justify-center">
+                    <Mail className="w-6 h-6 text-pink-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">Resend</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Transactional emails</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                    <Zap className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">Vercel</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Instant deployments</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
