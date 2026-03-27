@@ -156,6 +156,14 @@ export default function HomePage() {
     "ETH/USD": { name: "Ethereum", icon: "Ξ", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
     "XRP/USD": { name: "Ripple (XRP)", icon: "✕", color: "bg-gray-100 dark:bg-gray-700 text-gray-600" },
     "KAS/USDT": { name: "Kaspa (KAS/USDT)", icon: "Ⓚ", color: "bg-green-100 dark:bg-green-900/30 text-green-600" },
+    // Stocks & Indices
+    NASDAQ: { name: "NASDAQ Index", icon: "📈", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
+    SP500: { name: "S&P 500", icon: "📊", color: "bg-green-100 dark:bg-green-900/30 text-green-600" },
+    AAPL: { name: "Apple Inc.", icon: "🍎", color: "bg-gray-100 dark:bg-gray-700 text-gray-600" },
+    NVDA: { name: "NVIDIA Corp.", icon: "🎮", color: "bg-green-100 dark:bg-green-900/30 text-green-600" },
+    AMD: { name: "AMD Inc.", icon: "💻", color: "bg-red-100 dark:bg-red-900/30 text-red-600" },
+    GOOGL: { name: "Alphabet (Google)", icon: "🔍", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
+    TSM: { name: "Taiwan Semiconductor", icon: "🔬", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
   };
 
   const currentMarkets = markets;

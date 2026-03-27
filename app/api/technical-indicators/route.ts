@@ -16,6 +16,13 @@ const SYMBOL_MAP: Record<string, string> = {
   "SOL/USD": "SOL/USD",
   "XRP/USD": "XRP/USD",
   "KAS/USDT": "KAS/USDT",
+  "NASDAQ": "^IXIC",
+  "SP500": "^GSPC",
+  "AAPL": "AAPL",
+  "NVDA": "NVDA",
+  "AMD": "AMD",
+  "GOOGL": "GOOGL",
+  "TSM": "TSM",
 };
 
 const FREE_PAIRS = ["XAUUSD", "USOIL", "BTC/USD"];
@@ -28,6 +35,14 @@ const DUMMY_INDICATORS: Record<string, any> = {
   "SOL/USD": { currentPrice: 175.20, rsi: 71, macd: "sell", sma20: 180, sma50: 170, trend: "overbought", support: 168, resistance: 185, notes: "Overbought, watch for reversal" },
   "XRP/USD": { currentPrice: 0.6250, rsi: 52, macd: "neutral", sma20: 0.620, sma50: 0.610, trend: "neutral", support: 0.615, resistance: 0.635, notes: "Range bound" },
   "KAS/USDT": { currentPrice: 0.1200, rsi: 68, macd: "buy", sma20: 0.115, sma50: 0.110, trend: "bullish", support: 0.112, resistance: 0.125, notes: "Momentum acceleration" },
+  // Stocks & Indices
+  "NASDAQ": { currentPrice: 20500.50, rsi: 58, macd: "buy", sma20: 20300, sma50: 20050, trend: "bullish", support: 20100, resistance: 20800, notes: "Tech rally continues" },
+  "SP500": { currentPrice: 5230.15, rsi: 52, macd: "buy", sma20: 5200, sma50: 5150, trend: "bullish", support: 5180, resistance: 5280, notes: "Gradual uptrend" },
+  "AAPL": { currentPrice: 195.40, rsi: 48, macd: "neutral", sma20: 194, sma50: 192, trend: "neutral", support: 192, resistance: 198, notes: "Consolidating near resistance" },
+  "NVDA": { currentPrice: 135.20, rsi: 65, macd: "buy", sma20: 132, sma50: 128, trend: "bullish", support: 130, resistance: 140, notes: "Strong momentum" },
+  "AMD": { currentPrice: 165.80, rsi: 45, macd: "buy", sma20: 164, sma50: 160, trend: "bullish", support: 162, resistance: 170, notes: "Recovering from dip" },
+  "GOOGL": { currentPrice: 175.60, rsi: 55, macd: "buy", sma20: 174, sma50: 172, trend: "bullish", support: 172, resistance: 180, notes: "Steady climb" },
+  "TSM": { currentPrice: 185.90, rsi: 60, macd: "buy", sma20: 184, sma50: 181, trend: "bullish", support: 183, resistance: 190, notes: "Semiconductor strength" },
 };
 
 function calculateSMA(data: number[], period: number): number {

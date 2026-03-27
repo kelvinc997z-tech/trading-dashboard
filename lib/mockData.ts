@@ -26,6 +26,14 @@ const basePrices: Record<string, number> = {
   "ETH/USD": 3500,
   "XRP/USD": 0.62,
   "KAS/USDT": 0.12,
+  // Stocks & Indices
+  NASDAQ: 20500,
+  SP500: 5230,
+  AAPL: 195,
+  NVDA: 135,
+  AMD: 166,
+  GOOGL: 176,
+  TSM: 186,
 };
 
 // Volatility per symbol
@@ -37,6 +45,14 @@ const symbolVolatility: Record<string, number> = {
   "ETH/USD": 150,
   "XRP/USD": 0.05,
   "KAS/USDT": 0.03,
+  // Stocks & Indices
+  NASDAQ: 200,
+  SP500: 40,
+  AAPL: 3,
+  NVDA: 5,
+  AMD: 4,
+  GOOGL: 3,
+  TSM: 4,
 };
 
 export function generateMarketData(symbol: string): MarketData {
@@ -57,6 +73,14 @@ const getTpSlOffsets = (symbol: string) => {
     case 'ETH/USD': return { tp: 120, sl: 80 };
     case 'XRP/USD': return { tp: 0.03, sl: 0.02 };
     case 'KAS/USDT': return { tp: 0.01, sl: 0.008 };
+    // Stocks & Indices
+    case 'NASDAQ': return { tp: 200, sl: 120 };
+    case 'SP500': return { tp: 40, sl: 25 };
+    case 'AAPL': return { tp: 3, sl: 2 };
+    case 'NVDA': return { tp: 5, sl: 3 };
+    case 'AMD': return { tp: 4, sl: 2.5 };
+    case 'GOOGL': return { tp: 3, sl: 2 };
+    case 'TSM': return { tp: 4, sl: 2.5 };
     default: return { tp: 3, sl: 2 };
   }
 };
@@ -102,4 +126,11 @@ export const supportedPairs = [
   "ETH/USD",
   "XRP/USD",
   "KAS/USDT",
+  "NASDAQ",
+  "SP500",
+  "AAPL",
+  "NVDA",
+  "AMD",
+  "GOOGL",
+  "TSM",
 ];

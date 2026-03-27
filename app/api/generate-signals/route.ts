@@ -8,6 +8,13 @@ const SYMBOL_LABELS: Record<string, string> = {
   "SOL/USD": "Solana",
   "XRP/USD": "Ripple",
   "KAS/USDT": "Kaspa",
+  "NASDAQ": "NASDAQ Index",
+  "SP500": "S&P 500",
+  "AAPL": "Apple Inc.",
+  "NVDA": "NVIDIA Corp.",
+  "AMD": "AMD Inc.",
+  "GOOGL": "Alphabet (Google)",
+  "TSM": "Taiwan Semiconductor",
 };
 
 function generateSignalFromIndicator(symbol: string, indicator: any, entryPrice?: number) {
@@ -26,6 +33,14 @@ function generateSignalFromIndicator(symbol: string, indicator: any, entryPrice?
     "SOL/USD": { tp: 8, sl: 6 },
     "XRP/USD": { tp: 0.03, sl: 0.02 },
     "KAS/USDT": { tp: 0.01, sl: 0.008 },
+    // Stocks & Indices
+    "NASDAQ": { tp: 200, sl: 120 },
+    "SP500": { tp: 40, sl: 25 },
+    "AAPL": { tp: 3, sl: 2 },
+    "NVDA": { tp: 5, sl: 3 },
+    "AMD": { tp: 4, sl: 2.5 },
+    "GOOGL": { tp: 3, sl: 2 },
+    "TSM": { tp: 4, sl: 2.5 },
   };
   const base = offsets[symbol] || { tp: 3, sl: 2 };
 

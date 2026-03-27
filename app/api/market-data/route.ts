@@ -13,9 +13,16 @@ const SYMBOL_MAP: Record<string, string> = {
   "SOL/USD": "SOL/USD",
   "XRP/USD": "XRP/USD",
   "KAS/USDT": "KAS/USDT",
+  "NASDAQ": "^IXIC",
+  "SP500": "^GSPC",
+  "AAPL": "AAPL",
+  "NVDA": "NVDA",
+  "AMD": "AMD",
+  "GOOGL": "GOOGL",
+  "TSM": "TSM",
 };
 
-// Free plan pairs restriction
+// Free plan pairs restriction (3 major pairs + can add more)
 const FREE_PAIRS = ["XAUUSD", "USOIL", "BTC/USD"];
 
 // Cache file location
@@ -31,6 +38,14 @@ const DUMMY_PRICES: Record<string, { price: number; change: number; changePercen
   "SOL/USD": { price: 175.20, change: 8.45, changePercent: 5.07 },
   "XRP/USD": { price: 0.6250, change: 0.0150, changePercent: 2.46 },
   "KAS/USDT": { price: 0.1200, change: 0.0050, changePercent: 4.35 },
+  // Stocks & Indices
+  "NASDAQ": { price: 20500.50, change: 125.30, changePercent: 0.61 },
+  "SP500": { price: 5230.15, change: 18.70, changePercent: 0.36 },
+  "AAPL": { price: 195.40, change: 2.85, changePercent: 1.48 },
+  "NVDA": { price: 135.20, change: 4.20, changePercent: 3.21 },
+  "AMD": { price: 165.80, change: -2.30, changePercent: -1.37 },
+  "GOOGL": { price: 175.60, change: 3.45, changePercent: 2.00 },
+  "TSM": { price: 185.90, change: 1.90, changePercent: 1.03 },
 };
 
 async function getCache(): Promise<{ timestamp: number; data: Record<string, any> } | null> {
