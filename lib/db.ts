@@ -177,7 +177,7 @@ export async function consumeResetToken(token: string): Promise<ResetToken | nul
 // Subscription Management
 export async function updateUserSubscription(
   userId: string,
-  updates: Partial<Pick<User, 'subscription_tier' | 'subscription_status' | 'stripe_customer_id' | 'stripe_subscription_id' | 'current_period_end'>>
+  updates: Partial<Pick<User, 'subscription_tier' | 'subscription_status' | 'stripe_customer_id' | 'stripe_subscription_id' | 'current_period_end' | 'trial_ends_at'>>
 ): Promise<User | null> {
   const users = await readUsers();
   const userIndex = users.findIndex(u => u.id === userId);
