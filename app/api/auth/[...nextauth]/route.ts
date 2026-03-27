@@ -1,6 +1,7 @@
 import NextAuth, { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
-import MicrosoftProvider from "next-auth/providers/microsoft"
+// MicrosoftProvider requires additional setup - commenting out for now until properly configured
+// import MicrosoftProvider from "next-auth/providers/microsoft"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
 import { getSession } from "next-auth/react"
@@ -12,11 +13,12 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
-    MicrosoftProvider({
-      clientId: process.env.MICROSOFT_CLIENT_ID!,
-      clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
-      authorization: { params: { scope: "openid email profile" } },
-    }),
+    // MicrosoftProvider temporarily disabled - need proper configuration
+    // MicrosoftProvider({
+    //   clientId: process.env.MICROSOFT_CLIENT_ID!,
+    //   clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
+    //   authorization: { params: { scope: "openid email profile" } },
+    // }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -73,15 +75,16 @@ export const authOptions: NextAuthOptions = {
           });
         }
       }
-      if (account.provider === 'microsoft' && profile.email) {
-        const existing = await findUserByEmail(profile.email);
-        if (!existing) {
-          await createUser(profile.email, profile.name || profile.email, undefined, {
-            provider: 'microsoft',
-            provider_id: profile.id,
-          });
-        }
-      }
+      // Microsoft signup disabled for now
+      // if (account.provider === 'microsoft' && profile.email) {
+      //   const existing = await findUserByEmail(profile.email);
+      //   if (!existing) {
+      //     await createUser(profile.email, profile.name || profile.email, undefined, {
+      //       provider: 'microsoft',
+      //       provider_id: profile.id,
+      //     });
+      //   }
+      // }
       return true;
     }
   },
