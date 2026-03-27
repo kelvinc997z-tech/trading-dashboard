@@ -6,7 +6,7 @@ import Header from "@/components/Header";
 import TradingViewChart from "@/components/TradingViewChart";
 import SignalTable, { Signal } from "@/components/SignalTable";
 import SignalTabs from "@/components/SignalTabs";
-import { Activity } from "lucide-react";
+import { Activity, Crown, ArrowRight } from "lucide-react";
 import { generateSignal, supportedPairs, initialSignals } from "@/lib/mockData";
 import { calculateWinRate } from "@/lib/signalUtils";
 import { getStoredSignals, storeSignals } from "@/lib/localStorage";
@@ -25,6 +25,7 @@ export default function HomePage() {
   const [stats, setStats] = useState({ total: 0, winRate: 0 });
   const [isLoaded, setIsLoaded] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [subscription, setSubscription] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "active" | "closed">("all");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -43,17 +44,18 @@ export default function HomePage() {
 
   // Check authentication
   useEffect(() => {
-    fetch("/api/me")
-      .then(res => res.json())
-      .then(data => {
-        if (!data.user) {
-          router.replace("/login");
-        } else {
-          setUser(data.user);
-        }
-        setAuthLoading(false);
-      })
-      .catch(() => setAuthLoading(false));
+    Promise.all([
+      fetch("/api/me").then(res => res.json()),
+      fetch("/api/subscription").then(res => res.json()),
+    ]).then(([userData, subData]) => {
+      if (!userData.user) {
+        router.replace("/login");
+      } else {
+        setUser(userData.user);
+        setSubscription(subData);
+      }
+      setAuthLoading(false);
+    }).catch(() => setAuthLoading(false));
   }, [router]);
 
   const fetchGenerateSignals = async () => {
@@ -188,6 +190,26 @@ export default function HomePage() {
             <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{signals.filter(s => s.status === "active").length}</p>
           </div>
         </div>
+
+        {/* Upgrade CTA for Free users */}
+        {subscription?.tier === "free" && (
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 shadow-lg text-white">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div>
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <Crown className="w-5 h-5" /> Upgrade to Pro
+                </h3>
+                <p className="text-blue-100 mt-1">Get real-time data, all 7 pairs, advanced indicators, CSV export, and priority support!</p>
+              </div>
+              <button
+                onClick={() => router.push('/pricing')}
+                className="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-100 transition flex items-center gap-2 whitespace-nowrap"
+              >
+                View Plans <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Market Prices Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
