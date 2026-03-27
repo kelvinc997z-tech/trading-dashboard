@@ -1,6 +1,13 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+let resend: Resend | null = null;
+
+function getResend(): Resend | null {
+  if (!resend && process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resend;
+}
 
 export interface EmailTemplate {
   subject: string;
@@ -14,8 +21,14 @@ export async function sendEmail(to: string, template: EmailTemplate): Promise<vo
     return;
   }
 
+  const client = getResend();
+  if (!client) {
+    console.warn('Resend client not initialized, skipping email send');
+    return;
+  }
+
   try {
-    await resend.emails.send({
+    await client.emails.send({
       from: process.env.RESEND_FROM || 'Trading Dashboard <noreply@trading-dashboard.com>',
       to,
       subject: template.subject,
