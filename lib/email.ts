@@ -173,4 +173,52 @@ export const templates = {
     `,
     text: `Payment of ${amount} failed. Please update your payment method.`,
   }),
+
+  emailVerification: (name: string, verificationUrl: string): EmailTemplate => ({
+    subject: 'Verify Your Email - Trading Dashboard',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Welcome to Trading Dashboard, ${name}!</h1>
+        <p>Thank you for signing up. Please verify your email address to activate your account and start your 7-day free trial.</p>
+        <p>
+          <a href="${verificationUrl}" 
+             style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: bold;">
+            Verify Email Address
+          </a>
+        </p>
+        <p>Or copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; color: #6b7280; font-size: 14px;">${verificationUrl}</p>
+        <p>This link expires in <strong>24 hours</strong>.</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+        <p style="color: #6b7280; font-size: 14px;">
+          If you didn't create this account, please ignore this email.
+        </p>
+      </div>
+    `,
+    text: `Welcome ${name}! Please verify your email: ${verificationUrl}`,
+  }),
+
+  waitlistConfirmation: (email: string): EmailTemplate => ({
+    subject: 'You\'re on our waitlist!',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">You're on the list!</h1>
+        <p>Hi there,</p>
+        <p>Thank you for joining our waitlist with email: <strong>${email}</strong></p>
+        <p>We'll notify you when we launch new features, market insights, and exclusive offers.</p>
+        <p>In the meantime, feel free to explore our platform:</p>
+        <p>
+          <a href="${process.env.NEXTAUTH_URL}" 
+             style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 20px 0;">
+            Visit Trading Dashboard
+          </a>
+        </p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+        <p style="color: #6b7280; font-size: 14px;">
+          Want to unsubscribe? <a href="${process.env.NEXTAUTH_URL}/unsubscribe?email=${encodeURIComponent(email)}">Click here</a>
+        </p>
+      </div>
+    `,
+    text: `You're on our waitlist! We'll notify you about new features.`,
+  }),
 };

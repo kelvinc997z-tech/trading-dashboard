@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
-import { isValidSession, readUsers } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { readUsers } from "@/lib/db";
 
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
 
@@ -135,24 +137,15 @@ async function fetchMarketDataFromAPI(): Promise<Record<string, { price: number;
 }
 
 export async function GET(request: NextRequest) {
-  // 1. Authenticate user
-  const cookieHeader = request.headers.get('cookie');
-  if (!cookieHeader) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-  }
-  const match = cookieHeader.match(/session=([^;]+)/);
-  if (!match) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-  }
-  const token = match[1];
-  const session = await isValidSession(token);
+  // 1. Authenticate with NextAuth
+  const session = await getServerSession(authOptions);
   if (!session) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
   // 2. Get user's subscription tier
   const users = await readUsers();
-  const user = users.find(u => u.id === session.userId);
+  const user = users.find(u => u.id === session.user.id);
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }

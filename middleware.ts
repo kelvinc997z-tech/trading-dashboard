@@ -11,8 +11,9 @@ export function middleware(request: NextRequest) {
     "/register",
     "/pricing",
     "/api/me",
-    "/api/login",
-    "/api/register",
+    "/api/auth",
+    "/api/email-capture",
+    "/api/verify-email",
     "/api/logout",
     "/api/forgot-password",
     "/api/reset-password",
@@ -31,8 +32,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protected routes - require auth
-  const session = request.cookies.get("session");
+  // Protected routes - require auth (check NextAuth session)
+  const session = request.cookies.get("next-auth.session-token");
   if (!session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }

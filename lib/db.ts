@@ -12,8 +12,12 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  password: string; // hashed
+  password?: string; // hashed, optional for OAuth users
   createdAt: string;
+  email_verified: boolean;
+  verification_token?: string;
+  provider?: 'credentials' | 'google' | 'microsoft';
+  provider_id?: string; // OAuth provider user ID
   subscription_tier: 'free' | 'pro' | 'trial';
   subscription_status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete' | 'incomplete_expired';
   stripe_customer_id?: string;
@@ -71,21 +75,34 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   return users.find(u => u.email === email) || null;
 }
 
-export async function createUser(email: string, name: string, password: string): Promise<User> {
+export async function createUser(
+  email: string, 
+  name: string, 
+  password?: string, 
+  options?: { provider?: 'credentials' | 'google' | 'microsoft'; provider_id?: string }
+): Promise<User> {
   const users = await readUsers();
   const id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
+  const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+  
+  const now = new Date();
+  const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  
   const newUser: User = {
     id,
     email,
     name,
     password: hashedPassword,
-    createdAt: new Date().toISOString(),
+    createdAt: now.toISOString(),
+    email_verified: options?.provider ? true : false, // OAuth users are auto-verified
+    verification_token: options?.provider ? undefined : generateVerificationToken(),
+    provider: options?.provider || 'credentials',
+    provider_id: options?.provider_id,
     subscription_tier: 'trial',
     subscription_status: 'trialing',
     trial_ends_at: trialEndsAt,
   };
+  
   users.push(newUser);
   await writeUsers(users);
   return newUser;
@@ -172,6 +189,55 @@ export async function consumeResetToken(token: string): Promise<ResetToken | nul
   tokens.splice(index, 1);
   await writeResetTokens(tokens);
   return resetToken;
+}
+
+// Email Verification
+export async function verifyUserEmail(token: string): Promise<User | null> {
+  try {
+    const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any;
+    if (decoded.purpose !== 'email-verification') return null;
+    
+    const users = await readUsers();
+    const userIndex = users.findIndex(u => u.verification_token === token);
+    if (userIndex === -1) return null;
+    
+    // Mark as verified, clear token
+    users[userIndex].email_verified = true;
+    users[userIndex].verification_token = undefined;
+    await writeUsers(users);
+    
+    return users[userIndex];
+  } catch {
+    return null;
+  }
+}
+
+export async function requestEmailVerification(userId: string): Promise<boolean> {
+  const users = await readUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user || user.email_verified) return false;
+  
+  const token = generateVerificationToken();
+  user.verification_token = token;
+  await writeUsers(users);
+  
+  // Send verification email (handled in route)
+  return true;
+}
+
+export async function findUserById(userId: string): Promise<User | null> {
+  const users = await readUsers();
+  return users.find(u => u.id === userId) || null;
+}
+
+export async function updateUser(userId: string, updates: Partial<User>): Promise<User | null> {
+  const users = await readUsers();
+  const userIndex = users.findIndex(u => u.id === userId);
+  if (userIndex === -1) return null;
+  
+  users[userIndex] = { ...users[userIndex], ...updates };
+  await writeUsers(users);
+  return users[userIndex];
 }
 
 // Subscription Management

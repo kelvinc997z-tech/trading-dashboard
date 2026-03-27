@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
-import { isValidSession, readUsers } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { readUsers } from "@/lib/db";
 
 // Force dynamic rendering to avoid static generation errors
 export const dynamic = "force-dynamic";
@@ -90,24 +92,15 @@ async function fetchTimeSeries(symbol: string, apiKey: string): Promise<number[]
 }
 
 export async function GET(request: NextRequest) {
-  // Authenticate user
-  const cookieHeader = request.headers.get('cookie');
-  if (!cookieHeader) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-  }
-  const match = cookieHeader.match(/session=([^;]+)/);
-  if (!match) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-  }
-  const token = match[1];
-  const session = await isValidSession(token);
+  // Authenticate with NextAuth
+  const session = await getServerSession(authOptions);
   if (!session) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
   // Get user's tier to restrict pairs
   const users = await readUsers();
-  const user = users.find(u => u.id === session.userId);
+  const user = users.find(u => u.id === session.user.id);
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }

@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { deleteSession } from "@/lib/db";
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function POST(request: NextRequest) {
-  const cookieHeader = request.headers.get('cookie');
-  if (cookieHeader) {
-    const match = cookieHeader.match(/session=([^;]+)/);
-    if (match) {
-      const token = match[1];
-      await deleteSession(token);
-    }
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
-  const response = NextResponse.json({ success: true });
-  response.headers.set('Set-Cookie', `session=; HttpOnly; Path=/; Max-Age=0`);
+  
+  // Clear NextAuth cookies
+  const response = NextResponse.redirect(new URL("/login", request.url));
+  response.cookies.delete("next-auth.session-token");
+  response.cookies.delete("next-auth.csrf-token");
   return response;
 }

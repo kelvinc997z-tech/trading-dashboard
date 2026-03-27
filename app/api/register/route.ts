@@ -18,11 +18,20 @@ export async function POST(request: NextRequest) {
 
     const user = await createUser(email, name, password);
 
-    // Send welcome email with trial info
-    const trialEndDate = user.trial_ends_at ? new Date(user.trial_ends_at).toLocaleDateString() : 'soon';
-    await sendEmail(user.email, templates.welcome(user.name, 7));
+    // Send verification email
+    if (user.verification_token) {
+      const verifyUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${user.verification_token}`;
+      await sendEmail(user.email, templates.emailVerification(user.name, verifyUrl));
+    }
 
-    return NextResponse.json({ success: true, message: "User created", user: { id: user.id, email: user.email, name: user.name } });
+    // Also send welcome email (will be sent after verification)
+    // await sendEmail(user.email, templates.welcome(user.name, 7));
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "User created. Please check your email to verify your account.", 
+      user: { id: user.id, email: user.email, name: user.name, email_verified: user.email_verified } 
+    });
   } catch (error) {
     console.error("Register error:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
