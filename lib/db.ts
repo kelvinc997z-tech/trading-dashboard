@@ -203,7 +203,7 @@ export async function getUserSubscription(userId: string): Promise<{ tier: strin
 export async function isProUser(userId: string): Promise<boolean> {
   const sub = await getUserSubscription(userId);
   const isPro = sub?.tier === 'pro' && sub?.status === 'active';
-  const isActiveTrial = sub?.tier === 'trial' && sub?.trial_ends_at && new Date(sub.trial_ends_at) > new Date();
+  const isActiveTrial = !!(sub?.tier === 'trial' && sub?.trial_ends_at && new Date(sub.trial_ends_at) > new Date());
   return isPro || isActiveTrial;
 }
 
