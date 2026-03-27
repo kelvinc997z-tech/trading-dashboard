@@ -83,7 +83,8 @@ export async function POST(request: NextRequest) {
 
         // Send email for past_due or canceled
         if (status === 'past_due') {
-          await sendEmail(user.email, templates.paymentFailed(user.name, `$${(subscription.amount_total / 100).toFixed(2)}`));
+          const amount = subscription.plan?.amount ? `$${(subscription.plan.amount / 100).toFixed(2)}` : '$29.00';
+          await sendEmail(user.email, templates.paymentFailed(user.name, amount));
         }
 
         console.log(`User ${user.id} subscription updated: ${status}`);
