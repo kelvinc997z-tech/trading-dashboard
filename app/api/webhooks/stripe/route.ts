@@ -51,9 +51,13 @@ export async function POST(request: NextRequest) {
 
         // Send subscription activated email
         if (user) {
-          const nextBillDate = new Date(session.expires_at * 1000).toLocaleDateString();
-          const amount = session.amount_total ? `$${(session.amount_total / 100).toFixed(2)}` : '$29.00';
-          const planType = session.metadata?.plan === 'yearly' ? 'Pro Plan (Yearly $290)' : 'Pro Plan (Monthly $29)';
+          // Use subscription data for accurate dates/amounts
+          const subDetails = await stripe.subscriptions.retrieve(subscription);
+          const nextBillDate = new Date(subDetails.current_period_end * 1000).toLocaleDateString();
+          const amount = subDetails.items.data[0].price.unit_amount 
+            ? `$${(subDetails.items.data[0].price.unit_amount / 100).toFixed(2)}`
+            : (session.metadata?.plan === 'yearly' ? '$290.00' : '$29.00');
+          const planType = session.metadata?.plan === 'yearly' ? 'Pro Plan (Yearly)' : 'Pro Plan (Monthly)';
           await sendEmail(user.email, templates.subscriptionActivated(user.name, planType, nextBillDate, amount));
         }
 
@@ -83,8 +87,9 @@ export async function POST(request: NextRequest) {
 
         // Send email for past_due or canceled
         if (status === 'past_due') {
-          // Get amount from subscription total or fallback to price ID lookup
-          const amount = subscription.amount_total ? `$${(subscription.amount_total / 100).toFixed(2)}` : '$29.00';
+          // Get amount from subscription items or fallback to hardcoded
+          const unitAmount = subscription.items?.data?.[0]?.price?.unit_amount;
+          const amount = unitAmount ? `$${(unitAmount / 100).toFixed(2)}` : '$29.00';
           await sendEmail(user.email, templates.paymentFailed(user.name, amount));
         }
 
