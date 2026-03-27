@@ -479,6 +479,75 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Email Capture Section */}
+      <section className="py-20 bg-gradient-to-br from-blue-600 to-indigo-600">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Get Notified About New Features & Updates
+          </h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Join our waitlist and be the first to know when we launch new features, market insights, and exclusive offers.
+          </p>
+          
+          <form 
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              const email = formData.get('email') as string;
+              const submitBtn = e.currentTarget.querySelector('button[type="submit"]');
+              
+              if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Subscribing...';
+              }
+
+              try {
+                const res = await fetch('/api/email-capture', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email, source: 'landing_page_waitlist' }),
+                });
+                
+                if (res.ok) {
+                  alert('✅ Thanks! You\'ve been added to our waitlist.');
+                  (e.target as HTMLFormElement).reset();
+                } else {
+                  const data = await res.json();
+                  alert(data.error || 'Something went wrong. Please try again.');
+                }
+              } catch (err) {
+                alert('Network error. Please try again.');
+              } finally {
+                if (submitBtn) {
+                  submitBtn.disabled = false;
+                  submitBtn.textContent = 'Join Waitlist';
+                }
+              }
+            }}
+            className="max-w-md mx-auto"
+          >
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                required
+                className="flex-1 px-6 py-4 rounded-full border-2 border-transparent focus:border-white focus:ring-2 focus:ring-white/30 outline-none text-gray-900 placeholder-gray-500"
+              />
+              <button
+                type="submit"
+                className="px-8 py-4 bg-white text-blue-600 font-bold rounded-full hover:bg-gray-100 transition-colors shadow-lg whitespace-nowrap"
+              >
+                Join Waitlist
+              </button>
+            </div>
+            <p className="text-blue-200 text-sm mt-3">
+              No spam, ever. Unsubscribe anytime.
+            </p>
+          </form>
+        </div>
+      </section>
+
       {/* Testimonials */}
       <section className="py-20 bg-gray-50 dark:bg-gray-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
