@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Zap, Shield, BarChart3, TrendingUp, MessageSquare, Mail } from "lucide-react";
+import { Check, Zap, Shield, BarChart3, TrendingUp, MessageSquare, Mail, X } from "lucide-react";
 
 export default function PricingPage() {
   const router = useRouter();
@@ -79,7 +79,16 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative">
+      {/* Close Button */}
+      <button
+        onClick={() => router.push("/")}
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+        title="Back to Dashboard"
+      >
+        <X className="w-6 h-6 text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white" />
+      </button>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="text-center mb-16">
