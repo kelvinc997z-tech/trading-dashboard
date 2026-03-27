@@ -3,8 +3,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "Trading Dashboard",
-  description: "Real-time trading signals and market overview",
+  title: "Trading Dashboard - Professional Trading Signals",
+  description: "Real-time trading signals, market data, and technical analysis for serious traders. Start your free trial today.",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+      <body className="antialiased min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

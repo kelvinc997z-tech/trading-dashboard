@@ -1,271 +1,282 @@
-"use client";
+import Link from "next/link";
+import { ArrowRight, BarChart3, TrendingUp, Shield, Zap, Mail, Check } from "lucide-react";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import Header from "@/components/Header";
-import TradingViewChart from "@/components/TradingViewChart";
-import SignalTable, { Signal } from "@/components/SignalTable";
-import SignalTabs from "@/components/SignalTabs";
-import { Activity, Crown, ArrowRight } from "lucide-react";
-import { generateSignal, supportedPairs, initialSignals } from "@/lib/mockData";
-import { calculateWinRate } from "@/lib/signalUtils";
-import { getStoredSignals, storeSignals } from "@/lib/localStorage";
-
-interface MarketData {
-  symbol: string;
-  price: number;
-  change: number;
-  changePercent: number;
-}
-
-export default function HomePage() {
-  const router = useRouter();
-  const [markets, setMarkets] = useState<Record<string, MarketData>>({});
-  const [signals, setSignals] = useState<Signal[]>(() => getStoredSignals());
-  const [stats, setStats] = useState({ total: 0, winRate: 0 });
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [subscription, setSubscription] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"all" | "active" | "closed">("all");
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  // Fetch market data from Twelve Data API
-  const fetchMarketData = async () => {
-    try {
-      const res = await fetch("/api/market-data");
-      if (!res.ok) throw new Error("Failed to fetch market data");
-      const data = await res.json();
-      setMarkets(data);
-    } catch (error) {
-      console.error("Error fetching market data:", error);
-    }
-  };
-
-  // Check authentication
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/me").then(res => res.json()),
-      fetch("/api/subscription").then(res => res.json()),
-    ]).then(([userData, subData]) => {
-      if (!userData.user) {
-        router.replace("/login");
-      } else {
-        setUser(userData.user);
-        setSubscription(subData);
-      }
-      setAuthLoading(false);
-    }).catch(() => setAuthLoading(false));
-  }, [router]);
-
-  const fetchGenerateSignals = async () => {
-    try {
-      const res = await fetch("/api/generate-signals");
-      if (!res.ok) throw new Error("Failed to fetch signals");
-      const data = await res.json();
-      const newSignals = data.signals || [];
-      setSignals(newSignals);
-      storeSignals(newSignals);
-    } catch (error) {
-      console.error("Error fetching signals:", error);
-    }
-  };
-
-  // Initialize after auth
-  useEffect(() => {
-    if (!user) return;
-    fetchMarketData();
-    fetchGenerateSignals();
-    setIsLoaded(true);
-  }, [user]);
-
-  // Polling every 60 seconds
-  useEffect(() => {
-    if (!isLoaded) return;
-    const interval = setInterval(() => {
-      fetchMarketData();
-      fetchGenerateSignals();
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [isLoaded]);
-
-  // Auto-close signals based on current market prices
-  useEffect(() => {
-    if (!isLoaded) return;
-    setSignals(prev => prev.map(signal => {
-      if (signal.status !== "active") return signal;
-      const price = markets[signal.pair as keyof typeof markets]?.price;
-      if (!price) return signal;
-
-      if (signal.type === "BUY") {
-        if (price >= signal.tp) {
-          return { ...signal, status: "closed", result: "win" };
-        } else if (price <= signal.sl) {
-          return { ...signal, status: "closed", result: "lose" };
-        }
-      } else { // SELL
-        if (price <= signal.tp) {
-          return { ...signal, status: "closed", result: "win" };
-        } else if (price >= signal.sl) {
-          return { ...signal, status: "closed", result: "lose" };
-        }
-      }
-      return signal;
-    }));
-  }, [markets, isLoaded]);
-
-  // Update stats
-  useEffect(() => {
-    const { total, winRate } = calculateWinRate(signals);
-    setStats({ total, winRate });
-  }, [signals]);
-
-  // Auth guard
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-gray-900 dark:text-white text-xl font-semibold animate-pulse">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null; // Will redirect in effect
-  }
-
-  // Helper: base prices for fallback
-  function basePriceForSymbol(symbol: string): number {
-    const base: Record<string, number> = {
-      XAUUSD: 4570,
-      USOIL: 88,
-      "BTC/USD": 68000,
-      "SOL/USD": 170,
-      "ETH/USD": 3500,
-      "XRP/USD": 0.62,
-      "KAS/USDT": 0.12,
-    };
-    return base[symbol] || 100;
-  }
-
-  // Symbol metadata for display
-  const symbolInfo: Record<string, { name: string; icon: string; color: string }> = {
-    XAUUSD: { name: "Gold (XAUUSD)", icon: "🥇", color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600" },
-    USOIL: { name: "US Oil (WTI)", icon: "🛢️", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
-    "BTC/USD": { name: "Bitcoin", icon: "₿", color: "bg-orange-100 dark:bg-orange-900/30 text-orange-600" },
-    "SOL/USD": { name: "Solana", icon: "◎", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600" },
-    "ETH/USD": { name: "Ethereum", icon: "Ξ", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
-    "XRP/USD": { name: "Ripple (XRP)", icon: "✕", color: "bg-gray-100 dark:bg-gray-700 text-gray-600" },
-    "KAS/USDT": { name: "Kaspa (KAS/USDT)", icon: "Ⓚ", color: "bg-green-100 dark:bg-green-900/30 text-green-600" },
-    // Stocks & Indices
-    NASDAQ: { name: "NASDAQ Index", icon: "📈", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
-    SP500: { name: "S&P 500", icon: "📊", color: "bg-green-100 dark:bg-green-900/30 text-green-600" },
-    AAPL: { name: "Apple Inc.", icon: "🍎", color: "bg-gray-100 dark:bg-gray-700 text-gray-600" },
-    NVDA: { name: "NVIDIA Corp.", icon: "🎮", color: "bg-green-100 dark:bg-green-900/30 text-green-600" },
-    AMD: { name: "AMD Inc.", icon: "💻", color: "bg-red-100 dark:bg-red-900/30 text-red-600" },
-    GOOGL: { name: "Alphabet (Google)", icon: "🔍", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
-    TSM: { name: "Taiwan Semiconductor", icon: "🔬", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
-  };
-
-  const currentMarkets = markets;
-
-  // Filter signals based on active tab
-  const filteredSignals = activeTab === "all" ? signals : signals.filter(s => s.status === activeTab);
-
-  const handleCloseSignal = (id: string) => {
-    setSignals(prev => {
-      const updated = prev.map(sig => sig.id === id ? { ...sig, status: "closed" as const } : sig);
-      storeSignals(updated);
-      return updated;
-    });
-  };
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen">
-      <Header />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Signals</h3>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{stats.total}</p>
-          </div>
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Win Rate</h3>
-            <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{stats.winRate}%</p>
-          </div>
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Signals</h3>
-            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{signals.filter(s => s.status === "active").length}</p>
-          </div>
-        </div>
-
-        {/* Upgrade CTA for Free users */}
-        {subscription?.tier === "free" && (
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 shadow-lg text-white">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <div>
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                  <Crown className="w-5 h-5" /> Upgrade to Pro
-                </h3>
-                <p className="text-blue-100 mt-1">Get real-time data, all 7 pairs, advanced indicators, CSV export, and priority support!</p>
-              </div>
-              <button
-                onClick={() => router.push('/pricing')}
-                className="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-100 transition flex items-center gap-2 whitespace-nowrap"
+    <div className="min-h-screen bg-white dark:bg-gray-900">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+              Professional Trading
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+                Signals & Analysis
+              </span>
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-10">
+              Institutional-quality analysis on the largest technological shift in finance.
+              Built for independent thinkers, not insiders.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link
+                href="/register"
+                className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-semibold rounded-full hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
               >
-                View Plans <ArrowRight className="w-4 h-4" />
-              </button>
+                Get Started Free
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                href="/pricing"
+                className="px-8 py-4 border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-lg font-semibold rounded-full hover:border-blue-600 hover:text-blue-600 transition-colors"
+              >
+                View Pricing
+              </Link>
             </div>
           </div>
-        )}
+        </div>
+      </section>
 
-        {/* Market Prices Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {supportedPairs.map(symbol => {
-            const data = currentMarkets[symbol as keyof typeof currentMarkets];
-            if (!data) return null;
-            const format = (sym: string) => {
-              if (sym === "XRP/USD" || sym === "KAS/USDT") return (val: number) => val.toFixed(4);
-              return (val: number) => val.toFixed(2);
-            };
-            const fmt = format(symbol as string);
-            const isPositive = data.change >= 0;
-            return (
-              <div key={symbol} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{symbol}</span>
-                  <span className={`text-xs font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                    {isPositive ? '+' : ''}{fmt(data.change)}%
-                  </span>
-                </div>
-                <div className="text-xl font-bold text-gray-900 dark:text-white">${fmt(data.price)}</div>
+      {/* Stats Section */}
+      <section className="py-16 bg-gray-50 dark:bg-gray-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">14+</div>
+              <div className="text-gray-600 dark:text-gray-400">Trading Pairs</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Real-time</div>
+              <div className="text-gray-600 dark:text-gray-400">Market Data</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">7-Day</div>
+              <div className="text-gray-600 dark:text-gray-400">Free Trial</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">24/7</div>
+              <div className="text-gray-600 dark:text-gray-400">Signal Alerts</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Everything You Need to Trade Smarter
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Comprehensive tools and signals to help you make informed trading decisions.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-6">
+                <BarChart3 className="w-6 h-6 text-blue-600" />
               </div>
-            );
-          })}
-        </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                Live Signals
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Real-time BUY/SELL signals with precise entry, take-profit, and stop-loss levels.
+                Generated using advanced technical analysis.
+              </p>
+            </div>
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TradingViewChart symbol="FOREXCOM:XAUUSD" height={400} />
-          <TradingViewChart symbol="FOREXCOM:USOIL" height={400} />
-          <TradingViewChart symbol="BINANCE:BTCUSDT" height={400} />
-          <TradingViewChart symbol="BINANCE:ETHUSDT" height={400} />
-          <TradingViewChart symbol="BINANCE:SOLUSDT" height={400} />
-          <TradingViewChart symbol="BINANCE:XRPUSDT" height={400} />
-          <TradingViewChart symbol="MEXC:KASUSDT" height={400} />
-        </div>
+            {/* Feature 2 */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-6">
+                <TrendingUp className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                Market Data
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Access to 14+ trading pairs including crypto, forex, commodities, and major indices.
+                Updated every 60 seconds.
+              </p>
+            </div>
 
-        {/* Signal Table with Tabs */}
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Live Trading Signals (All Pairs)</h2>
-          <SignalTabs signals={signals} activeTab={activeTab} onTabChange={setActiveTab} />
-          <SignalTable signals={filteredSignals} onClose={handleCloseSignal} />
-        </div>
-      </main>
+            {/* Feature 3 */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mb-6">
+                <Shield className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                Risk Management
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Every signal includes calculated stop-loss levels. Track win rates and performance
+                metrics to refine your strategy.
+              </p>
+            </div>
 
-      <footer className="max-w-7xl mx-auto px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-        <p>© 2026 TradeSignal Dashboard. Built with Next.js & Tailwind.</p>
-        <p className="mt-1">Charts powered by TradingView | Prices update every 60 seconds</p>
+            {/* Feature 4 */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mb-6">
+                <Zap className="w-6 h-6 text-orange-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                Instant Alerts
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Get notified immediately when new signals are generated. Never miss a trading opportunity.
+              </p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-6">
+                <BarChart3 className="w-6 h-6 text-indigo-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                Technical Analysis
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Advanced indicators including RSI, MACD, SMAs, and custom algorithms.
+                Full charts powered by TradingView.
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900/30 rounded-full flex items-center justify-center mb-6">
+                <Mail className="w-6 h-6 text-pink-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                Email Reports
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Daily and weekly digest emails. Trial reminders and subscription updates
+                delivered straight to your inbox.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Preview */}
+      <section className="py-20 bg-gray-50 dark:bg-gray-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              Start free, upgrade when you're ready.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Free Plan */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border-2 border-gray-200 dark:border-gray-700">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Free</h3>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-6">
+                $0<span className="text-lg font-normal text-gray-500">/month</span>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-500 mt-0.5" />
+                  <span className="text-gray-600 dark:text-gray-300">3 trading pairs</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-500 mt-0.5" />
+                  <span className="text-gray-600 dark:text-gray-300">15-minute delayed data</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-500 mt-0.5" />
+                  <span className="text-gray-600 dark:text-gray-300">Basic indicators</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-500 mt-0.5" />
+                  <span className="text-gray-600 dark:text-gray-300">Email support</span>
+                </li>
+              </ul>
+              <Link
+                href="/register"
+                className="block w-full text-center py-3 px-6 rounded-lg border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold hover:border-blue-600 hover:text-blue-600 transition-colors"
+              >
+                Get Started
+              </Link>
+            </div>
+
+            {/* Pro Plan */}
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl p-8 shadow-xl text-white relative">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-400 text-gray-900 text-xs font-bold px-4 py-1 rounded-full">
+                RECOMMENDED
+              </div>
+              <h3 className="text-2xl font-bold mb-2">Pro</h3>
+              <div className="text-4xl font-bold mb-6">
+                $29<span className="text-lg font-normal opacity-80">/month</span>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-300 mt-0.5" />
+                  <span>All 14 trading pairs</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-300 mt-0.5" />
+                  <span>Real-time market data</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-300 mt-0.5" />
+                  <span>Advanced technical indicators</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-300 mt-0.5" />
+                  <span>CSV export</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-300 mt-0.5" />
+                  <span>Priority support</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-300 mt-0.5" />
+                  <span>7-day free trial</span>
+                </li>
+              </ul>
+              <Link
+                href="/register"
+                className="block w-full text-center py-3 px-6 rounded-lg bg-white text-blue-600 font-bold hover:bg-gray-100 transition-colors"
+              >
+                Start Free Trial
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-600">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Ready to Start Trading Smarter?
+          </h2>
+          <p className="text-xl text-blue-100 mb-10">
+            Join thousands of traders using our signals to make better decisions.
+          </p>
+          <Link
+            href="/register"
+            className="inline-flex items-center gap-2 px-10 py-4 bg-white text-blue-600 text-lg font-bold rounded-full hover:bg-gray-100 transition-all shadow-lg"
+          >
+            Get Started Now
+            <ArrowRight className="w-5 h-5" />
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 bg-gray-900 text-gray-400">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="mb-2">© 2026 Trading Dashboard. Built with Next.js & Tailwind.</p>
+          <p className="text-sm">Charts powered by TradingView. Not financial advice.</p>
+        </div>
       </footer>
     </div>
   );
