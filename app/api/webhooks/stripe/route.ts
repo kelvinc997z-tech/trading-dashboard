@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
         if (user) {
           const nextBillDate = new Date(session.expires_at * 1000).toLocaleDateString();
           const amount = session.amount_total ? `$${(session.amount_total / 100).toFixed(2)}` : '$29.00';
-          await sendEmail(user.email, templates.subscriptionActivated(user.name, session.display_items?.[0]?.plan?.name || 'Pro Plan', nextBillDate, amount));
+          const planType = session.metadata?.plan === 'yearly' ? 'Pro Plan (Yearly $290)' : 'Pro Plan (Monthly $29)';
+          await sendEmail(user.email, templates.subscriptionActivated(user.name, planType, nextBillDate, amount));
         }
 
         console.log(`User ${userId} upgraded to pro`);
