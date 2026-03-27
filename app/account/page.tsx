@@ -134,12 +134,17 @@ export default function AccountPage() {
           )}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Subscription</h2>
+            {subscription?.tier === 'trial' && (
+              <span className="flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-full text-sm font-semibold">
+                <Crown className="w-4 h-4" /> Trial
+              </span>
+            )}
             {isPro && (
               <span className="flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full text-sm font-semibold">
                 <Crown className="w-4 h-4" /> Pro
               </span>
             )}
-            {!isPro && (
+            {!isPro && subscription?.tier !== 'trial' && (
               <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 rounded-full text-sm font-semibold">
                 Free
               </span>
@@ -151,7 +156,9 @@ export default function AccountPage() {
               <CreditCard className="w-5 h-5 text-gray-400" />
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Plan</p>
-                <p className="font-semibold text-gray-900 dark:text-white capitalize">{subscription?.tier || "Free"}</p>
+                <p className="font-semibold text-gray-900 dark:text-white capitalize">
+                  {subscription?.tier === 'trial' ? 'Pro Trial' : (subscription?.tier || "Free")}
+                </p>
               </div>
             </div>
 
@@ -163,7 +170,17 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {subscription?.current_period_end && (
+            {subscription?.trial_ends_at && (
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-purple-500" />
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Trial Ends</p>
+                  <p className="font-semibold text-purple-600 dark:text-purple-400">{formatDate(subscription.trial_ends_at)}</p>
+                </div>
+              </div>
+            )}
+
+            {subscription?.current_period_end && subscription?.tier === 'pro' && (
               <div className="flex items-center gap-3">
                 <Calendar className="w-5 h-5 text-gray-400" />
                 <div>
@@ -176,14 +193,19 @@ export default function AccountPage() {
 
           {/* Actions */}
           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            {!isPro ? (
-              <button
-                onClick={() => router.push("/pricing")}
-                className="w-full py-3 px-6 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition"
-              >
-                Upgrade to Pro
-              </button>
-            ) : (
+            {subscription?.tier === 'trial' ? (
+              <div className="space-y-3">
+                <button
+                  onClick={() => router.push("/pricing")}
+                  className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold hover:from-purple-700 hover:to-blue-700 transition"
+                >
+                  Upgrade to Pro
+                </button>
+                <p className="text-xs text-center text-purple-600 dark:text-purple-400">
+                  Your trial ends {formatDate(subscription.trial_ends_at)}. Upgrade now to keep full access!
+                </p>
+              </div>
+            ) : isPro ? (
               <div className="space-y-3">
                 <button
                   onClick={() => router.push("/pricing")}
@@ -202,6 +224,13 @@ export default function AccountPage() {
                   Cancelling will downgrade you to Free at the end of your billing period.
                 </p>
               </div>
+            ) : (
+              <button
+                onClick={() => router.push("/pricing")}
+                className="w-full py-3 px-6 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition"
+              >
+                Upgrade to Pro
+              </button>
             )}
           </div>
         </div>

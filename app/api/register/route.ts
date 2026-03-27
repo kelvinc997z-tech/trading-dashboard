@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createUser, findUserByEmail } from "@/lib/db";
+import { sendEmail, templates } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,8 +16,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email already registered" }, { status: 400 });
     }
 
-    await createUser(email, name, password);
-    return NextResponse.json({ success: true, message: "User created" });
+    const user = await createUser(email, name, password);
+
+    // Send welcome email with trial info
+    const trialEndDate = user.trial_ends_at ? new Date(user.trial_ends_at).toLocaleDateString() : 'soon';
+    await sendEmail(user.email, templates.welcome(user.name, 7));
+
+    return NextResponse.json({ success: true, message: "User created", user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
     console.error("Register error:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import Stripe from "stripe";
-import { updateUserSubscription } from "@/lib/db";
+import { updateUserSubscription, readUsers } from "@/lib/db";
+import { sendEmail, templates } from "@/lib/email";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2023-10-16",
@@ -34,13 +35,27 @@ export async function POST(request: NextRequest) {
         const userId = session.metadata?.userId;
         if (!userId) break;
 
+        // Get user email for receipt
+        const users = await readUsers();
+        const user = users.find(u => u.id === userId);
+        
         // Subscription created, update user to pro
+        const subscription = session.subscription as string;
         await updateUserSubscription(userId, {
           subscription_tier: "pro",
           subscription_status: "active",
-          stripe_subscription_id: session.subscription as string,
+          stripe_subscription_id: subscription,
           current_period_end: new Date(session.expires_at * 1000).toISOString(),
+          trial_ends_at: undefined, // Clear trial if exists
         });
+
+        // Send subscription activated email
+        if (user) {
+          const nextBillDate = new Date(session.expires_at * 1000).toLocaleDateString();
+          const amount = session.amount_total ? `$${(session.amount_total / 100).toFixed(2)}` : '$29.00';
+          await sendEmail(user.email, templates.subscriptionActivated(user.name, session.display_items?.[0]?.plan?.name || 'Pro Plan', nextBillDate, amount));
+        }
+
         console.log(`User ${userId} upgraded to pro`);
         break;
       }
@@ -50,7 +65,7 @@ export async function POST(request: NextRequest) {
         const customerId = subscription.customer as string;
         
         // Find user by Stripe customer ID
-        const users = await (await import("@/lib/db")).readUsers();
+        const users = await readUsers();
         const user = users.find(u => u.stripe_customer_id === customerId);
         if (!user) break;
 
@@ -64,6 +79,12 @@ export async function POST(request: NextRequest) {
           current_period_end: currentPeriodEnd,
           stripe_subscription_id: subscription.id,
         });
+
+        // Send email for past_due or canceled
+        if (status === 'past_due') {
+          await sendEmail(user.email, templates.paymentFailed(user.name, `$${(subscription.amount_total / 100).toFixed(2)}`));
+        }
+
         console.log(`User ${user.id} subscription updated: ${status}`);
         break;
       }
@@ -72,16 +93,24 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
         
-        const users = await (await import("@/lib/db")).readUsers();
+        const users = await readUsers();
         const user = users.find(u => u.stripe_customer_id === customerId);
         if (!user) break;
 
+        const endDate = subscription.current_period_end 
+          ? new Date(subscription.current_period_end * 1000).toLocaleDateString()
+          : 'immediately';
+
         await updateUserSubscription(user.id, {
-          subscription_tier: "free",
-          subscription_status: "canceled",
+          subscription_tier: 'free',
+          subscription_status: 'canceled',
           stripe_subscription_id: undefined,
           current_period_end: undefined,
         });
+
+        // Send cancellation email
+        await sendEmail(user.email, templates.subscriptionCancelled(user.name, endDate));
+
         console.log(`User ${user.id} subscription cancelled, downgraded to free`);
         break;
       }

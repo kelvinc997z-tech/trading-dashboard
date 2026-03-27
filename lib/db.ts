@@ -14,11 +14,12 @@ export interface User {
   name: string;
   password: string; // hashed
   createdAt: string;
-  subscription_tier: 'free' | 'pro';
+  subscription_tier: 'free' | 'pro' | 'trial';
   subscription_status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete' | 'incomplete_expired';
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
   current_period_end?: string;
+  trial_ends_at?: string;
 }
 
 export interface Session {
@@ -74,14 +75,16 @@ export async function createUser(email: string, name: string, password: string):
   const users = await readUsers();
   const id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const hashedPassword = await bcrypt.hash(password, 10);
+  const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
   const newUser: User = {
     id,
     email,
     name,
     password: hashedPassword,
     createdAt: new Date().toISOString(),
-    subscription_tier: 'free',
-    subscription_status: 'active',
+    subscription_tier: 'trial',
+    subscription_status: 'trialing',
+    trial_ends_at: trialEndsAt,
   };
   users.push(newUser);
   await writeUsers(users);
@@ -185,7 +188,7 @@ export async function updateUserSubscription(
   return users[userIndex];
 }
 
-export async function getUserSubscription(userId: string): Promise<{ tier: string; status: string; current_period_end?: string } | null> {
+export async function getUserSubscription(userId: string): Promise<{ tier: string; status: string; current_period_end?: string; trial_ends_at?: string } | null> {
   const users = await readUsers();
   const user = users.find(u => u.id === userId);
   if (!user) return null;
@@ -193,10 +196,36 @@ export async function getUserSubscription(userId: string): Promise<{ tier: strin
     tier: user.subscription_tier,
     status: user.subscription_status,
     current_period_end: user.current_period_end,
+    trial_ends_at: user.trial_ends_at,
   };
 }
 
 export async function isProUser(userId: string): Promise<boolean> {
   const sub = await getUserSubscription(userId);
-  return sub?.tier === 'pro' && sub?.status === 'active';
+  const isPro = sub?.tier === 'pro' && sub?.status === 'active';
+  const isActiveTrial = sub?.tier === 'trial' && sub?.trial_ends_at && new Date(sub.trial_ends_at) > new Date();
+  return isPro || isActiveTrial;
+}
+
+export async function checkAndExpireTrials(): Promise<void> {
+  const users = await readUsers();
+  const now = new Date();
+  let changed = false;
+
+  for (const user of users) {
+    if (user.subscription_tier === 'trial' && user.trial_ends_at) {
+      if (new Date(user.trial_ends_at) < now) {
+        // Trial expired, downgrade to free
+        user.subscription_tier = 'free';
+        user.subscription_status = 'active';
+        user.trial_ends_at = undefined;
+        changed = true;
+        console.log(`User ${user.id} trial expired, downgraded to free`);
+      }
+    }
+  }
+
+  if (changed) {
+    await writeUsers(users);
+  }
 }

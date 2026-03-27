@@ -54,6 +54,9 @@ export async function POST(request: NextRequest) {
       metadata: { userId: user.id, plan },
     });
 
+    // Clear trial when starting checkout (optional - they'll pay soon)
+    await updateUserSubscription(user.id, { trial_ends_at: undefined });
+
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (err: any) {
     console.error("Error creating checkout session:", err);
