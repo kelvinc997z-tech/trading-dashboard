@@ -1,5 +1,46 @@
 import Link from "next/link";
 import { ArrowRight, BarChart3, TrendingUp, Shield, Zap, Mail, Check, Star, MessageSquare, Award, Lock, CreditCard } from "lucide-react";
+import { useEffect, useState } from "react";
+
+// CountUp Animation Component
+function CountUp({ end, suffix = "", duration = 2000 }: { end: number; suffix?: string; duration?: number }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const increment = end / (duration / 16);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 16);
+    return () => clearInterval(timer);
+  }, [end, duration]);
+
+  return <span>{count}{suffix}</span>;
+}
+
+// Live Counter Component (simulate live member count)
+function LiveCounter({ target }: { target: number }) {
+  const [count, setCount] = useState(target - 50);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCount(prev => {
+        const change = Math.floor(Math.random() * 5) - 2; // -2 to +2
+        const newCount = prev + change;
+        return newCount < target - 100 ? target - 100 : newCount;
+      });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [target]);
+
+  return <span>{count.toLocaleString()}</span>;
+}
 
 export default function LandingPage() {
   return (
@@ -323,6 +364,118 @@ export default function LandingPage() {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Performance Stats */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Performance That Speaks for Itself
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              Track record of our signals across various market conditions.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">68%</div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Average Win Rate</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">1:2.5</div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Average Risk/Reward</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">2,500+</div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Signals Generated</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-4xl font-bold text-orange-600 dark:text-orange-400 mb-2">15+</div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Active Months</p>
+            </div>
+          </div>
+
+          <div className="mt-12 max-w-3xl mx-auto bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
+            <div className="flex items-start gap-3">
+              <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400 mt-1 flex-shrink-0" />
+              <div>
+                <h4 className="font-bold text-gray-900 dark:text-white mb-2">Important Risk Disclosure</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Trading involves significant risk. Past performance does not guarantee future results. 
+                  Our signals are educational purposes only and not financial advice. Always do your own 
+                  research and never risk more than you can afford to lose. Win rate and returns are 
+                  based on historical data and may vary. We are not responsible for any losses incurred.
+                </p>
+              </div>
+            </div>
+      {/* Performance Stats */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Performance That Speaks for Itself
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              Track record of our signals across various market conditions.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">
+                <CountUp end={68} suffix="%" />
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Average Win Rate</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">1:2.5</div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Average Risk/Reward</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+                <CountUp end={2500} suffix="+" />
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Signals Generated</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+              <div className="text-4xl font-bold text-orange-600 dark:text-orange-400 mb-2">
+                <CountUp end={15} suffix="+" />
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Active Months</p>
+            </div>
+          </div>
+
+          <div className="mt-12 max-w-3xl mx-auto bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
+            <div className="flex items-start gap-3">
+              <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400 mt-1 flex-shrink-0" />
+              <div>
+                <h4 className="font-bold text-gray-900 dark:text-white mb-2">Important Risk Disclosure</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Trading involves significant risk. Past performance does not guarantee future results. 
+                  Our signals are for educational purposes only and not financial advice. Always do your own 
+                  research and never risk more than you can afford to lose. Win rate and returns are 
+                  based on historical data and may vary. We are not responsible for any losses incurred.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Live User Counter */}
+      <section className="py-12 bg-gradient-to-r from-purple-600 to-pink-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-lg text-purple-100 mb-4">
+            <MessageSquare className="w-5 h-5 inline mr-2" />
+            Join thousands of traders receiving signals right now
+          </p>
+          <div className="text-5xl md:text-6xl font-bold text-white mb-2">
+            <LiveCounter target={3847} />
+          </div>
+          <p className="text-purple-200">Active Members Worldwide</p>
         </div>
       </section>
 
