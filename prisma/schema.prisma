@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String            @id @default(cuid())
+  email                 String            @unique
+  name                  String
+  password              String?           // hashed, optional for OAuth users
+  createdAt             DateTime          @default(now())
+  email_verified        Boolean           @default(false)
+  verification_token    String?           @unique
+  provider              String            @default("credentials") // credentials, google, microsoft
+  provider_id           String?           @unique
+  subscription_tier     SubscriptionTier  @default(free)
+  subscription_status   SubscriptionStatus @default(active)
+  stripe_customer_id    String?           @unique
+  stripe_subscription_id String?          @unique
+  current_period_end    DateTime?
+  trial_ends_at         DateTime?
+  resetTokens           ResetToken[]      @relation("UserResetTokens")
+
+  @@index([email])
+  @@index([provider])
+  @@map("users")
+}
+
+model ResetToken {
+  token     String   @id
+  userId    String
+  user      User     @relation("UserResetTokens", fields: [userId], references: [id])
+  expiresAt DateTime
+  @@map("reset_tokens")
+}
+
+enum SubscriptionTier {
+  free
+  pro
+  trial
+}
+
+enum SubscriptionStatus {
+  active
+  canceled
+  past_due
+  trialing
+  incomplete
+  incomplete_expired
+}

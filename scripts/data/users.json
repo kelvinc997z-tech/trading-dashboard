@@ -1,0 +1,14 @@
+[
+  {
+    "id": "user_test_1774668223348",
+    "email": "test@trading.com",
+    "name": "Test User",
+    "password": "$2a$10$z2y/4CRMZBTDZkTrxxiLq.3Iqkd.EaYHVFPZXrOt4Q5ezAHBpkNiC",
+    "createdAt": "2026-03-28T03:23:43.348Z",
+    "email_verified": true,
+    "provider": "credentials",
+    "subscription_tier": "trial",
+    "subscription_status": "trialing",
+    "trial_ends_at": "2026-04-04T03:23:43.348Z"
+  }
+]

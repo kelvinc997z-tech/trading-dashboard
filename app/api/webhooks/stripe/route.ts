@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
           subscription_tier: "pro",
           subscription_status: "active",
           stripe_subscription_id: subscription,
-          current_period_end: new Date(session.expires_at * 1000).toISOString(),
+          current_period_end: new Date(session.expires_at * 1000),
           trial_ends_at: undefined, // Clear trial if exists
         });
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
         const status = subscription.status as "active" | "canceled" | "past_due" | "trialing" | "incomplete" | "incomplete_expired";
         const currentPeriodEnd = subscription.current_period_end 
-          ? new Date(subscription.current_period_end * 1000).toISOString()
+          ? new Date(subscription.current_period_end * 1000)
           : undefined;
 
         await updateUserSubscription(user.id, {
@@ -106,8 +106,12 @@ export async function POST(request: NextRequest) {
         if (!user) break;
 
         const endDate = subscription.current_period_end 
-          ? new Date(subscription.current_period_end * 1000).toLocaleDateString()
+          ? new Date(subscription.current_period_end * 1000)
           : 'immediately';
+
+        const endDateString = endDate instanceof Date 
+          ? endDate.toLocaleDateString() 
+          : endDate;
 
         await updateUserSubscription(user.id, {
           subscription_tier: 'free',
@@ -117,7 +121,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Send cancellation email
-        await sendEmail(user.email, templates.subscriptionCancelled(user.name, endDate));
+        await sendEmail(user.email, templates.subscriptionCancelled(user.name, endDateString));
 
         console.log(`User ${user.id} subscription cancelled, downgraded to free`);
         break;
