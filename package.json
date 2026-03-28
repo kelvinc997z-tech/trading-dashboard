@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate && if [ -n \"$DATABASE_URL\" ]; then prisma db push && prisma db seed; fi"
+    "postinstall": "prisma generate && if [ -n \"$DATABASE_URL\" ]; then echo '==> Running prisma db push...' && prisma db push && echo '==> prisma db push succeeded' && echo '==> Running prisma db seed...' && prisma db seed && echo '==> prisma db seed succeeded'; else echo '==> No DATABASE_URL set, skipping DB init'; fi"
   },
   "dependencies": {
     "@prisma/client": "^6.4.0",
