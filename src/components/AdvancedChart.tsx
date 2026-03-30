@@ -256,8 +256,8 @@ export default function AdvancedChart({ symbol = "XAU/USD", indicators = ["rsi",
               <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
               <Tooltip />
               <Line type="monotone" dataKey="rsi" stroke="#8b5cf6" strokeWidth={1.5} dot={false} />
-              <referenceLine y={70} stroke="#ef4444" strokeDasharray="3 3" />
-              <referenceLine y={30} stroke="#10b981" strokeDasharray="3 3" />
+              <ReferenceLine y={70} stroke="#ef4444" strokeDasharray="3 3" />
+              <ReferenceLine y={30} stroke="#10b981" strokeDasharray="3 3" />
             </LineChart>
           </ResponsiveContainer>
         </div>
