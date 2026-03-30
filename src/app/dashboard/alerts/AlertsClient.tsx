@@ -31,6 +31,26 @@ export default function AlertsPage() {
     notificationChannel: "email",
   });
 
+  const indicatorConditions = {
+    rsi: ["above", "below"],
+    macd: ["above", "below", "cross_above", "cross_below"],
+    bollinger: ["above", "below"],
+  } as const;
+
+  const isIndicatorType = form.type === "indicator";
+  const allowedConditions = isIndicatorType && form.indicator ? indicatorConditions[form.indicator as keyof typeof indicatorConditions] : ["above", "below", "cross_above", "cross_below"];
+
+  // Reset condition when indicator changes to ensure it's allowed
+  const handleIndicatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newIndicator = e.target.value;
+    const allowed = newIndicator ? indicatorConditions[newIndicator as keyof typeof indicatorConditions] : ["above", "below", "cross_above", "cross_below"];
+    if (!allowed.includes(form.condition as any)) {
+      setForm({ ...form, indicator: newIndicator, condition: allowed[0] });
+    } else {
+      setForm({ ...form, indicator: newIndicator });
+    }
+  };
+
   const fetchAlerts = async () => {
     try {
       const res = await fetch("/api/alerts");
@@ -49,7 +69,15 @@ export default function AlertsPage() {
   const createAlert = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = { ...form, value: form.value ? parseFloat(form.value) : null, symbol: form.symbol || null };
+      const payload = {
+        type: form.type,
+        symbol: form.symbol || null,
+        condition: form.condition,
+        value: form.value ? parseFloat(form.value) : null,
+        indicator: form.type === "indicator" ? form.indicator || null : null,
+        timeframe: form.timeframe,
+        notificationChannel: form.notificationChannel,
+      };
       const res = await fetch("/api/alerts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -112,10 +140,9 @@ export default function AlertsPage() {
             <div>
               <label className="block text-sm mb-1">Condition</label>
               <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value })} className="input w-full">
-                <option value="above">Above</option>
-                <option value="below">Below</option>
-                <option value="cross_above">Cross Above</option>
-                <option value="cross_below">Cross Below</option>
+                {allowedConditions.map(c => (
+                  <option key={c} value={c}>{c.replace('_', ' ')}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -126,7 +153,7 @@ export default function AlertsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm mb-1">Indicator (if type is indicator)</label>
-              <select value={form.indicator} onChange={e => setForm({ ...form, indicator: e.target.value })} className="input w-full">
+              <select value={form.indicator} onChange={handleIndicatorChange} className="input w-full">
                 <option value="">Select...</option>
                 <option value="rsi">RSI</option>
                 <option value="macd">MACD</option>
@@ -168,8 +195,10 @@ export default function AlertsPage() {
               <tr>
                 <th>Type</th>
                 <th>Symbol</th>
+                <th>Indicator</th>
                 <th>Condition</th>
                 <th>Value</th>
+                <th>Timeframe</th>
                 <th>Notify</th>
                 <th>Status</th>
                 <th>Last Triggered</th>
@@ -182,8 +211,10 @@ export default function AlertsPage() {
                 <tr key={alert.id}>
                   <td>{alert.type}</td>
                   <td>{alert.symbol || "All"}</td>
+                  <td>{alert.indicator ?? "-"}</td>
                   <td>{alert.condition}</td>
                   <td>{alert.value ?? "-"}</td>
+                  <td>{alert.timeframe}</td>
                   <td>{alert.notificationChannel}</td>
                   <td>
                     <span className={`badge ${alert.isActive ? "badge-success" : "badge-neutral"}`}>

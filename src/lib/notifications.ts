@@ -10,18 +10,22 @@ export async function sendAlertEmail(to: string, alert: any, currentPrice: numbe
     <div style="font-family: sans-serif; padding: 20px;">
       <h2>🚨 Alert Triggered</h2>
       <p><strong>Alert ID:</strong> ${alert.id}</p>
-      <p><strong>Type:</strong> ${alert.type}</p>
+      <p><strong>Type:</strong> ${alert.type} ${alert.indicator ? `(${alert.indicator.toUpperCase()})` : ''}</p>
       <p><strong>Symbol:</strong> ${symbol}</p>
       <p><strong>Condition:</strong> ${alert.condition} ${alert.value ?? ''}</p>
-      <p><strong>Current Price:</strong> $${currentPrice.toFixed(2)}</p>
+      <p><strong>Current ${alert.type === 'price' ? 'Price' : 'Value'}:</strong> $${currentPrice.toFixed(2)}</p>
       <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
       <hr/>
       <p><a href="${process.env.NEXTAUTH_URL}/dashboard/alerts">Manage Alerts</a></p>
     </div>
   `;
 
+  const fromEmail = process.env.RESEND_EMAIL_FROM || 'Trading Dashboard <alerts@yourdomain.com>';
+  const fromName = fromEmail.split('<')[0]?.trim() || 'Trading Dashboard';
+  const fromAddress = fromEmail.match(/<(.+)>/)?.[1] || fromEmail;
+
   await resend.emails.send({
-    from: 'Trading Dashboard <alerts@yourdomain.com>',
+    from: `${fromName} <${fromAddress}>`,
     to,
     subject,
     html,
