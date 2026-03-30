@@ -111,6 +111,8 @@ export default function AdvancedChart({ symbol = "XAU/USD", indicators = ["rsi",
   const [data, setData] = useState<IndicatorData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showIndicators, setShowIndicators] = useState<Set<string>>(new Set(indicators));
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [priceChange, setPriceChange] = useState<number>(0);
 
   const toggleIndicator = (indicator: string) => {
     setShowIndicators(prev => {
@@ -135,6 +137,11 @@ export default function AdvancedChart({ symbol = "XAU/USD", indicators = ["rsi",
           setData([]);
           setLoading(false);
           return;
+        }
+
+        if (result.current) {
+          setCurrentPrice(result.current.price);
+          setPriceChange(result.current.changePercent || 0);
         }
         
         const prices = result.history.map((h: any) => h.price);
@@ -178,7 +185,7 @@ export default function AdvancedChart({ symbol = "XAU/USD", indicators = ["rsi",
     };
     
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, [symbol]);
 
@@ -204,6 +211,16 @@ export default function AdvancedChart({ symbol = "XAU/USD", indicators = ["rsi",
 
   return (
     <div className="space-y-4">
+      {/* Current Price */}
+      {currentPrice !== null && (
+        <div className="text-center text-2xl font-bold">
+          ${currentPrice.toFixed(2)}
+          <span className={`ml-2 text-base ${priceChange >= 0 ? "text-green-600" : "text-red-600"}`}>
+            ({priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%)
+          </span>
+        </div>
+      )}
+
       {/* Price Chart */}
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">

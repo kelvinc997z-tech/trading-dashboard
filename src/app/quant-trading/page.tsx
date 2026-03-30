@@ -1,11 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Brain, BarChart2, GitBranch, TrendingUp, ListChecks } from "lucide-react";
 
 export default function QuantTradingPage() {
   const [selectedModel, setSelectedModel] = useState("LSTM");
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+          if (data.user?.role !== "pro") {
+            router.replace("/pricing");
+          }
+        } else {
+          router.replace("/login");
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    checkSession();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (user?.role !== "pro") {
+    return null;
+  }
 
   const models = ["LSTM", "XGBoost", "Random Forest"];
   const signals = [
