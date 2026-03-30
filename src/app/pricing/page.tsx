@@ -29,7 +29,7 @@ export default function PricingPage() {
         {/* Back Button */}
         <div className="mb-6">
           <Link 
-            href="/" 
+            href="/dashboard" 
             className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
