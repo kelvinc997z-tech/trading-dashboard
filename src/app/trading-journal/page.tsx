@@ -8,12 +8,14 @@ interface Trade {
   id: string;
   symbol: string;
   side: "buy" | "sell";
-  entry: string;
-  exit?: string;
-  stopLoss?: string;
-  takeProfit?: string;
-  pnl?: string;
-  pnlPct?: string;
+  entry: number;
+  size: number;
+  exit?: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  pnl?: number;
+  pnlPct?: number;
+  status?: string;
   date: string;
   exitDate?: string;
   notes?: string;
@@ -59,6 +61,54 @@ export default function TradingJournalPage() {
     filterSymbol === "all" || t.symbol === filterSymbol
   );
 
+  const exportCSV = () => {
+    const headers = [
+      "Date",
+      "Symbol",
+      "Side",
+      "Entry",
+      "Size",
+      "Exit",
+      "StopLoss",
+      "TakeProfit",
+      "P&L",
+      "P&L %",
+      "Status",
+      "Notes",
+      "Tags",
+    ];
+    const rows = trades.map((t) => [
+      t.date,
+      t.symbol,
+      t.side,
+      t.entry,
+      t.size,
+      t.exit || "",
+      t.stopLoss || "",
+      t.takeProfit || "",
+      t.pnl || "",
+      t.pnlPct || "",
+      t.status || "open",
+      (t.notes || "").replace(/"/g, '""'),
+      (t.tags || "").replace(/"/g, '""'),
+    ]);
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) =>
+        row.map((field) => `"${field}"`).join(",")
+      ),
+    ].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `trades-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="container mx-auto px-4">
@@ -74,13 +124,21 @@ export default function TradingJournalPage() {
 
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Trading Journal</h1>
-          <Link
-            href="/trading-journal/new"
-            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition"
-          >
-            <Plus className="w-4 h-4" />
-            Add Trade
-          </Link>
+          <div className="flex gap-2">
+            <button
+              onClick={exportCSV}
+              className="inline-flex items-center gap-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            >
+              Export CSV
+            </button>
+            <Link
+              href="/trading-journal/new"
+              className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition"
+            >
+              <Plus className="w-4 h-4" />
+              Add Trade
+            </Link>
+          </div>
         </div>
 
         {/* Filters */}
