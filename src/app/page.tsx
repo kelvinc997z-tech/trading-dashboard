@@ -1,6 +1,9 @@
 import Link from "next/link";
 import RealTimeChart from "@/components/RealTimeChart";
 import MarketOutlook from "@/components/MarketOutlook";
+import SignalsTicker from "@/components/SignalsTicker";
+import MiniChartsBar from "@/components/MiniChartsBar";
+import Testimonials from "@/components/Testimonials";
 
 export default function LandingPage() {
   return (
@@ -88,6 +91,20 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Live Signals Ticker */}
+      <SignalsTicker />
+
+      {/* Mini Charts Bar */}
+      <section className="py-12 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold">All Markets</h2>
+            <p className="text-gray-600">Live candlestick charts (1H)</p>
+          </div>
+          <MiniChartsBar />
+        </div>
+      </section>
+
       {/* Framework / Features */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -135,6 +152,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Testimonials */}
+      <Testimonials />
 
       {/* CTA */}
       <section className="py-20 bg-black text-white">
