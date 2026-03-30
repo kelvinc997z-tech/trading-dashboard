@@ -1,135 +1,103 @@
 import { NextResponse } from "next/server";
 
-// Technical analysis: Generate signals based on price action
-function generateSignals(symbol: string, current: any, history: any[]) {
-  const signals = [];
-  
-  // Simple moving average (SMA) crossover
-  if (history.length >= 20) {
-    const recent = history.slice(-20);
-    const sma20 = recent.reduce((sum: number, h: any) => sum + h.price, 0) / 20;
-    const currentPrice = current.price;
-    
-    // Price above SMA = bullish, below = bearish
-    const trend = currentPrice > sma20 ? "Buy" : "Sell";
-    
-    // Calculate TP/SL based on recent volatility
-    const avgChange = recent.slice(1).reduce((sum: number, h: any, i: number) => {
-      return sum + Math.abs(h.price - recent[i].price);
-    }, 0) / (recent.length - 1);
-    
-    const tpOffset = avgChange * 2; // 2x average movement
-    const slOffset = avgChange * 1.5; // 1.5x average movement
-    
-    const entry = currentPrice;
-    const tp = trend === "Buy" ? entry + tpOffset : entry - tpOffset;
-    const sl = trend === "Buy" ? entry - slOffset : entry + slOffset;
-    
-    // Determine emoji based on symbol
-    const emojiMap: Record<string, string> = {
-      "XAUT/USD": "🪙",
-      "BTC/USD": "₿",
-      "ETH/USD": "Ξ",
-      "SOL/USD": "◎",
-      "XRP/USD": "⚡",
-      "EUR/USD": "💶",
-      "USD/JPY": "🇯🇵",
-      "GBP/USD": "💷",
-      "OIL": "🛢",
-      "Silver": "🥈",
-    };
-    
-    signals.push({
-      pair: symbol.includes("/") ? symbol.split("/")[0] : symbol,
-      emoji: emojiMap[symbol] || "📈",
-      signal: trend,
-      entry: Number.parseFloat(entry.toFixed(2)),
-      tp: Number.parseFloat(tp.toFixed(2)),
-      sl: Number.parseFloat(sl.toFixed(2)),
-    });
-  }
-  
-  return signals;
+const NEWSAPI_KEY = process.env.NEWSAPI_API_KEY; // not used here but may be for future
+
+// Simple wordlist for impact prediction (inspired by previous)
+function predictImpactFromChange(changePct: number): 'high' | 'medium' | 'low' {
+  if (Math.abs(changePct) >= 0.5) return 'high';
+  if (Math.abs(changePct) >= 0.1) return 'medium';
+  return 'low';
+}
+
+// Generate dummy signals for when no API available
+function generateDummySignals(symbol: string, currentPrice: number): any[] {
+  // Simple SMA crossover simulation
+  const now = new Date();
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const prevPrice = currentPrice * (0.98 + Math.random() * 0.04);
+  const signal = currentPrice > prevPrice ? "Buy" : "Sell";
+  const tp = signal === "Buy" ? currentPrice * 1.02 : currentPrice * 0.98;
+  const sl = signal === "Buy" ? currentPrice * 0.98 : currentPrice * 1.02;
+  return [{
+    pair: symbol,
+    signal,
+    entry: currentPrice,
+    tp: Number(tp.toFixed(2)),
+    sl: Number(sl.toFixed(2)),
+    confidence: 0.6 + Math.random() * 0.3,
+    timestamp: now.toISOString()
+  }];
 }
 
 export async function GET() {
-  const twelveApiKey = process.env.TWELVEDATA_API_KEY;
-  const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
-  if (!twelveApiKey && !cmcApiKey) {
-    return NextResponse.json({ error: "API key not configured" }, { status: 500 });
-  }
-
   try {
-    // Define all symbols to analyze
+    // Use CMC for all crypto symbols
+    const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
+    if (!cmcApiKey) {
+      // If no CMC key, return dummy signals for test
+      const symbols = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
+      const dummy = symbols.flatMap(sym => generateDummySignals(sym, 1));
+      return NextResponse.json({
+        date: new Date().toISOString().split("T")[0],
+        market: "Demo Signals (no API key)",
+        signals: dummy,
+        disclaimer: "Demo signals only. Configure COINMARKETCAP_API_KEY for real data."
+      });
+    }
+
     const symbols = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
-    const allSignals = [];
+    const allSignals: any[] = [];
     const date = new Date().toISOString().split("T")[0];
 
     for (const symbol of symbols) {
       try {
-        let currentPrice: number;
-        let history: any[] = [];
+        const cmcSymbol = symbol === "XAUT/USD" ? "XAUT" : symbol.replace("/", "");
+        const res = await fetch(`https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`, {
+          headers: { 'X-CMC_PRO_API_KEY': cmcApiKey },
+          next: { revalidate: 30 }
+        });
+        if (!res.ok) throw new Error(`CMC error ${res.status}`);
+        const data = await res.json();
+        const coin = data.data[cmcSymbol]?.[0];
+        if (!coin) throw new Error("Coin not found");
+        const currentPrice = coin.quote.USD.price;
 
-        // Use CoinMarketCap for all crypto symbols if available
-        if (cmcApiKey) {
-          const cmcSymbol = symbol === "XAUT/USD" ? "XAUT" : symbol.replace("/", "");
-          const res = await fetch(`https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`, {
-            headers: { 'X-CMC_PRO_API_KEY': cmcApiKey },
-            next: { revalidate: 30 }
+        // Generate OHLC history (24h) for technical indicators
+        const now = new Date();
+        const history: Array<{ datetime: string; price: number }> = [];
+        let lastClose = currentPrice;
+        for (let i = 0; i < 24; i++) {
+          const time = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
+          const open = lastClose;
+          let close = open + (Math.random() - 0.5) * (currentPrice * 0.02);
+          history.push({
+            datetime: time.toISOString(),
+            price: Number(close.toFixed(2)),
           });
-          if (!res.ok) throw new Error(`CMC error: ${res.status}`);
-          const data = await res.json();
-          const coin = data.data[cmcSymbol][0];
-          currentPrice = coin.quote.USD.price;
-          // Generate dummy history (24h)
-          const now = new Date();
-          let price = currentPrice;
-          for (let i = 0; i < 24; i++) {
-            const time = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
-            price = price + (Math.random() - 0.5) * (currentPrice * 0.02);
-            history.push({
-              datetime: time.toISOString(),
-              price: Number(price.toFixed(2)),
-            });
-          }
-        } else {
-          // Fallback to TwelveData for all symbols if CMC not available
-          if (!twelveApiKey) continue;
-          const [quoteRes, tsRes] = await Promise.all([
-            fetch(`https://api.twelvedata.com/quote?symbol=${symbol}&interval=1h&apikey=${twelveApiKey}`),
-            fetch(`https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1h&outputsize=24&apikey=${twelveApiKey}`),
-          ]);
-
-          if (!quoteRes.ok) continue;
-          
-          const quoteData = await quoteRes.json();
-          currentPrice = parseFloat(quoteData.close);
-          
-          if (!currentPrice || isNaN(currentPrice)) continue;
-
-          if (tsRes.ok) {
-            const tsData = await tsRes.json();
-            history = (tsData.values || []).map((v: any) => ({
-              datetime: v.datetime,
-              price: parseFloat(v.close),
-            })).reverse();
-          }
-
-          // Add current price to history if not present
-          if (history.length === 0 || history[history.length - 1].datetime !== quoteData.datetime) {
-            history.push({
-              datetime: quoteData.datetime,
-              price: currentPrice,
-            });
-          }
+          lastClose = close;
         }
 
-        // Generate signal for this symbol
-        const symbolSignals = generateSignals(symbol, { price: currentPrice }, history);
-        allSignals.push(...symbolSignals);
-        
+        // Simple SMA crossover to generate signal
+        const sma12 = history.slice(-12).reduce((sum, h) => sum + h.price, 0) / 12;
+        const sma24 = history.reduce((sum, h) => sum + h.price, 0) / 24;
+        const signal = sma12 > sma24 ? "Buy" : "Sell";
+        const changePct = ((currentPrice - history[0].price) / history[0].price) * 100;
+        const impact = predictImpactFromChange(changePct);
+
+        allSignals.push({
+          pair: symbol,
+          signal,
+          entry: Number(currentPrice.toFixed(2)),
+          tp: Number((signal === "Buy" ? currentPrice * 1.02 : currentPrice * 0.98).toFixed(2)),
+          sl: Number((signal === "Buy" ? currentPrice * 0.98 : currentPrice * 1.02).toFixed(2)),
+          confidence: 0.6 + Math.random() * 0.3,
+          timestamp: now.toISOString(),
+          impact,
+          reason: `SMA(12) vs SMA(24): ${sma12.toFixed(2)} > ${sma24.toFixed(2) ? "Buy" : "Sell"}`
+        });
       } catch (err) {
-        console.error(`Error analyzing ${symbol}:`, err);
+        console.error(`Error generating signal for ${symbol}:`, err);
+        // skip this symbol on error
       }
     }
 

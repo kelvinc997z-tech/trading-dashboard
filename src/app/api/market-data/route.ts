@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 const CRYPTO_SYMBOLS = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
 const SUPPORTED_SYMBOLS = CRYPTO_SYMBOLS;
 
-// Generate OHLC history and compute current stats
 function generateOHLC(symbol: string) {
   const basePrices: Record<string, number> = {
     "XAUT/USD": 2350,
@@ -30,11 +29,11 @@ function generateOHLC(symbol: string) {
       high: Number(high.toFixed(2)),
       low: Number(low.toFixed(2)),
       close: Number(close.toFixed(2)),
+      price: Number(close.toFixed(2)),
       volume,
     });
     lastClose = close;
   }
-  // Compute change from previous close (use previous day if available)
   const current = history[history.length - 1];
   const previous = history.length > 1 ? history[history.length - 2] : current;
   const change = current.close - previous.close;
@@ -61,9 +60,9 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string) {
   });
   if (!res.ok) throw new Error(`CoinMarketCap error: ${res.status}`);
   const data = await res.json();
-  const coin = data.data[cmcSymbol][0];
+  const coin = data.data[cmcSymbol]?.[0];
+  if (!coin) throw new Error("Coin not found in CMC response");
   const price = coin.quote.USD.price;
-  // Generate OHLC history based on current price
   const now = new Date();
   const history: Array<{ time: string; open: number; high: number; low: number; close: number; volume: number }> = [];
   let lastClose = price;
@@ -79,6 +78,7 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string) {
       high: Number(high.toFixed(2)),
       low: Number(low.toFixed(2)),
       close: Number(close.toFixed(2)),
+      price: Number(close.toFixed(2)),
       volume: Math.floor(Math.random() * 1000) + 100,
     });
     lastClose = close;
@@ -101,7 +101,6 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string) {
 }
 
 export async function GET(request: Request) {
-  const twelveApiKey = process.env.TWELVEDATA_API_KEY;
   const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get("symbol") || "XAUT/USD";
@@ -113,92 +112,17 @@ export async function GET(request: Request) {
     );
   }
 
-  // Use CoinMarketCap for all crypto symbols if API key available
+  // Use CoinMarketCap for all crypto symbols if API key is set
   if (cmcApiKey && CRYPTO_SYMBOLS.includes(symbol)) {
     try {
       return NextResponse.json(await fetchCoinMarketCap(symbol, cmcApiKey));
     } catch (error) {
       console.error(`CoinMarketCap error for ${symbol}:`, error);
-      // fallback to TwelveData if CMC fails and TwelveData key exists
-      if (twelveApiKey) {
-        console.warn(`Falling back to TwelveData for ${symbol}`);
-      } else {
-        return NextResponse.json(generateOHLC(symbol));
-      }
-    }
-  }
-
-  // Fallback to TwelveData for any symbol (if key exists)
-  if (!twelveApiKey) {
-    console.warn(`TWELVEDATA_API_KEY not set, returning dummy data for ${symbol}`);
-    return NextResponse.json(generateOHLC(symbol));
-  }
-
-  try {
-    const quoteRes = await fetch(
-      `https://api.twelvedata.com/quote?symbol=${symbol}&interval=1h&apikey=${twelveApiKey}`,
-      { next: { revalidate: 30 } }
-    );
-
-    if (!quoteRes.ok) {
-      throw new Error(`Twelvedata error: ${quoteRes.status} ${quoteRes.statusText}`);
-    }
-
-    const quoteData = await quoteRes.json();
-
-    if (quoteData.code) {
-      throw new Error(quoteData.message || "Twelvedata returned error");
-    }
-
-    const tsRes = await fetch(
-      `https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1h&outputsize=24&apikey=${twelveApiKey}`,
-      { next: { revalidate: 30 } }
-    );
-
-    let tsData: any = { values: [] };
-    if (tsRes.ok) {
-      tsData = await tsRes.json();
-      if (tsData.code) {
-        throw new Error(tsData.message || "Twelvedata time_series error");
-      }
-    } else {
-      throw new Error(`Time series request failed: ${tsRes.status}`);
-    }
-
-    const history = (tsData.values || []).map((v: any) => ({
-      time: new Date(v.datetime).toISOString(),
-      open: parseFloat(v.open),
-      high: parseFloat(v.high),
-      low: parseFloat(v.low),
-      close: parseFloat(v.close),
-      volume: parseFloat(v.volume) || 0,
-    })).reverse();
-
-    // If history empty, fallback to dummy
-    if (history.length === 0) {
-      console.warn(`Empty history from TwelveData for ${symbol}, using dummy`);
+      // Fallback to dummy data on CMC failure (no TwelveData fallback)
       return NextResponse.json(generateOHLC(symbol));
     }
-
-    const last = history[history.length - 1];
-    // Use TwelveData quote for change/percent if available, else compute from history
-    const change = parseFloat(quoteData.change) || (last.close - (history.length > 1 ? history[history.length - 2].close : last.close));
-    const changePercent = parseFloat(quoteData.percent_change) || ((change / (history.length > 1 ? history[history.length - 2].close : last.close)) * 100);
-
-    return NextResponse.json({
-      symbol,
-      current: {
-        close: last.close,
-        change: Number(change.toFixed(2)),
-        changePercent: Number(changePercent.toFixed(2)),
-        high: last.high,
-        low: last.low,
-      },
-      history,
-    });
-  } catch (error) {
-    console.error(`Error fetching market data for ${symbol}:`, error);
-    // Fallback to dummy data so UI still shows something
-    return NextResponse.json(generateOHLC(symbol));
   }
+
+  // If no CMC key, fallback to dummy (TwelveData not used for crypto)
+  return NextResponse.json(generateOHLC(symbol));
 }
