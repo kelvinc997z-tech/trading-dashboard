@@ -130,8 +130,6 @@ export async function GET() {
     const prevSignal = macdSignal.length >= 2 ? macdSignal[macdSignal.length - 2] : null;
     const latestUpper = bollingerUpper.length ? bollingerUpper[bollingerUpper.length - 1] : null;
     const latestLower = bollingerLower.length ? bollingerLower[bollingerLower.length - 1] : null;
-    const prevLower = bollingerLower.length >= 2 ? bollingerLower[bollingerLower.length - 2] : null;
-    const prevUpper = bollingerUpper.length >= 2 ? bollingerUpper[bollingerUpper.length - 2] : null;
 
     for (const alert of batch) {
       checked++;
@@ -143,9 +141,7 @@ export async function GET() {
       if (indicator === 'rsi' && latestRSI !== null) {
         if (condition === 'above' && latestRSI > value) conditionMet = true;
         if (condition === 'below' && latestRSI < value) conditionMet = true;
-        if (condition === 'cross_above' && latestRSI !== null) {
-          // For RSI cross we'd need previous RSI, but we only have latest; skip cross conditions for RSI
-        }
+        // Cross conditions not applicable for RSI
       } else if (indicator === 'macd') {
         if (condition === 'above' && latestMACD !== null && latestMACD > value) conditionMet = true;
         if (condition === 'below' && latestMACD !== null && latestMACD < value) conditionMet = true;
@@ -156,9 +152,9 @@ export async function GET() {
           if (prevMACD > prevSignal && latestMACD <= latestSignal) conditionMet = true;
         }
       } else if (indicator === 'bollinger') {
-        if (condition === 'above' && latestUpper !== null && currentPrice > latestUpper) conditionMet = true;
-        if (condition === 'below' && latestLower !== null && currentPrice < latestLower) conditionMet = true;
-        // cross conditions could be added (price crossing upper/lower) but need previous price relative to band
+        // Bollinger does not use value
+        if (condition === 'above_upper' && latestUpper !== null && currentPrice > latestUpper) conditionMet = true;
+        if (condition === 'below_lower' && latestLower !== null && currentPrice < latestLower) conditionMet = true;
       }
 
       if (conditionMet) {

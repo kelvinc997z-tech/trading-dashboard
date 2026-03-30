@@ -34,11 +34,21 @@ export default function AlertsPage() {
   const indicatorConditions = {
     rsi: ["above", "below"],
     macd: ["above", "below", "cross_above", "cross_below"],
-    bollinger: ["above", "below"],
+    bollinger: ["above_upper", "below_lower"],
   } as const;
 
   const isIndicatorType = form.type === "indicator";
   const allowedConditions = isIndicatorType && form.indicator ? indicatorConditions[form.indicator as keyof typeof indicatorConditions] : ["above", "below", "cross_above", "cross_below"];
+
+  // Label mappings for display
+  const conditionLabels: Record<string, string> = {
+    above: "Above",
+    below: "Below",
+    cross_above: "Cross Above",
+    cross_below: "Cross Below",
+    above_upper: "Price Above Upper Band",
+    below_lower: "Price Below Lower Band",
+  };
 
   // Reset condition when indicator changes to ensure it's allowed
   const handleIndicatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -141,14 +151,17 @@ export default function AlertsPage() {
               <label className="block text-sm mb-1">Condition</label>
               <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value })} className="input w-full">
                 {allowedConditions.map(c => (
-                  <option key={c} value={c}>{c.replace('_', ' ')}</option>
+                  <option key={c} value={c}>{conditionLabels[c] || c.replace('_', ' ')}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm mb-1">Value</label>
-              <input type="number" step="any" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} className="input w-full" />
-            </div>
+            {/* Value field - hide for Bollinger Bands (not needed) */}
+            {(!isIndicatorType || form.indicator !== 'bollinger') && (
+              <div>
+                <label className="block text-sm mb-1">Value</label>
+                <input type="number" step="any" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} className="input w-full" />
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
