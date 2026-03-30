@@ -13,7 +13,7 @@ function generateOHLC(symbol: string) {
   };
   const base = basePrices[symbol] || 100;
   const now = new Date();
-  const history: Array<{ time: string; open: number; high: number; low: number; close: number; volume: number }> = [];
+  const history: Array<{ time: string; open: number; high: number; low: number; close: number; price: number; volume: number }> = [];
   let lastClose = base + (Math.random() - 0.5) * 20;
   for (let i = 0; i < 24; i++) {
     const time = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
@@ -64,7 +64,7 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string) {
   if (!coin) throw new Error("Coin not found in CMC response");
   const price = coin.quote.USD.price;
   const now = new Date();
-  const history: Array<{ time: string; open: number; high: number; low: number; close: number; volume: number }> = [];
+  const history: Array<{ time: string; open: number; high: number; low: number; close: number; price: number; volume: number }> = [];
   let lastClose = price;
   for (let i = 0; i < 24; i++) {
     const time = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
