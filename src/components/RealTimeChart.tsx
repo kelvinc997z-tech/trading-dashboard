@@ -1,23 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface MarketData {
   symbol: string;
   current: {
-    open: number;
+    price: number;
+    change: number;
+    changePercent: number;
     high: number;
     low: number;
-    close: number;
-    volume?: number;
   };
   history: Array<{
     time: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume?: number;
+    price: number;
   }>;
 }
 
@@ -26,29 +23,16 @@ interface RealTimeChartProps {
 }
 
 export default function RealTimeChart({ symbol = "XAUT/USD" }: RealTimeChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<any>(null);
-  const seriesRef = useRef<any>(null);
+  const [data, setData] = useState<MarketData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const fetchData = async () => {
     try {
       const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: MarketData = await res.json();
-      if (!data.history?.length) throw new Error("No historical data");
-      const candles = data.history.map((h) => ({
-        time: Math.floor(new Date(h.time).getTime() / 1000),
-        open: h.open,
-        high: h.high,
-        low: h.low,
-        close: h.close,
-        volume: h.volume,
-      }));
-      if (seriesRef.current) {
-        seriesRef.current.setData(candles);
-      }
+      const json: MarketData = await res.json();
+      setData(json);
       setError(null);
     } catch (err: any) {
       setError(err.message || "Failed to load");
@@ -58,64 +42,8 @@ export default function RealTimeChart({ symbol = "XAUT/USD" }: RealTimeChartProp
   };
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    let mounted = true;
-
-    import('lightweight-charts').then((mod: any) => {
-      if (!mounted) return;
-      const { createChart, ColorType } = mod;
-      const chart = createChart(containerRef.current!, {
-        width: containerRef.current!.clientWidth,
-        height: 400,
-        layout: {
-          background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: '#d1d4dc',
-        },
-        grid: {
-          vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
-          horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
-        },
-        crosshair: { mode: 1 },
-        rightPriceScale: { borderColor: 'rgba(197, 203, 206, 0.8)' },
-        timeScale: {
-          borderColor: 'rgba(197, 203, 206, 0.8)',
-          timeVisible: true,
-          secondsVisible: false,
-        },
-      });
-
-      const candlestickSeries = chart.addCandlestickSeries({
-        upColor: '#26a69a',
-        downColor: '#ef5350',
-        borderVisible: false,
-        wickUpColor: '#26a69a',
-        wickDownColor: '#ef5350',
-      });
-
-      chartRef.current = chart;
-      seriesRef.current = candlestickSeries;
-
-      const handleResize = () => {
-        if (containerRef.current) {
-          chart.applyOptions({ width: containerRef.current.clientWidth, height: 400 });
-        }
-      };
-      window.addEventListener('resize', handleResize);
-
-      loadData();
-
-      return () => {
-        mounted = false;
-        window.removeEventListener('resize', handleResize);
-        chart.remove();
-      };
-    });
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol]);
-
-  useEffect(() => {
-    const interval = setInterval(loadData, 30000);
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [symbol]);
 
@@ -127,13 +55,53 @@ export default function RealTimeChart({ symbol = "XAUT/USD" }: RealTimeChartProp
     );
   }
 
-  if (error) {
+  if (error || !data) {
     return (
       <div className="h-64 flex items-center justify-center text-gray-500 text-sm">
-        {error}
+        {error || "No data"}
       </div>
     );
   }
 
-  return <div ref={containerRef} style={{ width: '100%', height: 400 }} />;
+  // Transform history for Recharts
+  const chartData = data.history.map((h) => ({
+    time: new Date(h.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    price: h.price,
+  }));
+
+  const isPositive = data.current.change >= 0;
+
+  return (
+    <ResponsiveContainer width="100%" height={400}>
+      <LineChart data={chartData}>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300 dark:stroke-gray-600" />
+        <XAxis 
+          dataKey="time" 
+          tick={{ fontSize: 12 }}
+          className="text-gray-600 dark:text-gray-300"
+        />
+        <YAxis 
+          domain={['auto', 'auto']}
+          tick={{ fontSize: 12 }}
+          className="text-gray-600 dark:text-gray-300"
+        />
+        <Tooltip 
+          contentStyle={{ 
+            backgroundColor: 'var(--tooltip-bg, white)',
+            border: '1px solid var(--tooltip-border, #e5e7eb)',
+            borderRadius: '0.5rem',
+            color: 'var(--tooltip-color, #111827)'
+          }}
+        />
+        <Line 
+          type="monotone" 
+          dataKey="price" 
+          stroke={isPositive ? "#16a34a" : "#dc2626"} 
+          strokeWidth={2}
+          dot={false}
+          activeDot={{ r: 4 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
 }
