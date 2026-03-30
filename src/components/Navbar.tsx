@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { logOut } from "@/lib/auth";
-import { LayoutDashboard, BarChart2, Crown, Brain, Calendar, LogOut as LogOutIcon } from "lucide-react";
+import { LayoutDashboard, BarChart2, Crown, Brain, Calendar, BookOpen, LogOut as LogOutIcon } from "lucide-react";
 
 export default function Navbar({ user }: { user: { email: string } }) {
   return (
@@ -45,6 +45,13 @@ export default function Navbar({ user }: { user: { email: string } }) {
             >
               <Calendar className="w-4 h-4" />
               Economic Calendar
+            </Link>
+            <Link 
+              href="/trading-journal" 
+              className="text-sm text-gray-600 dark:text-gray-300 hover:text-primary flex items-center gap-1"
+            >
+              <BookOpen className="w-4 h-4" />
+              Trading Journal
             </Link>
           </div>
         </div>

@@ -1,72 +1,56 @@
 import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+
+const prisma = db;
 
 export async function GET() {
-  const apiKey = process.env.TWELVEDATA_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json([], { status: 200 }); // Return empty array as fallback
-  }
-
   try {
-    // Fetch current data for all symbols
-    const symbols = ["XAU/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
-    const trades = [];
+    const trades = await prisma.trade.findMany({
+      orderBy: { date: "desc" },
+    });
+    return NextResponse.json(trades);
+  } catch (error) {
+    console.error("GET /api/trades error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
 
-    for (const symbol of symbols) {
-      try {
-        const res = await fetch(
-          `https://api.twelvedata.com/quote?symbol=${symbol}&interval=1h&apikey=${apiKey}`,
-          { next: { revalidate: 30 } }
-        );
-
-        if (!res.ok) continue;
-
-        const data = await res.json();
-        const currentPrice = parseFloat(data.close);
-        const change = parseFloat(data.change) || 0;
-        const changePercent = parseFloat(data.percent_change) || 0;
-
-        if (isNaN(currentPrice)) continue;
-
-        // Generate simulated trade based on current price movement
-        const now = new Date();
-        const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        
-        // Determine side based on recent movement
-        const side = change >= 0 ? "BUY" : "SELL";
-        
-        // Simulate position size (random between 0.1 and 1.0)
-        const size = Math.random() * 0.9 + 0.1;
-        
-        // Entry price = current price minus/plus small spread
-        const spread = currentPrice * 0.0001; // 0.01% spread
-        const entry = side === "BUY" ? currentPrice - spread : currentPrice + spread;
-        
-        // Calculate P&L based on price change (percent of entry)
-        const pnl = change * size;
-
-        trades.push({
-          time,
-          pair: symbol.split("/")[0],
-          side,
-          size: parseFloat(size.toFixed(2)),
-          entry: parseFloat(entry.toFixed(2)),
-          pnl: parseFloat(pnl.toFixed(2)),
-        });
-      } catch (err) {
-        console.error(`Error fetching trades for ${symbol}:`, err);
-      }
+export async function POST(request: Request) {
+  try {
+    // Ensure there is a user to associate
+    let user = await prisma.user.findFirst();
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: "trading-journal@example.com",
+          password: "dummy",
+          verified: true,
+        },
+      });
     }
 
-    // Sort by time (most recent first) and limit to 10
-    trades.sort((a, b) => {
-      const [hA, mA] = a.time.split(':').map(Number);
-      const [hB, mB] = b.time.split(':').map(Number);
-      return (hB * 60 + mB) - (hA * 60 + mA);
+    const body = await request.json();
+    const trade = await prisma.trade.create({
+      data: {
+        userId: user.id,
+        symbol: body.symbol,
+        side: body.side,
+        entry: body.entry,
+        exit: body.exit,
+        stopLoss: body.stopLoss,
+        takeProfit: body.takeProfit,
+        pnl: body.pnl,
+        pnlPct: body.pnlPct,
+        date: body.date ? new Date(body.date) : new Date(),
+        exitDate: body.exitDate ? new Date(body.exitDate) : null,
+        notes: body.notes,
+        tags: body.tags,
+        screenshotUrl: body.screenshotUrl,
+      },
     });
-
-    return NextResponse.json(trades.slice(0, 10));
+    return NextResponse.json(trade);
   } catch (error) {
-    console.error("Error generating trades:", error);
-    return NextResponse.json([], { status: 200 }); // Return empty array on error
+    console.error("POST /api/trades error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

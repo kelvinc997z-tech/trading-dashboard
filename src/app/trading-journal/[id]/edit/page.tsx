@@ -1,0 +1,233 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
+
+export default function EditTradePage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
+  const [form, setForm] = useState({
+    symbol: "XAU",
+    side: "buy",
+    entry: "",
+    exit: "",
+    stopLoss: "",
+    takeProfit: "",
+    pnl: "",
+    pnlPct: "",
+    date: "",
+    exitDate: "",
+    notes: "",
+    tags: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    async function fetchTrade() {
+      const res = await fetch(`/api/trades/${id}`);
+      if (!res.ok) {
+        alert("Failed to load trade");
+        router.back();
+        return;
+      }
+      const data = await res.json();
+      const toDateTimeLocal = (dt: string) => {
+        const d = new Date(dt);
+        return d.toISOString().slice(0, 16);
+      };
+      setForm({
+        symbol: data.symbol,
+        side: data.side,
+        entry: data.entry,
+        exit: data.exit || "",
+        stopLoss: data.stopLoss || "",
+        takeProfit: data.takeProfit || "",
+        pnl: data.pnl || "",
+        pnlPct: data.pnlPct || "",
+        date: toDateTimeLocal(data.date),
+        exitDate: data.exitDate ? toDateTimeLocal(data.exitDate) : "",
+        notes: data.notes || "",
+        tags: data.tags || "",
+      });
+      setLoading(false);
+    }
+    fetchTrade();
+  }, [id]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/trades/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error("Failed");
+      router.push("/trading-journal");
+    } catch (err) {
+      alert("Error updating trade");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 flex items-center justify-center">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      <div className="container mx-auto px-4 max-w-2xl">
+        <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Edit Trade</h1>
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Symbol</label>
+              <select
+                value={form.symbol}
+                onChange={(e) => setForm({ ...form, symbol: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              >
+                <option value="XAU">XAU (Gold)</option>
+                <option value="BTC">BTC</option>
+                <option value="ETH">ETH</option>
+                <option value="SOL">SOL</option>
+                <option value="XRP">XRP</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Side</label>
+              <select
+                value={form.side}
+                onChange={(e) => setForm({ ...form, side: e.target.value as "buy" | "sell" })}
+                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              >
+                <option value="buy">Buy</option>
+                <option value="sell">Sell</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Entry Price</label>
+              <input
+                type="number"
+                step="any"
+                required
+                value={form.entry}
+                onChange={(e) => setForm({ ...form, entry: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Exit Price (optional)</label>
+              <input
+                type="number"
+                step="any"
+                value={form.exit}
+                onChange={(e) => setForm({ ...form, exit: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Stop Loss (optional)</label>
+              <input
+                type="number"
+                step="any"
+                value={form.stopLoss}
+                onChange={(e) => setForm({ ...form, stopLoss: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Take Profit (optional)</label>
+              <input
+                type="number"
+                step="any"
+                value={form.takeProfit}
+                onChange={(e) => setForm({ ...form, takeProfit: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">P&L (USD, optional)</label>
+              <input
+                type="number"
+                step="any"
+                value={form.pnl}
+                onChange={(e) => setForm({ ...form, pnl: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">P&L % (optional)</label>
+              <input
+                type="number"
+                step="any"
+                value={form.pnlPct}
+                onChange={(e) => setForm({ ...form, pnlPct: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Entry Date</label>
+              <input
+                type="datetime-local"
+                required
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Exit Date (optional)</label>
+              <input
+                type="datetime-local"
+                value={form.exitDate}
+                onChange={(e) => setForm({ ...form, exitDate: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Notes (optional)</label>
+            <textarea
+              rows={3}
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Tags (comma separated, optional)</label>
+            <input
+              type="text"
+              placeholder="e.g. scalping, BTC"
+              value={form.tags}
+              onChange={(e) => setForm({ ...form, tags: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+            />
+          </div>
+          <div className="flex gap-4 pt-4">
+            <button
+              type="submit"
+              disabled={saving}
+              className="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Update Trade"}
+            </button>
+            <Link href="/trading-journal" className="px-6 py-2 border rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-700">
+              Cancel
+            </Link>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

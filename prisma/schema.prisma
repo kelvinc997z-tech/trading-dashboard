@@ -15,4 +15,27 @@ model User {
   verificationToken String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+
+  trades Trade[]
+}
+
+model Trade {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  symbol          String   // XAU, BTC, ETH, SOL, XRP, etc.
+  side            String   // "buy" | "sell"
+  entry           Decimal
+  exit            Decimal?
+  stopLoss        Decimal?
+  takeProfit      Decimal?
+  pnl             Decimal? // in USD
+  pnlPct          Decimal? // percentage
+  date            DateTime // entry date
+  exitDate        DateTime?
+  notes           String?
+  tags            String?  // comma-separated
+  screenshotUrl   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
