@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { sendAlertNotification } from "@/lib/notifications";
 import { calculateRSI, calculateMACD, calculateBollingerBands } from "@/lib/indicators";
+import { detectPatterns } from "@/lib/patterns";
 
 export async function GET() {
   const session = await getSession();
@@ -28,9 +29,10 @@ export async function GET() {
   let checked = 0;
   let triggered = 0;
 
-  // Separate price alerts and indicator alerts
-  const priceAlerts = alerts.filter(a => !a.indicator);
-  const indicatorAlerts = alerts.filter(a => a.indicator);
+  // Separate alerts by type
+  const priceAlerts = alerts.filter(a => a.type === 'price');
+  const indicatorAlerts = alerts.filter(a => a.type === 'indicator');
+  const patternAlerts = alerts.filter(a => a.type === 'pattern');
 
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
@@ -196,6 +198,69 @@ export async function GET() {
       await processIndicatorAlerts(symbol, prices, currentPrice, batch);
     } catch (e) {
       console.error(`Error checking indicator alerts for ${symbol}:`, e);
+    }
+  }
+
+  // Process pattern alerts
+  const patternAlertsBySymbol: Record<string, typeof alerts> = {};
+  const allPatternAlerts: typeof alerts = [];
+  for (const alert of patternAlerts) {
+    if (alert.symbol) {
+      if (!patternAlertsBySymbol[alert.symbol]) patternAlertsBySymbol[alert.symbol] = [];
+      patternAlertsBySymbol[alert.symbol].push(alert);
+    } else {
+      allPatternAlerts.push(alert);
+    }
+  }
+
+  async function processPatternAlerts(symbol: string, candles: Candle[], batch: typeof alerts) {
+    const detectedPatterns = detectPatterns(candles);
+    for (const alert of batch) {
+      checked++;
+      const pattern = alert.indicator; // pattern name stored in indicator field
+      if (pattern && detectedPatterns.includes(pattern)) {
+        const lastTriggered = alert.lastTriggered ? new Date(alert.lastTriggered) : null;
+        if (lastTriggered && (now.getTime() - lastTriggered.getTime()) < COOLDOWN_MS) {
+          continue;
+        }
+        try {
+          const currentPrice = candles[candles.length - 1]?.close || null;
+          await sendAlertNotification(alert, currentPrice, symbol, alert.user.email);
+          await db.alert.update({
+            where: { id: alert.id },
+            data: { lastTriggered: now, lastCheckedAt: now },
+          });
+          triggered++;
+        } catch (e) {
+          console.error('Pattern alert notification failed:', e);
+        }
+      } else {
+        await db.alert.update({
+          where: { id: alert.id },
+          data: { lastCheckedAt: now },
+        });
+      }
+    }
+  }
+
+  // Process pattern alerts per symbol
+  for (const [symbol, batch] of Object.entries(patternAlertsBySymbol)) {
+    try {
+      const res = await fetch(`${baseUrl}/api/market-data?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!data.history || data.history.length < 3) continue; // need at least 3 candles
+
+      const candles: Candle[] = data.history.map((h: any) => ({
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+      }));
+
+      await processPatternAlerts(symbol, candles, batch);
+    } catch (e) {
+      console.error(`Error checking pattern alerts for ${symbol}:`, e);
     }
   }
 

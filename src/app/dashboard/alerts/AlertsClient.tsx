@@ -37,6 +37,20 @@ export default function AlertsPage() {
     bollinger: ["above_upper", "below_lower"],
   } as const;
 
+  const patternOptions = [
+    { value: "doji", label: "Doji" },
+    { value: "hammer", label: "Hammer" },
+    { value: "shooting_star", label: "Shooting Star" },
+    { value: "bullish_engulfing", label: "Bullish Engulfing" },
+    { value: "bearish_engulfing", label: "Bearish Engulfing" },
+    { value: "morning_star", label: "Morning Star" },
+    { value: "evening_star", label: "Evening Star" },
+  ];
+
+  const getPatternLabel = (value: string) => {
+    return patternOptions.find(p => p.value === value)?.label || value;
+  };
+
   const isIndicatorType = form.type === "indicator";
   const allowedConditions = isIndicatorType && form.indicator ? indicatorConditions[form.indicator as keyof typeof indicatorConditions] : ["above", "below", "cross_above", "cross_below"];
 
@@ -48,6 +62,7 @@ export default function AlertsPage() {
     cross_below: "Cross Below",
     above_upper: "Price Above Upper Band",
     below_lower: "Price Below Lower Band",
+    detected: "Detected",
   };
 
   // Reset condition when indicator changes to ensure it's allowed
@@ -82,9 +97,9 @@ export default function AlertsPage() {
       const payload = {
         type: form.type,
         symbol: form.symbol || null,
-        condition: form.condition,
+        condition: form.type === "pattern" ? "detected" : form.condition,
         value: form.value ? parseFloat(form.value) : null,
-        indicator: form.type === "indicator" ? form.indicator || null : null,
+        indicator: (form.type === "indicator" || form.type === "pattern") ? form.indicator || null : null,
         timeframe: form.timeframe,
         notificationChannel: form.notificationChannel,
       };
@@ -148,15 +163,30 @@ export default function AlertsPage() {
               <input type="text" value={form.symbol} onChange={e => setForm({ ...form, symbol: e.target.value })} placeholder="e.g. BTC/USD" className="input w-full" />
             </div>
             <div>
-              <label className="block text-sm mb-1">Condition</label>
-              <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value })} className="input w-full">
-                {allowedConditions.map(c => (
-                  <option key={c} value={c}>{conditionLabels[c] || c.replace('_', ' ')}</option>
-                ))}
-              </select>
+              <label className="block text-sm mb-1">Pattern / Condition</label>
+              {isIndicatorType ? (
+                <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value })} className="input w-full">
+                  {allowedConditions.map(c => (
+                    <option key={c} value={c}>{conditionLabels[c] || c.replace('_', ' ')}</option>
+                  ))}
+                </select>
+              ) : form.type === "pattern" ? (
+                <select value={form.indicator} onChange={e => setForm({ ...form, indicator: e.target.value, condition: "detected" })} className="input w-full">
+                  <option value="">Select pattern...</option>
+                  {patternOptions.map(p => (
+                    <option key={p.value} value={p.value}>{p.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value })} className="input w-full">
+                  {allowedConditions.map(c => (
+                    <option key={c} value={c}>{conditionLabels[c] || c.replace('_', ' ')}</option>
+                  ))}
+                </select>
+              )}
             </div>
-            {/* Value field - hide for Bollinger Bands (not needed) */}
-            {(!isIndicatorType || form.indicator !== 'bollinger') && (
+            {/* Value field - hide for Bollinger Bands and Pattern */}
+            {(!isIndicatorType || form.indicator !== 'bollinger') && form.type !== "pattern" && (
               <div>
                 <label className="block text-sm mb-1">Value</label>
                 <input type="number" step="any" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} className="input w-full" />
@@ -224,8 +254,10 @@ export default function AlertsPage() {
                 <tr key={alert.id}>
                   <td>{alert.type}</td>
                   <td>{alert.symbol || "All"}</td>
-                  <td>{alert.indicator ?? "-"}</td>
-                  <td>{alert.condition}</td>
+                  <td>
+                    {alert.type === 'pattern' && alert.indicator ? getPatternLabel(alert.indicator) : (alert.indicator ?? "-")}
+                  </td>
+                  <td>{conditionLabels[alert.condition] || alert.condition}</td>
                   <td>{alert.value ?? "-"}</td>
                   <td>{alert.timeframe}</td>
                   <td>{alert.notificationChannel}</td>
