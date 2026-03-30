@@ -1,19 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Activity } from "lucide-react";
 import MarketOutlook from "@/components/MarketOutlook";
 import RealTimeChart from "@/components/RealTimeChart";
 import AdvancedChart from "@/components/AdvancedChart";
 
+interface DbTrade {
+  id: string;
+  symbol: string;
+  side: "buy" | "sell";
+  entry: number;
+  size: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  pnl?: number;
+  pnlPct?: number;
+  status: "open" | "closed";
+  date: Date | string;
+  exit?: number;
+  exitDate?: Date | string;
+}
+
 interface Trade {
+  id: string;
+  symbol: string;
   time: string;
   pair: string;
-  side: string;
+  side: "buy" | "sell";
   size: number;
   entry: number;
-  pnl: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  pnl?: number; // realized
+  pnlPct?: number;
+  unrealizedPnl?: number; // current
+  status: "open" | "closed";
+  exitDate?: string | Date;
 }
 
 interface User {
@@ -31,27 +55,133 @@ const CRYPTO_PAIRS = [
 
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [markets, setMarkets] = useState<Record<string, { price: number }>>({});
   const [user, setUser] = useState<User | null>(null);
 
-  const fetchTrades = async () => {
-    try {
-      const res = await fetch("/api/trades");
-      if (res.ok) {
-        const data = await res.json();
-        setTrades(data);
+  // Map DB trade -> UI trade, plus compute unrealized
+  const mapTrade = useCallback((dbTrade: DbTrade, currentPrice?: number): Trade => {
+    const date = new Date(dbTrade.date);
+    const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const pair = dbTrade.symbol.split('/')[0];
+    let unrealized;
+    if (dbTrade.status === "open" && currentPrice !== undefined) {
+      if (dbTrade.side === "buy") {
+        unrealized = (currentPrice - dbTrade.entry) * dbTrade.size;
       } else {
-        // Fallback to sample trades if API fails
-        setTrades([
-          { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), pair: "XAU", side: "BUY", size: 0.2, entry: 4450.50, pnl: 12.30 },
-          { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), pair: "BTC", side: "SELL", size: 0.5, entry: 88500.00, pnl: -25.60 },
-        ]);
+        unrealized = (dbTrade.entry - currentPrice) * dbTrade.size;
+      }
+    }
+    return {
+      id: dbTrade.id,
+      symbol: dbTrade.symbol,
+      time,
+      pair,
+      side: dbTrade.side,
+      size: dbTrade.size,
+      entry: dbTrade.entry,
+      stopLoss: dbTrade.stopLoss,
+      takeProfit: dbTrade.takeProfit,
+      pnl: dbTrade.pnl,
+      pnlPct: dbTrade.pnlPct,
+      unrealizedPnl: unrealized,
+      status: dbTrade.status,
+      exitDate: dbTrade.exitDate,
+    };
+  }, []);
+
+  const fetchTrades = async (): Promise<DbTrade[]> => {
+    const res = await fetch("/api/trades");
+    if (res.ok) {
+      return await res.json();
+    }
+    return [];
+  };
+
+  const fetchMarketData = useCallback(async () => {
+    try {
+      // Fetch all symbols we need (from trades and CRYPTO_PAIRS)
+      const symbols = [...new Set([...CRYPTO_PAIRS.map(p => p.symbol)])];
+      const promises = symbols.map(async sym => {
+        try {
+          const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(sym)}`);
+          if (res.ok) {
+            const data = await res.json();
+            return { symbol: sym, price: data.current?.price };
+          }
+        } catch (e) {}
+        return null;
+      });
+      const results = await Promise.all(promises);
+      const marketsMap: Record<string, { price: number }> = {};
+      results.forEach(r => {
+        if (r) marketsMap[r.symbol] = { price: r.price };
+      });
+      setMarkets(marketsMap);
+    } catch (err) {
+      console.error("Failed to fetch market data:", err);
+    }
+  }, []);
+
+  const updateTrade = async (id: string, updates: Partial<DbTrade>) => {
+    try {
+      const res = await fetch(`/api/trades/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setTrades(prev => prev.map(t => t.id === id ? mapTrade(updated, markets[updated.symbol]?.price) : t));
+        return updated;
       }
     } catch (err) {
-      console.error("Failed to fetch trades:", err);
-      // Show empty trades on error (not loading forever)
-      setTrades([]);
+      console.error("Failed to update trade:", err);
     }
+    return null;
   };
+
+  // Auto-close logic
+  const checkAndCloseTrades = useCallback(async () => {
+    const toClose: Trade[] = [];
+    trades.forEach(trade => {
+      if (trade.status !== "open") return;
+      const market = markets[trade.symbol];
+      if (!market) return;
+      const price = market.price;
+      const tp = trade.takeProfit;
+      const sl = trade.stopLoss;
+      let hit = false;
+      let exitPrice = price;
+      if (trade.side === "buy") {
+        if (tp !== undefined && price >= tp) hit = true;
+        if (sl !== undefined && price <= sl) hit = true;
+      } else {
+        if (tp !== undefined && price <= tp) hit = true;
+        if (sl !== undefined && price >= sl) hit = true;
+      }
+      if (hit) {
+        toClose.push(trade);
+      }
+    });
+
+    // Process each
+    for (const trade of toClose) {
+      const market = markets[trade.symbol];
+      if (!market) continue;
+      const exitPrice = market.price;
+      // Calculate P&L
+      const pnl = trade.side === "buy"
+        ? (exitPrice - trade.entry) * trade.size
+        : (trade.entry - exitPrice) * trade.size;
+      await updateTrade(trade.id, {
+        status: "closed",
+        exit: exitPrice,
+        exitDate: new Date(),
+        pnl,
+        pnlPct: (pnl / (trade.entry * trade.size)) * 100,
+      });
+    }
+  }, [trades, markets, mapTrade, updateTrade]);
 
   const fetchSession = async () => {
     try {
@@ -69,15 +199,35 @@ export default function Dashboard() {
     window.location.href = "/payment";
   };
 
+  // Initial load & polling
   useEffect(() => {
     fetchSession();
-    fetchTrades();
-    // Refresh trades every 30 seconds
-    const interval = setInterval(() => {
-      fetchTrades();
-    }, 30000);
+    const loadData = async () => {
+      const dbTrades = await fetchTrades();
+      await fetchMarketData();
+      // Map trades using current market prices
+      const mapped: Trade[] = dbTrades.map(db => mapTrade(db, markets[db.symbol]?.price));
+      setTrades(mapped);
+    };
+    loadData();
+    const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchMarketData, mapTrade]);
+
+  // Separate effect for auto-close (runs after markets/trades update)
+  useEffect(() => {
+    if (Object.keys(markets).length === 0 || trades.length === 0) return;
+    checkAndCloseTrades();
+  }, [markets, trades, checkAndCloseTrades]);
+
+  // Computed stats
+  const openTradesCount = trades.filter(t => t.status === "open").length;
+  const realizedToday = trades
+    .filter(t => t.status === "closed" && t.pnl !== undefined && t.exitDate && new Date(t.exitDate).toDateString() === new Date().toDateString())
+    .reduce((sum, t) => sum + (t.pnl as number), 0);
+  const unrealizedPnl = trades
+    .filter(t => t.status === "open")
+    .reduce((sum, t) => sum + (t.unrealizedPnl || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -123,7 +273,7 @@ export default function Dashboard() {
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Open Positions
               </p>
-              <p className="text-2xl font-bold">{trades.length}</p>
+              <p className="text-2xl font-bold">{openTradesCount}</p>
               <p className="text-xs text-gray-500 mt-1">Real-time</p>
             </div>
           </div>
@@ -133,10 +283,10 @@ export default function Dashboard() {
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
             Today's P&L
           </p>
-          <p className="text-2xl font-bold text-green-500">
-            {trades.reduce((sum, t) => sum + t.pnl, 0).toFixed(2)}
+          <p className={`text-2xl font-bold ${realizedToday >= 0 ? "text-green-500" : "text-red-500"}`}>
+            {realizedToday.toFixed(2)}
           </p>
-          <p className="text-xs text-gray-500 mt-1">Net profit</p>
+          <p className="text-xs text-gray-500 mt-1">Net profit (closed today)</p>
         </div>
 
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
@@ -173,31 +323,43 @@ export default function Dashboard() {
                 <th className="px-4 py-2">Side</th>
                 <th className="px-4 py-2">Size</th>
                 <th className="px-4 py-2">Entry</th>
+                <th className="px-4 py-2">TP</th>
+                <th className="px-4 py-2">SL</th>
                 <th className="px-4 py-2">P&L</th>
               </tr>
             </thead>
             <tbody>
               {trades.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-4 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-4 text-center text-gray-500">
                     No trades available at the moment.
                   </td>
                 </tr>
               ) : (
-                trades.map((trade, i) => (
-                  <tr key={i} className="border-b dark:border-gray-700">
-                    <td className="px-4 py-2">{trade.time}</td>
-                    <td className="px-4 py-2">{trade.pair}</td>
-                    <td className={`px-4 py-2 ${trade.side === "BUY" ? "text-green-500" : "text-red-500"}`}>
-                      {trade.side}
-                    </td>
-                    <td className="px-4 py-2">{trade.size}</td>
-                    <td className="px-4 py-2">{trade.entry.toFixed(2)}</td>
-                    <td className={`px-4 py-2 ${trade.pnl >= 0 ? "text-green-500" : "text-red-500"}`}>
-                      {trade.pnl >= 0 ? "+" : ""}{trade.pnl.toFixed(2)}
-                    </td>
-                  </tr>
-                ))
+                trades.map((trade) => {
+                  const isOpen = trade.status === "open";
+                  const displayPnl = isOpen
+                    ? trade.unrealizedPnl ?? 0
+                    : trade.pnl ?? 0;
+                  const pnlClass = displayPnl >= 0 ? "text-green-500" : "text-red-500";
+                  return (
+                    <tr key={trade.id} className="border-b dark:border-gray-700">
+                      <td className="px-4 py-2">{trade.time}</td>
+                      <td className="px-4 py-2">{trade.pair}</td>
+                      <td className={`px-4 py-2 ${trade.side === "buy" ? "text-green-500" : "text-red-500"}`}>
+                        {trade.side.toUpperCase()}
+                      </td>
+                      <td className="px-4 py-2">{trade.size}</td>
+                      <td className="px-4 py-2">{trade.entry.toFixed(2)}</td>
+                      <td className="px-4 py-2">{trade.takeProfit?.toFixed(2) ?? "-"}</td>
+                      <td className="px-4 py-2">{trade.stopLoss?.toFixed(2) ?? "-"}</td>
+                      <td className={`px-4 py-2 ${pnlClass}`}>
+                        {displayPnl >= 0 ? "+" : ""}{displayPnl.toFixed(2)}
+                        {isOpen && <span className="text-xs ml-1">(unreal)</span>}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

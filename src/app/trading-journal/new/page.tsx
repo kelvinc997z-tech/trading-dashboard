@@ -7,9 +7,10 @@ import Link from "next/link";
 export default function NewTradePage() {
   const router = useRouter();
   const [form, setForm] = useState({
-    symbol: "XAU",
+    symbol: "XAUT/USD",
     side: "buy",
     entry: "",
+    size: "1",
     exit: "",
     stopLoss: "",
     takeProfit: "",
@@ -26,10 +27,22 @@ export default function NewTradePage() {
     e.preventDefault();
     setLoading(true);
     try {
+      const payload = {
+        ...form,
+        entry: parseFloat(form.entry),
+        size: parseFloat(form.size),
+        exit: form.exit ? parseFloat(form.exit) : null,
+        stopLoss: form.stopLoss ? parseFloat(form.stopLoss) : null,
+        takeProfit: form.takeProfit ? parseFloat(form.takeProfit) : null,
+        pnl: form.pnl ? parseFloat(form.pnl) : null,
+        pnlPct: form.pnlPct ? parseFloat(form.pnlPct) : null,
+        date: new Date(form.date).toISOString(),
+        exitDate: form.exitDate ? new Date(form.exitDate).toISOString() : null,
+      };
       const res = await fetch("/api/trades", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Failed");
       router.push("/trading-journal");
@@ -63,11 +76,11 @@ export default function NewTradePage() {
                 onChange={(e) => setForm({ ...form, symbol: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
               >
-                <option value="XAU">XAU (Gold)</option>
-                <option value="BTC">BTC</option>
-                <option value="ETH">ETH</option>
-                <option value="SOL">SOL</option>
-                <option value="XRP">XRP</option>
+                <option value="XAUT/USD">XAUT/USD (Tether Gold)</option>
+                <option value="BTC/USD">BTC/USD</option>
+                <option value="ETH/USD">ETH/USD</option>
+                <option value="SOL/USD">SOL/USD</option>
+                <option value="XRP/USD">XRP/USD</option>
               </select>
             </div>
             <div>
@@ -89,6 +102,17 @@ export default function NewTradePage() {
                 required
                 value={form.entry}
                 onChange={(e) => setForm({ ...form, entry: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Size (contracts)</label>
+              <input
+                type="number"
+                step="any"
+                required
+                value={form.size}
+                onChange={(e) => setForm({ ...form, size: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
               />
             </div>

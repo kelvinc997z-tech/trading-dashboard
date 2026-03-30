@@ -1,67 +1,46 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-const prisma = db;
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const trade = await prisma.trade.findUnique({
-      where: { id: params.id },
-    });
-    if (!trade) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-    return NextResponse.json(trade);
-  } catch (error) {
-    console.error("GET /api/trades/:id error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
-
-export async function PUT(
+export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     const body = await request.json();
-    const trade = await prisma.trade.update({
+
+    // Convert date fields if provided
+    const data: any = { ...body };
+    if (body.exitDate) {
+      data.exitDate = new Date(body.exitDate);
+    }
+    // If pnlPct not provided, we could recalc, but client sends it
+
+    const trade = await db.trade.update({
       where: { id: params.id },
-      data: {
-        symbol: body.symbol,
-        side: body.side,
-        entry: body.entry,
-        exit: body.exit,
-        stopLoss: body.stopLoss,
-        takeProfit: body.takeProfit,
-        pnl: body.pnl,
-        pnlPct: body.pnlPct,
-        date: body.date ? new Date(body.date) : undefined,
-        exitDate: body.exitDate ? new Date(body.exitDate) : null,
-        notes: body.notes,
-        tags: body.tags,
-        screenshotUrl: body.screenshotUrl,
-      },
+      data,
     });
     return NextResponse.json(trade);
   } catch (error) {
-    console.error("PUT /api/trades/:id error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("PATCH /api/trades/[id] error:", error);
+    return NextResponse.json({ error: "Failed to update trade" }, { status: 500 });
   }
 }
 
-export async function DELETE(
+// Also allow GET for individual trade if needed (optional)
+export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    await prisma.trade.delete({
+    const trade = await db.trade.findUnique({
       where: { id: params.id },
     });
-    return NextResponse.json({ success: true });
+    if (!trade) {
+      return NextResponse.json({ error: "Trade not found" }, { status: 404 });
+    }
+    return NextResponse.json(trade);
   } catch (error) {
-    console.error("DELETE /api/trades/:id error:", error);
+    console.error("GET /api/trades/[id] error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
