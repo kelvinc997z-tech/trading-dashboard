@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 
 interface CandlestickData {
   time: number;
@@ -20,12 +20,18 @@ export default function CandlestickChart({ symbol, height = 400 }: CandlestickCh
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const seriesRef = useRef<any>(null);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [change, setChange] = useState<number>(0);
 
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}`);
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
+      if (data.current) {
+        setCurrentPrice(data.current.price ?? data.current.close);
+        setChange(data.current.changePercent ?? 0);
+      }
       const candles: CandlestickData[] = data.history.map((h: any) => ({
         time: Math.floor(new Date(h.time).getTime() / 1000),
         open: h.open,
@@ -104,5 +110,17 @@ export default function CandlestickChart({ symbol, height = 400 }: CandlestickCh
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  return <div ref={containerRef} style={{ width: '100%', height }} />;
+  return (
+    <div>
+      {(currentPrice !== null) && (
+        <div className="text-center mb-2">
+          <span className="font-bold">{symbol}</span>
+          <span className={`ml-2 ${change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            ${currentPrice.toFixed(2)} ({change >= 0 ? '+' : ''}{change.toFixed(2)}%)
+          </span>
+        </div>
+      )}
+      <div ref={containerRef} style={{ width: '100%', height }} />
+    </div>
+  );
 }

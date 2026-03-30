@@ -64,15 +64,20 @@ Fiturnya:
 - **Phase 4: Backtesting Lab**
   - Strategy backtesting, Sharpe/Sortino metrics, walk-forward optimization
 
-### 📋 Next Implementation Queue
-1. ⏳ Custom Alerts
-2. ⏳ Multi-Timeframe Analysis
-3. ⏳ Correlation Matrix
-4. ⏳ Sentiment Analysis (crypto/forex news)
-5. ⏳ Performance Analytics
-6. ⏳ Quant AI Engine (ML predictions)
+### 📋 Implementation Queue
 
-**Note:** Economic Calendar and Trading Journal have been implemented (see Completed Features).
+**High Priority:**
+1. Custom Alerts (price, indicator thresholds)
+2. Multi-Timeframe Analysis
+3. Correlation Matrix
+4. Sentiment Analysis (crypto/forex news)
+5. Performance Analytics
+6. Quant AI Engine (ML predictions)
+
+**Completed:**
+- ✅ Economic Calendar (Finnhub API)
+- ✅ Trading Journal (CRUD + auto-close TP/SL)
+- ✅ CoinMarketCap API integration for real-time crypto prices
 
 ---
 
@@ -114,7 +119,7 @@ cp .env.example .env.local
 | `RESEND_API_KEY` | API key from Resend dashboard |
 | `RESEND_VERIFY_URL` | Frontend verify URL (e.g. `http://localhost:3000/api/auth/verify`) |
 | `DATABASE_URL` | `file:./dev.db` for SQLite dev; Postgres URL for production |
-| `COINMARKETCAP_API_KEY` | (Optional) CoinMarketCap Pro API key for real-time crypto prices. Without this, dummy data is used. |
+| `COINMARKETCAP_API_KEY` | CoinMarketCap Pro API key for real-time crypto prices (required for live data) |
 
 ### 3. Initialize Database
 
