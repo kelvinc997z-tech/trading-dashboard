@@ -36,8 +36,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
-  if (!mounted) return null; // or loading placeholder
-
+  // Render children immediately; ThemeContext will initially have default theme "light"
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
