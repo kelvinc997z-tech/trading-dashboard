@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 type DarkModeContextType = {
   dark: boolean;
   toggle: () => void;
+  setMode: (mode: "dark" | "light") => void;
 };
 
 const DarkModeContext = createContext<DarkModeContextType | undefined>(undefined);
@@ -37,8 +38,20 @@ export function DarkModeProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const setMode = (mode: "dark" | "light") => {
+    const next = mode === "dark";
+    if (next) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+    setDark(next);
+  };
+
   return (
-    <DarkModeContext.Provider value={{ dark, toggle }}>
+    <DarkModeContext.Provider value={{ dark, toggle, setMode }}>
       {children}
     </DarkModeContext.Provider>
   );
