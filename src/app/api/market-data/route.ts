@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
-const SUPPORTED_SYMBOLS = ["XAU/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
+const SUPPORTED_SYMBOLS = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
 
 function generateDummy(symbol: string) {
   const basePrices: Record<string, number> = {
-    "XAU/USD": 2200,
+    "XAUT/USD": 2350,
     "BTC/USD": 65000,
     "ETH/USD": 3500,
     "SOL/USD": 150,
@@ -41,10 +41,51 @@ function generateDummy(symbol: string) {
   };
 }
 
+// CoinMarketCap fetch for XAUT/USD
+async function fetchCoinMarketCap(symbol: string, apiKey: string) {
+  const cmcSymbol = symbol === "XAUT/USD" ? "XAUT" : symbol.replace("/", "");
+  const url = `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`;
+  const res = await fetch(url, {
+    headers: { 'X-CMC_PRO_API_KEY': apiKey },
+    next: { revalidate: 30 }
+  });
+  if (!res.ok) throw new Error(`CoinMarketCap error: ${res.status}`);
+  const data = await res.json();
+  const coin = data.data[cmcSymbol][0];
+  const price = coin.quote.USD.price;
+  const change = coin.quote.USD.percent_change_24h;
+  // Generate dummy history (CMc doesn't provide free historical)
+  const now = new Date();
+  const history: any[] = [];
+  let histPrice = price;
+  for (let i = 0; i < 24; i++) {
+    const time = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
+    histPrice = histPrice + (Math.random() - 0.5) * (price * 0.02);
+    histPrice = Math.max(histPrice, 0.1);
+    history.push({
+      time: time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      price: Number(histPrice.toFixed(2)),
+      datetime: time.toISOString(),
+    });
+  }
+  return {
+    symbol,
+    current: {
+      price: Number(price.toFixed(2)),
+      change: Number(change.toFixed(2)),
+      changePercent: Number(change.toFixed(2)),
+      high: Number((price * 1.02).toFixed(2)),
+      low: Number((price * 0.98).toFixed(2)),
+    },
+    history,
+  };
+}
+
 export async function GET(request: Request) {
-  const apiKey = process.env.TWELVEDATA_API_KEY;
+  const twelveApiKey = process.env.TWELVEDATA_API_KEY;
+  const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
   const { searchParams } = new URL(request.url);
-  const symbol = searchParams.get("symbol") || "XAU/USD";
+  const symbol = searchParams.get("symbol") || "XAUT/USD";
 
   if (!SUPPORTED_SYMBOLS.includes(symbol)) {
     return NextResponse.json(
@@ -53,15 +94,26 @@ export async function GET(request: Request) {
     );
   }
 
-  // If no API key, return dummy data immediately
-  if (!apiKey) {
+  // Use CoinMarketCap for XAUT/USD if cmc API key available
+  if (symbol === "XAUT/USD" && cmcApiKey) {
+    try {
+      return NextResponse.json(await fetchCoinMarketCap(symbol, cmcApiKey));
+    } catch (error) {
+      console.error(`CoinMarketCap error for ${symbol}:`, error);
+      // fallback to dummy if CMC fails
+      return NextResponse.json(generateDummy(symbol));
+    }
+  }
+
+  // Fallback to TwelveData for other symbols (or if CMC key not set for XAUT)
+  if (!twelveApiKey) {
     console.warn(`TWELVEDATA_API_KEY not set, returning dummy data for ${symbol}`);
     return NextResponse.json(generateDummy(symbol));
   }
 
   try {
     const quoteRes = await fetch(
-      `https://api.twelvedata.com/quote?symbol=${symbol}&interval=1h&apikey=${apiKey}`,
+      `https://api.twelvedata.com/quote?symbol=${symbol}&interval=1h&apikey=${twelveApiKey}`,
       { next: { revalidate: 30 } }
     );
 
@@ -77,7 +129,7 @@ export async function GET(request: Request) {
     }
 
     const tsRes = await fetch(
-      `https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1h&outputsize=24&apikey=${apiKey}`,
+      `https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1h&outputsize=24&apikey=${twelveApiKey}`,
       { next: { revalidate: 30 } }
     );
 

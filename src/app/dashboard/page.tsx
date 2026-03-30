@@ -22,7 +22,7 @@ interface User {
 }
 
 const CRYPTO_PAIRS = [
-  { symbol: "XAU/USD", name: "Gold" },
+  { symbol: "XAUT/USD", name: "Tether Gold" },
   { symbol: "BTC/USD", name: "Bitcoin" },
   { symbol: "ETH/USD", name: "Ethereum" },
   { symbol: "SOL/USD", name: "Solana" },

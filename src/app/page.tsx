@@ -78,11 +78,11 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold mb-2">Live Gold Price</h2>
-              <p className="text-gray-600">Real-time XAUUSD chart - updates every 30 seconds</p>
+              <h2 className="text-3xl font-bold mb-2">Live Tether Gold Price</h2>
+              <p className="text-gray-600">Real-time XAUT/USD chart - updates every 30 seconds</p>
             </div>
             <div className="rounded-lg border bg-white dark:bg-gray-800 p-6 shadow-sm">
-              <RealTimeChart symbol="XAU/USD" />
+              <RealTimeChart symbol="XAUT/USD" />
             </div>
           </div>
         </div>

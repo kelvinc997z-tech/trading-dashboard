@@ -107,7 +107,7 @@ function calculateBollingerBands(prices: number[], period: number = 20, stdDev: 
   return { upper, lower };
 }
 
-export default function AdvancedChart({ symbol = "XAU/USD", indicators = ["rsi", "macd"] }: AdvancedChartProps) {
+export default function AdvancedChart({ symbol = "XAUT/USD", indicators = ["rsi", "macd"] }: AdvancedChartProps) {
   const [data, setData] = useState<IndicatorData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showIndicators, setShowIndicators] = useState<Set<string>>(new Set(indicators));

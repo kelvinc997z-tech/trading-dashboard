@@ -32,7 +32,7 @@ interface RealTimeChartProps {
   symbol?: string;
 }
 
-export default function RealTimeChart({ symbol = "XAU/USD" }: RealTimeChartProps) {
+export default function RealTimeChart({ symbol = "XAUT/USD" }: RealTimeChartProps) {
   const [data, setData] = useState<MarketData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

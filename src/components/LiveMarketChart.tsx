@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-export default function LiveMarketChart({ symbol = "XAU/USD" }) {
+export default function LiveMarketChart({ symbol = "XAUT/USD" }) {
   const [data, setData] = useState<any[]>([]);
   const [current, setCurrent] = useState<number | null>(null);
   const [change, setChange] = useState<number>(0);
