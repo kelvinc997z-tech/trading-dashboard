@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Crown, Check, CreditCard, Smartphone } from "lucide-react";
 
 export default function PaymentPage() {

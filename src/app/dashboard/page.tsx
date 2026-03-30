@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Activity } from "lucide-react";
 import MarketOutlook from "@/components/MarketOutlook";
 import RealTimeChart from "@/components/RealTimeChart";
