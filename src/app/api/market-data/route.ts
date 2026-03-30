@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 const CRYPTO_SYMBOLS = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
 const SUPPORTED_SYMBOLS = CRYPTO_SYMBOLS;
 
+// Generate OHLC history and compute current stats
 function generateOHLC(symbol: string) {
   const basePrices: Record<string, number> = {
     "XAUT/USD": 2350,
@@ -13,7 +14,7 @@ function generateOHLC(symbol: string) {
   };
   const base = basePrices[symbol] || 100;
   const now = new Date();
-  const history: any[] = [];
+  const history: Array<{ time: string; open: number; high: number; low: number; close: number; volume: number }> = [];
   let lastClose = base + (Math.random() - 0.5) * 20;
   for (let i = 0; i < 24; i++) {
     const time = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
@@ -33,19 +34,22 @@ function generateOHLC(symbol: string) {
     });
     lastClose = close;
   }
+  // Compute change from previous close (use previous day if available)
   const current = history[history.length - 1];
+  const previous = history.length > 1 ? history[history.length - 2] : current;
+  const change = current.close - previous.close;
+  const changePercent = (change / previous.close) * 100;
   return {
     symbol,
     current: {
-      ...current,
+      close: current.close,
+      change: Number(change.toFixed(2)),
+      changePercent: Number(changePercent.toFixed(2)),
+      high: current.high,
+      low: current.low,
     },
     history,
   };
-}
-
-// Keep for backward compatibility? We'll replace with generateOHLC
-function generateDummy(symbol: string) {
-  return generateOHLC(symbol);
 }
 
 async function fetchCoinMarketCap(symbol: string, apiKey: string) {
@@ -59,15 +63,14 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string) {
   const data = await res.json();
   const coin = data.data[cmcSymbol][0];
   const price = coin.quote.USD.price;
-  const change = coin.quote.USD.percent_change_24h;
-  // Generate OHLC history based on current price (CMc doesn't provide free historical)
+  // Generate OHLC history based on current price
   const now = new Date();
-  const history: any[] = [];
+  const history: Array<{ time: string; open: number; high: number; low: number; close: number; volume: number }> = [];
   let lastClose = price;
   for (let i = 0; i < 24; i++) {
     const time = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
     const open = lastClose;
-    const close = open + (Math.random() - 0.5) * (price * 0.02);
+    let close = open + (Math.random() - 0.5) * (price * 0.02);
     const high = Math.max(open, close) + Math.random() * (price * 0.01);
     const low = Math.min(open, close) - Math.random() * (price * 0.01);
     history.push({
@@ -81,9 +84,18 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string) {
     lastClose = close;
   }
   const current = history[history.length - 1];
+  const previous = history.length > 1 ? history[history.length - 2] : current;
+  const change = current.close - previous.close;
+  const changePercent = (change / previous.close) * 100;
   return {
     symbol,
-    current,
+    current: {
+      close: current.close,
+      change: Number(change.toFixed(2)),
+      changePercent: Number(changePercent.toFixed(2)),
+      high: current.high,
+      low: current.low,
+    },
     history,
   };
 }
@@ -111,7 +123,7 @@ export async function GET(request: Request) {
       if (twelveApiKey) {
         console.warn(`Falling back to TwelveData for ${symbol}`);
       } else {
-        return NextResponse.json(generateDummy(symbol));
+        return NextResponse.json(generateOHLC(symbol));
       }
     }
   }
@@ -119,7 +131,7 @@ export async function GET(request: Request) {
   // Fallback to TwelveData for any symbol (if key exists)
   if (!twelveApiKey) {
     console.warn(`TWELVEDATA_API_KEY not set, returning dummy data for ${symbol}`);
-    return NextResponse.json(generateDummy(symbol));
+    return NextResponse.json(generateOHLC(symbol));
   }
 
   try {
@@ -134,7 +146,6 @@ export async function GET(request: Request) {
 
     const quoteData = await quoteRes.json();
 
-    // Check if TwelveData returned an error code (e.g. missing symbol)
     if (quoteData.code) {
       throw new Error(quoteData.message || "Twelvedata returned error");
     }
@@ -166,25 +177,28 @@ export async function GET(request: Request) {
     // If history empty, fallback to dummy
     if (history.length === 0) {
       console.warn(`Empty history from TwelveData for ${symbol}, using dummy`);
-      return NextResponse.json(generateDummy(symbol));
+      return NextResponse.json(generateOHLC(symbol));
     }
 
     const last = history[history.length - 1];
+    // Use TwelveData quote for change/percent if available, else compute from history
+    const change = parseFloat(quoteData.change) || (last.close - (history.length > 1 ? history[history.length - 2].close : last.close));
+    const changePercent = parseFloat(quoteData.percent_change) || ((change / (history.length > 1 ? history[history.length - 2].close : last.close)) * 100);
+
     return NextResponse.json({
       symbol,
       current: {
-        time: last.time,
-        open: parseFloat(quoteData.open) || last.open,
-        high: parseFloat(quoteData.high) || last.high,
-        low: parseFloat(quoteData.low) || last.low,
-        close: parseFloat(quoteData.close) || last.close,
-        volume: last.volume,
+        close: last.close,
+        change: Number(change.toFixed(2)),
+        changePercent: Number(changePercent.toFixed(2)),
+        high: last.high,
+        low: last.low,
       },
       history,
     });
   } catch (error) {
     console.error(`Error fetching market data for ${symbol}:`, error);
     // Fallback to dummy data so UI still shows something
-    return NextResponse.json(generateDummy(symbol));
+    return NextResponse.json(generateOHLC(symbol));
   }
 }

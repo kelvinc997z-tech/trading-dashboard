@@ -6,7 +6,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 interface MarketData {
   symbol: string;
   current: {
-    price: number;
+    close: number;
     change: number;
     changePercent: number;
     high: number;
@@ -14,7 +14,11 @@ interface MarketData {
   };
   history: Array<{
     time: string;
-    price: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume?: number;
   }>;
 }
 
@@ -63,10 +67,10 @@ export default function RealTimeChart({ symbol = "XAUT/USD" }: RealTimeChartProp
     );
   }
 
-  // Transform history for Recharts
+  // Transform history for Recharts (use close price)
   const chartData = data.history.map((h) => ({
     time: new Date(h.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-    price: h.price,
+    price: h.close,
   }));
 
   const isPositive = data.current.change >= 0;
