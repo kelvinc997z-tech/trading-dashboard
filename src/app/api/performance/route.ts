@@ -65,6 +65,11 @@ export async function GET(request: NextRequest) {
     return sum + (exit - entry);
   }, 0) / trades.length;
 
+  // Precompute best/worst trades to avoid complex inline expression
+  const pnlValues = trades.map(t => Number(t.pnl) || 0);
+  const bestTradeVal = Math.max(...pnlValues);
+  const worstTradeVal = Math.min(...pnlValues);
+
   const result = {
     period,
     totalTrades: trades.length,
@@ -76,8 +81,8 @@ export async function GET(request: NextRequest) {
     maxDrawdown: Number(maxDrawdown.toFixed(2)),
     totalPnL: Number(totalPnL.toFixed(2)),
     avgTradePnL: Number((totalPnL / trades.length).toFixed(2)),
-    bestTrade: Number(Math.max(...trades.map(t => Number(t.pnl) || 0)).toFixed(2),
-    worstTrade: Number(Math.min(...trades.map(t => Number(t.pnl) || 0)).toFixed(2),
+    bestTrade: Number(bestTradeVal.toFixed(2)),
+    worstTrade: Number(worstTradeVal.toFixed(2)),
     avgHoldingMs: Math.round(avgHolding),
   };
 
