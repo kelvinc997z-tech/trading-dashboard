@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 const CRYPTO_SYMBOLS = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
 const SUPPORTED_SYMBOLS = CRYPTO_SYMBOLS;
 
-function generateDummy(symbol: string) {
+function generateOHLC(symbol: string) {
   const basePrices: Record<string, number> = {
     "XAUT/USD": 2350,
     "BTC/USD": 65000,
@@ -14,35 +14,40 @@ function generateDummy(symbol: string) {
   const base = basePrices[symbol] || 100;
   const now = new Date();
   const history: any[] = [];
-  let price = base + (Math.random() - 0.5) * 20;
+  let lastClose = base + (Math.random() - 0.5) * 20;
   for (let i = 0; i < 24; i++) {
     const time = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
-    // Random walk
-    price = price + (Math.random() - 0.5) * 5;
-    // Clamp to positive
-    price = Math.max(price, 0.1);
+    const open = lastClose;
+    let close = open + (Math.random() - 0.5) * base * 0.02;
+    close = Math.max(close, 0.1);
+    const high = Math.max(open, close) + Math.random() * base * 0.01;
+    const low = Math.min(open, close) - Math.random() * base * 0.01;
+    const volume = Math.floor(Math.random() * 1000) + 100;
     history.push({
-      time: time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      price: Number(price.toFixed(2)),
-      datetime: time.toISOString(),
+      time: time.toISOString(),
+      open: Number(open.toFixed(2)),
+      high: Number(high.toFixed(2)),
+      low: Number(low.toFixed(2)),
+      close: Number(close.toFixed(2)),
+      volume,
     });
+    lastClose = close;
   }
-  const currentPrice = history[history.length - 1].price;
-  const change = Number(((Math.random() - 0.5) * 10).toFixed(2));
+  const current = history[history.length - 1];
   return {
     symbol,
     current: {
-      price: currentPrice,
-      change,
-      changePercent: Number(((change / currentPrice) * 100).toFixed(2)),
-      high: Number((currentPrice + Math.random() * 10).toFixed(2)),
-      low: Number((currentPrice - Math.random() * 10).toFixed(2)),
+      ...current,
     },
     history,
   };
 }
 
-// CoinMarketCap fetch for XAUT/USD
+// Keep for backward compatibility? We'll replace with generateOHLC
+function generateDummy(symbol: string) {
+  return generateOHLC(symbol);
+}
+
 async function fetchCoinMarketCap(symbol: string, apiKey: string) {
   const cmcSymbol = symbol === "XAUT/USD" ? "XAUT" : symbol.replace("/", "");
   const url = `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`;
@@ -55,29 +60,30 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string) {
   const coin = data.data[cmcSymbol][0];
   const price = coin.quote.USD.price;
   const change = coin.quote.USD.percent_change_24h;
-  // Generate dummy history (CMc doesn't provide free historical)
+  // Generate OHLC history based on current price (CMc doesn't provide free historical)
   const now = new Date();
   const history: any[] = [];
-  let histPrice = price;
+  let lastClose = price;
   for (let i = 0; i < 24; i++) {
     const time = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
-    histPrice = histPrice + (Math.random() - 0.5) * (price * 0.02);
-    histPrice = Math.max(histPrice, 0.1);
+    const open = lastClose;
+    const close = open + (Math.random() - 0.5) * (price * 0.02);
+    const high = Math.max(open, close) + Math.random() * (price * 0.01);
+    const low = Math.min(open, close) - Math.random() * (price * 0.01);
     history.push({
-      time: time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      price: Number(histPrice.toFixed(2)),
-      datetime: time.toISOString(),
+      time: time.toISOString(),
+      open: Number(open.toFixed(2)),
+      high: Number(high.toFixed(2)),
+      low: Number(low.toFixed(2)),
+      close: Number(close.toFixed(2)),
+      volume: Math.floor(Math.random() * 1000) + 100,
     });
+    lastClose = close;
   }
+  const current = history[history.length - 1];
   return {
     symbol,
-    current: {
-      price: Number(price.toFixed(2)),
-      change: Number(change.toFixed(2)),
-      changePercent: Number(change.toFixed(2)),
-      high: Number((price * 1.02).toFixed(2)),
-      low: Number((price * 0.98).toFixed(2)),
-    },
+    current,
     history,
   };
 }
@@ -149,9 +155,12 @@ export async function GET(request: Request) {
     }
 
     const history = (tsData.values || []).map((v: any) => ({
-      time: new Date(v.datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      price: parseFloat(v.close),
-      datetime: v.datetime,
+      time: new Date(v.datetime).toISOString(),
+      open: parseFloat(v.open),
+      high: parseFloat(v.high),
+      low: parseFloat(v.low),
+      close: parseFloat(v.close),
+      volume: parseFloat(v.volume) || 0,
     })).reverse();
 
     // If history empty, fallback to dummy
@@ -160,14 +169,16 @@ export async function GET(request: Request) {
       return NextResponse.json(generateDummy(symbol));
     }
 
+    const last = history[history.length - 1];
     return NextResponse.json({
       symbol,
       current: {
-        price: parseFloat(quoteData.close) || history[history.length - 1].price,
-        change: parseFloat(quoteData.change) || 0,
-        changePercent: parseFloat(quoteData.percent_change) || 0,
-        high: parseFloat(quoteData.high) || Math.max(...history.map((h: any) => h.price)),
-        low: parseFloat(quoteData.low) || Math.min(...history.map((h: any) => h.price)),
+        time: last.time,
+        open: parseFloat(quoteData.open) || last.open,
+        high: parseFloat(quoteData.high) || last.high,
+        low: parseFloat(quoteData.low) || last.low,
+        close: parseFloat(quoteData.close) || last.close,
+        volume: last.volume,
       },
       history,
     });
