@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 interface Article {
   headline: string;
@@ -25,7 +24,8 @@ export default function SentimentClient() {
       const json = await res.json();
       setData(json);
     } catch (e) {
-      toast.error("Failed to fetch sentiment");
+      console.error("Failed to fetch sentiment:", e);
+      alert("Failed to fetch sentiment");
     } finally {
       setLoading(false);
     }
