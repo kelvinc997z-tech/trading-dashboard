@@ -45,8 +45,11 @@ Fiturnya:
 - Protected dashboard with real-time trade table
 - Multi-pair live price charts (XAU/USD, BTC/USD, ETH/USD, SOL/USD, XRP/USD)
 - Market Outlook component (daily signals)
+- Economic Calendar (Finnhub API)
+- Trading Journal (full CRUD, auto-close on TP/SL)
 - Responsive design (mobile & desktop)
 - Dark mode toggle (via system preference)
+- CoinMarketCap API integration for real-time crypto prices
 
 ### 🚧 Coming Soon (Quant AI Roadmap
 - **Phase 1: Market Prediction Engine**
@@ -62,14 +65,14 @@ Fiturnya:
   - Strategy backtesting, Sharpe/Sortino metrics, walk-forward optimization
 
 ### 📋 Next Implementation Queue
-1. Economic Calendar
-2. Trading Journal
-3. Custom Alerts
-4. Multi-Timeframe Analysis
-5. Correlation Matrix
-6. Sentiment Analysis (crypto/forex news)
-7. Performance Analytics
-8. Quant AI Engine (ML predictions)
+1. ⏳ Custom Alerts
+2. ⏳ Multi-Timeframe Analysis
+3. ⏳ Correlation Matrix
+4. ⏳ Sentiment Analysis (crypto/forex news)
+5. ⏳ Performance Analytics
+6. ⏳ Quant AI Engine (ML predictions)
+
+**Note:** Economic Calendar and Trading Journal have been implemented (see Completed Features).
 
 ---
 
@@ -111,6 +114,7 @@ cp .env.example .env.local
 | `RESEND_API_KEY` | API key from Resend dashboard |
 | `RESEND_VERIFY_URL` | Frontend verify URL (e.g. `http://localhost:3000/api/auth/verify`) |
 | `DATABASE_URL` | `file:./dev.db` for SQLite dev; Postgres URL for production |
+| `COINMARKETCAP_API_KEY` | (Optional) CoinMarketCap Pro API key for real-time crypto prices. Without this, dummy data is used. |
 
 ### 3. Initialize Database
 
