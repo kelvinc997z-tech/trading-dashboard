@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 interface Alert {
   id: string;
@@ -81,7 +80,7 @@ export default function AlertsPage() {
       const res = await fetch("/api/alerts");
       if (res.ok) setAlerts(await res.json());
     } catch (e) {
-      toast.error("Failed to load alerts");
+      console.error("Failed to load alerts:", e);
     } finally {
       setLoading(false);
     }
@@ -109,12 +108,12 @@ export default function AlertsPage() {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        toast.success("Alert created");
+        alert("Alert created");
         setShowForm(false);
         setForm({ type: "price", symbol: "", condition: "above", value: "", indicator: "", timeframe: "1h", notificationChannel: "email" });
         fetchAlerts();
       } else {
-        toast.error("Failed to create alert");
+        alert("Failed to create alert");
       }
     } catch (e) {
       toast.error("Error creating alert");
@@ -128,14 +127,14 @@ export default function AlertsPage() {
       body: JSON.stringify({ isActive: !isActive }),
     });
     fetchAlerts();
-    toast.success(`Alert ${isActive ? "disabled" : "enabled"}`);
+    console.log(`Alert ${isActive ? "disabled" : "enabled"}`);
   };
 
   const deleteAlert = async (id: string) => {
     if (!confirm("Delete this alert?")) return;
     await fetch(`/api/alerts/${id}`, { method: "DELETE" });
     fetchAlerts();
-    toast.success("Alert deleted");
+    console.log("Alert deleted");
   };
 
   return (

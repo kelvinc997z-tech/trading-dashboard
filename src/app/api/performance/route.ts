@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     totalPnL: Number(totalPnL.toFixed(2)),
     avgTradePnL: Number((totalPnL / trades.length).toFixed(2)),
     bestTrade: Number(Math.max(...trades.map(t => Number(t.pnl) || 0)).toFixed(2),
-    worstTrade: Number(Math.min(...trades.map(t => Number(t.pnl) || 0)).toFixed(2)),
+    worstTrade: Number(Math.min(...trades.map(t => Number(t.pnl) || 0)).toFixed(2),
     avgHoldingMs: Math.round(avgHolding),
   };
 
