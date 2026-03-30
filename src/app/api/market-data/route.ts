@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-const SUPPORTED_SYMBOLS = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
+const CRYPTO_SYMBOLS = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
+const SUPPORTED_SYMBOLS = CRYPTO_SYMBOLS;
 
 function generateDummy(symbol: string) {
   const basePrices: Record<string, number> = {
@@ -94,18 +95,22 @@ export async function GET(request: Request) {
     );
   }
 
-  // Use CoinMarketCap for XAUT/USD if cmc API key available
-  if (symbol === "XAUT/USD" && cmcApiKey) {
+  // Use CoinMarketCap for all crypto symbols if API key available
+  if (cmcApiKey && CRYPTO_SYMBOLS.includes(symbol)) {
     try {
       return NextResponse.json(await fetchCoinMarketCap(symbol, cmcApiKey));
     } catch (error) {
       console.error(`CoinMarketCap error for ${symbol}:`, error);
-      // fallback to dummy if CMC fails
-      return NextResponse.json(generateDummy(symbol));
+      // fallback to TwelveData if CMC fails and TwelveData key exists
+      if (twelveApiKey) {
+        console.warn(`Falling back to TwelveData for ${symbol}`);
+      } else {
+        return NextResponse.json(generateDummy(symbol));
+      }
     }
   }
 
-  // Fallback to TwelveData for other symbols (or if CMC key not set for XAUT)
+  // Fallback to TwelveData for any symbol (if key exists)
   if (!twelveApiKey) {
     console.warn(`TWELVEDATA_API_KEY not set, returning dummy data for ${symbol}`);
     return NextResponse.json(generateDummy(symbol));

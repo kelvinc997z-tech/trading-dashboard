@@ -70,9 +70,9 @@ export async function GET() {
         let currentPrice: number;
         let history: any[] = [];
 
-        // Use CoinMarketCap for XAUT/USD if available
-        if (symbol === "XAUT/USD" && cmcApiKey) {
-          const cmcSymbol = "XAUT";
+        // Use CoinMarketCap for all crypto symbols if available
+        if (cmcApiKey) {
+          const cmcSymbol = symbol === "XAUT/USD" ? "XAUT" : symbol.replace("/", "");
           const res = await fetch(`https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`, {
             headers: { 'X-CMC_PRO_API_KEY': cmcApiKey },
             next: { revalidate: 30 }
@@ -93,7 +93,7 @@ export async function GET() {
             });
           }
         } else {
-          // Use TwelveData for others
+          // Fallback to TwelveData for all symbols if CMC not available
           if (!twelveApiKey) continue;
           const [quoteRes, tsRes] = await Promise.all([
             fetch(`https://api.twelvedata.com/quote?symbol=${symbol}&interval=1h&apikey=${twelveApiKey}`),
