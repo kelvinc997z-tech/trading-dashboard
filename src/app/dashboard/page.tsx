@@ -80,7 +80,17 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Back to Home */}
+      <div className="px-4">
+        <Link href="/" className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition">
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Home
+        </Link>
+      </div>
+
+      <div className="flex justify-between items-center px-4">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold tracking-tight">Trading Dashboard</h1>
           {user?.role === "pro" ? (
