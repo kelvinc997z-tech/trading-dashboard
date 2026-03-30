@@ -106,7 +106,7 @@ export default function Dashboard() {
           const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(sym)}`);
           if (res.ok) {
             const data = await res.json();
-            return { symbol: sym, price: data.current?.price };
+            return { symbol: sym, price: data.current?.price ?? data.current?.close ?? null };
           }
         } catch (e) {}
         return null;

@@ -41,6 +41,7 @@ function generateOHLC(symbol: string) {
   return {
     symbol,
     current: {
+      price: current.close,
       close: current.close,
       change: Number(change.toFixed(2)),
       changePercent: Number(changePercent.toFixed(2)),
@@ -90,6 +91,7 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string) {
   return {
     symbol,
     current: {
+      price: current.close,
       close: current.close,
       change: Number(change.toFixed(2)),
       changePercent: Number(changePercent.toFixed(2)),

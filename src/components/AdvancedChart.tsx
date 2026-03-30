@@ -140,14 +140,14 @@ export default function AdvancedChart({ symbol = "XAUT/USD", indicators = ["rsi"
         }
 
         if (result.current) {
-          setCurrentPrice(result.current.price);
-          setPriceChange(result.current.changePercent || 0);
+          setCurrentPrice(result.current.price ?? result.current.close ?? null);
+          setPriceChange(result.current.changePercent ?? 0);
         }
         
         const prices = result.history.map((h: any) => h.price);
-        const rsi = calculateRSI(prices, 14);
-        const { macd, signal: macdSignal } = calculateMACD(prices, 12, 26, 9);
-        const { upper, lower } = calculateBollingerBands(prices, 20, 2);
+        const rsi = prices.length >= 15 ? calculateRSI(prices, 14) : [];
+        const { macd, signal: macdSignal } = prices.length >= 27 ? calculateMACD(prices, 12, 26, 9) : { macd: [], signal: [] };
+        const { upper, lower } = prices.length >= 20 ? calculateBollingerBands(prices, 20, 2) : { upper: [], lower: [] };
         
         const enrichedData = result.history.map((h: any, i: number) => {
           const enriched: IndicatorData = {

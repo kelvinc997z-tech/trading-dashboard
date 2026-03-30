@@ -29,7 +29,8 @@ export default function CandlestickChart({ symbol, height = 400 }: CandlestickCh
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
       if (data.current) {
-        setCurrentPrice(data.current.price ?? data.current.close);
+        const price = data.current.price ?? data.current.close;
+        setCurrentPrice(price ?? null);
         setChange(data.current.changePercent ?? 0);
       }
       const candles: CandlestickData[] = data.history.map((h: any) => ({
