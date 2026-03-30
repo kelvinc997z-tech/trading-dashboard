@@ -1,44 +1,32 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useCallback } from "react";
 
-interface MarketData {
+interface CandlestickData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number;
+}
+
+interface CandlestickChartProps {
   symbol: string;
-  current: {
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume?: number;
-  };
-  history: Array<{
-    time: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume?: number;
-  }>;
+  height?: number;
 }
 
-interface RealTimeChartProps {
-  symbol?: string;
-}
-
-export default function RealTimeChart({ symbol = "XAUT/USD" }: RealTimeChartProps) {
+export default function CandlestickChart({ symbol, height = 400 }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const seriesRef = useRef<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: MarketData = await res.json();
-      if (!data.history?.length) throw new Error("No historical data");
-      const candles = data.history.map((h) => ({
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      const candles: CandlestickData[] = data.history.map((h: any) => ({
         time: Math.floor(new Date(h.time).getTime() / 1000),
         open: h.open,
         high: h.high,
@@ -49,13 +37,10 @@ export default function RealTimeChart({ symbol = "XAUT/USD" }: RealTimeChartProp
       if (seriesRef.current) {
         seriesRef.current.setData(candles);
       }
-      setError(null);
-    } catch (err: any) {
-      setError(err.message || "Failed to load");
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error(err);
     }
-  };
+  }, [symbol]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -66,7 +51,7 @@ export default function RealTimeChart({ symbol = "XAUT/USD" }: RealTimeChartProp
       const { createChart, ColorType } = mod;
       const chart = createChart(containerRef.current!, {
         width: containerRef.current!.clientWidth,
-        height: 400,
+        height,
         layout: {
           background: { type: ColorType.Solid, color: 'transparent' },
           textColor: '#d1d4dc',
@@ -97,12 +82,12 @@ export default function RealTimeChart({ symbol = "XAUT/USD" }: RealTimeChartProp
 
       const handleResize = () => {
         if (containerRef.current) {
-          chart.applyOptions({ width: containerRef.current.clientWidth, height: 400 });
+          chart.applyOptions({ width: containerRef.current.clientWidth, height });
         }
       };
       window.addEventListener('resize', handleResize);
 
-      loadData();
+      fetchData();
 
       return () => {
         mounted = false;
@@ -112,28 +97,12 @@ export default function RealTimeChart({ symbol = "XAUT/USD" }: RealTimeChartProp
     });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol]);
+  }, [symbol, height]);
 
   useEffect(() => {
-    const interval = setInterval(loadData, 30000);
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, [symbol]);
+  }, [fetchData]);
 
-  if (loading) {
-    return (
-      <div className="h-64 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="h-64 flex items-center justify-center text-gray-500 text-sm">
-        {error}
-      </div>
-    );
-  }
-
-  return <div ref={containerRef} style={{ width: '100%', height: 400 }} />;
+  return <div ref={containerRef} style={{ width: '100%', height }} />;
 }
