@@ -138,7 +138,7 @@ export default function DashboardPage() {
   // Helper: base prices for fallback
   function basePriceForSymbol(symbol: string): number {
     const base: Record<string, number> = {
-      XAUUSD: 4570,
+      "XAUT/USD": 2350,
       USOIL: 88,
       "BTC/USD": 68000,
       "SOL/USD": 170,
@@ -158,7 +158,7 @@ export default function DashboardPage() {
 
   // Symbol metadata for display
   const symbolInfo: Record<string, { name: string; icon: string; color: string }> = {
-    XAUUSD: { name: "Gold (XAUUSD)", icon: "🥇", color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600" },
+    "XAUT/USD": { name: "Tether Gold (XAUT/USD)", icon: "🥇", color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600" },
     USOIL: { name: "US Oil (WTI)", icon: "🛢️", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
     "BTC/USD": { name: "Bitcoin", icon: "₿", color: "bg-orange-100 dark:bg-orange-900/30 text-orange-600" },
     "SOL/USD": { name: "Solana", icon: "◎", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600" },
@@ -259,7 +259,7 @@ export default function DashboardPage() {
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Charts</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TradingViewChart symbol="FOREXCOM:XAUUSD" height={400} />
+            <TradingViewChart symbol="BITFINEX:XAUTUSD" height={400} />
             <TradingViewChart symbol="FOREXCOM:USOIL" height={400} />
             <TradingViewChart symbol="BINANCE:BTCUSDT" height={400} />
             <TradingViewChart symbol="BINANCE:ETHUSDT" height={400} />

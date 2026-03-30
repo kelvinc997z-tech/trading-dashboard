@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const SYMBOL_LABELS: Record<string, string> = {
-  "XAUUSD": "Gold (XAU/USD)",
+  "XAUT/USD": "Tether Gold (XAUT)",
   "USOIL": "US Oil (WTI)",
   "BTC/USD": "Bitcoin",
   "ETH/USD": "Ethereum",
@@ -26,7 +26,7 @@ function generateSignalFromIndicator(symbol: string, indicator: any, entryPrice?
   // Base volatility for TP/SL (from mockData logic, but we'll compute from recent range if available)
   // For now use fixed offsets per symbol type
   const offsets: Record<string, { tp: number; sl: number }> = {
-    "XAUUSD": { tp: 50, sl: 30 },
+    "XAUT/USD": { tp: 50, sl: 30 },
     "USOIL": { tp: 3, sl: 2 },
     "BTC/USD": { tp: 1000, sl: 800 },
     "ETH/USD": { tp: 120, sl: 80 },

@@ -17,7 +17,7 @@ interface MarketData {
 }
 
 const SYMBOL_LABELS: Record<string, string> = {
-  "XAUUSD": "Gold (XAU/USD)",
+  "XAUT/USD": "Tether Gold (XAUT)",
   "USOIL": "US Oil (WTI)",
   "BTC/USD": "Bitcoin",
   "ETH/USD": "Ethereum",

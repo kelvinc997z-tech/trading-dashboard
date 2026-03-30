@@ -7,14 +7,9 @@ import { readUsers } from "@/lib/db";
 
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
 
-const SYMBOL_MAP: Record<string, string> = {
-  "XAUUSD": "XAU/USD",
-  "USOIL": "WTI", // WTI crude oil
-  "BTC/USD": "BTC/USD",
-  "ETH/USD": "ETH/USD",
-  "SOL/USD": "SOL/USD",
-  "XRP/USD": "XRP/USD",
-  "KAS/USDT": "KAS/USDT",
+// Alpha Vantage symbols (forex, stocks, indices) – gold via CoinMarketCap
+const ALPHA_VANTAGE_SYMBOLS: Record<string, string> = {
+  "USOIL": "WTI",
   "NASDAQ": "^IXIC",
   "SP500": "^GSPC",
   "AAPL": "AAPL",
@@ -24,22 +19,52 @@ const SYMBOL_MAP: Record<string, string> = {
   "TSM": "TSM",
 };
 
-// Free plan pairs restriction (3 major pairs + can add more)
-const FREE_PAIRS = ["XAUUSD", "USOIL", "BTC/USD"];
+// CoinMarketCap symbols (cryptocurrencies + XAUT)
+const COINMARKETCAP_SYMBOLS: Record<string, string> = {
+  "BTC/USD": "BTC",
+  "ETH/USD": "ETH",
+  "SOL/USD": "SOL",
+  "XRP/USD": "XRP",
+  "KAS/USDT": "KAS",
+  "XAUT/USD": "XAUT"
+};
+
+// Combined symbol map
+const SYMBOL_MAP: Record<string, string> = {
+  "XAUT/USD": "XAUT",
+  "USOIL": "WTI",
+  "NASDAQ": "^IXIC",
+  "SP500": "^GSPC",
+  "AAPL": "AAPL",
+  "NVDA": "NVDA",
+  "AMD": "AMD",
+  "GOOGL": "GOOGL",
+  "TSM": "TSM",
+  // Crypto via CoinMarketCap
+  "BTC/USD": "BTC",
+  "ETH/USD": "ETH",
+  "SOL/USD": "SOL",
+  "XRP/USD": "XRP",
+  "KAS/USDT": "KAS",
+};
+
+// Free plan restriction
+const FREE_PAIRS = ["XAUT/USD", "USOIL", "BTC/USD"];
 
 // Cache file location
 const dataDir = path.join(process.cwd(), 'data');
 const cacheFile = path.join(dataDir, 'market_data_cache.json');
 
-// Realistic market prices (March 2026 - based on current market levels)
+// Realistic market prices (March 2026)
 const DUMMY_PRICES: Record<string, { price: number; change: number; changePercent: number }> = {
-  "XAUUSD": { price: 2350.75, change: 12.50, changePercent: 0.53 },
   "USOIL": { price: 82.45, change: -1.25, changePercent: -1.49 },
+  // Crypto
   "BTC/USD": { price: 68500.00, change: 1250.00, changePercent: 1.86 },
   "ETH/USD": { price: 3850.00, change: 85.00, changePercent: 2.26 },
   "SOL/USD": { price: 175.20, change: 8.45, changePercent: 5.07 },
   "XRP/USD": { price: 0.6250, change: 0.0150, changePercent: 2.46 },
   "KAS/USDT": { price: 0.1200, change: 0.0050, changePercent: 4.35 },
+  "XAUT/USD": { price: 2350.75, change: 12.50, changePercent: 0.53 },
   // Stocks & Indices
   "NASDAQ": { price: 20500.50, change: 125.30, changePercent: 0.61 },
   "SP500": { price: 5230.15, change: 18.70, changePercent: 0.36 },
@@ -70,55 +95,105 @@ async function setCache(data: Record<string, any>) {
 }
 
 async function fetchMarketDataFromAPI(): Promise<Record<string, { price: number; change: number; changePercent: number }>> {
-  const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
+  const alphaKey = process.env.ALPHA_VANTAGE_API_KEY;
+  const cmcKey = process.env.COINMARKETCAP_API_KEY;
   const results: Record<string, { price: number; change: number; changePercent: number }> = {};
 
-  // If no API key, return all dummy data immediately
-  if (!apiKey) {
-    console.warn("Alpha Vantage API key not configured, using dummy data");
+  // If no API keys at all, return all dummy data immediately
+  if (!alphaKey && !cmcKey) {
+    console.warn("No API keys configured (Alpha Vantage or CoinMarketCap), using dummy data");
     return DUMMY_PRICES;
   }
 
-  const fetchPromises = Object.entries(SYMBOL_MAP).map(async ([originalSymbol, avSymbol]) => {
-    try {
-      const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(avSymbol)}&apikey=${apiKey}`;
-      const res = await fetch(url, { 
-        next: { revalidate: 10 }, // refresh every 10s for near real-time
-      });
-      
-      if (!res.ok) {
-        console.error(`Failed to fetch ${avSymbol}: ${res.status} ${res.statusText}`);
+  const fetchPromises = Object.entries(SYMBOL_MAP).map(async ([originalSymbol, targetSymbol]) => {
+    const isCrypto = !!COINMARKETCAP_SYMBOLS[originalSymbol];
+    
+    if (isCrypto && cmcKey) {
+      // Fetch from CoinMarketCap
+      try {
+        const url = `https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=${encodeURIComponent(targetSymbol)}`;
+        const res = await fetch(url, {
+          headers: { 'X-CMC_PRO_API_KEY': cmcKey },
+          next: { revalidate: 10 }, // refresh every 10s
+        });
+        
+        if (!res.ok) {
+          console.error(`Failed to fetch CMC ${targetSymbol}: ${res.status} ${res.statusText}`);
+          return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
+        }
+        
+        const data = await res.json();
+        const coinData = data.data?.[targetSymbol];
+        if (!coinData) {
+          console.warn(`No data for ${targetSymbol} from CMC`);
+          return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
+        }
+        
+        const quote = coinData.quote?.USD;
+        if (!quote) {
+          console.warn(`No USD quote for ${targetSymbol} from CMC`);
+          return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
+        }
+        
+        const price = quote.price ?? 0;
+        const percentChange = quote.percent_change_24h ?? 0;
+        const change = price * (percentChange / 100);
+        
+        return {
+          symbol: originalSymbol,
+          price,
+          change,
+          changePercent: percentChange,
+        };
+      } catch (err) {
+        console.error(`CMC fetch error for ${originalSymbol}:`, err);
+        return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
+      }
+    } else {
+      // Alpha Vantage path (for stocks, indices, forex)
+      if (!alphaKey) {
         return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
       }
       
-      const data = await res.json();
-      
-      // Check for API limits
-      if (data["Note"] || data.Information) {
-        console.warn(`API limit/info for ${avSymbol}:`, data["Note"] || data.Information);
+      try {
+        const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(targetSymbol)}&apikey=${alphaKey}`;
+        const res = await fetch(url, { 
+          next: { revalidate: 10 },
+        });
+        
+        if (!res.ok) {
+          console.error(`Failed to fetch Alpha Vantage ${targetSymbol}: ${res.status} ${res.statusText}`);
+          return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
+        }
+        
+        const data = await res.json();
+        
+        if (data["Note"] || data.Information) {
+          console.warn(`API limit/info for ${targetSymbol}:`, data["Note"] || data.Information);
+          return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
+        }
+        
+        const quote = data["Global Quote"];
+        if (!quote) {
+          console.warn(`No quote data for ${targetSymbol}, using dummy`);
+          return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
+        }
+        
+        const price = parseFloat(quote["05. price"]);
+        const change = parseFloat(quote["09. change"] || "0");
+        const changePercentStr = quote["10. change percent"]?.replace("%", "") || "0";
+        const changePercent = parseFloat(changePercentStr);
+        
+        return {
+          symbol: originalSymbol,
+          price: isNaN(price) ? DUMMY_PRICES[originalSymbol].price : price,
+          change: isNaN(change) ? DUMMY_PRICES[originalSymbol].change : change,
+          changePercent: isNaN(changePercent) ? DUMMY_PRICES[originalSymbol].changePercent : changePercent,
+        };
+      } catch (err) {
+        console.error(`Alpha Vantage exception for ${targetSymbol}:`, err);
         return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
       }
-      
-      const quote = data["Global Quote"];
-      if (!quote) {
-        console.warn(`No quote data for ${avSymbol}, using dummy`);
-        return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
-      }
-      
-      const price = parseFloat(quote["05. price"]);
-      const change = parseFloat(quote["09. change"] || "0");
-      const changePercentStr = quote["10. change percent"]?.replace("%", "") || "0";
-      const changePercent = parseFloat(changePercentStr);
-      
-      return {
-        symbol: originalSymbol,
-        price: isNaN(price) ? DUMMY_PRICES[originalSymbol].price : price,
-        change: isNaN(change) ? DUMMY_PRICES[originalSymbol].change : change,
-        changePercent: isNaN(changePercent) ? DUMMY_PRICES[originalSymbol].changePercent : changePercent,
-      };
-    } catch (err) {
-      console.error(`Exception for ${avSymbol}:`, err);
-      return { symbol: originalSymbol, ...DUMMY_PRICES[originalSymbol] };
     }
   });
 

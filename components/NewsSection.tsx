@@ -105,7 +105,7 @@ export default function NewsSection() {
         title: "Gold prices surge to new all-time highs on geopolitical tensions",
         source: "Bloomberg",
         time: "10 min ago",
-        summary: "XAUUSD reach $4570 as safe-haven demand increases amid Middle East concerns.",
+        summary: "XAUT/USD reach $4570 as safe-haven demand increases amid Middle East concerns.",
         url: "#",
         category: "breaking",
       },

@@ -20,7 +20,7 @@ const MOCK_NEWS: NewsItem[] = [
     title: "Gold prices surge to new all-time highs on geopolitical tensions",
     source: "World Monitor",
     time: new Date().toLocaleTimeString(),
-    summary: "XAUUSD reaches $2,350 as safe-haven demand increases amid global uncertainties.",
+    summary: "XAUT/USD reaches $2,350 as safe-haven demand increases amid global uncertainties.",
     url: "https://world-monitor.app",
     category: "breaking",
   },

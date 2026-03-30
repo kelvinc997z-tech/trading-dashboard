@@ -11,13 +11,13 @@ export const dynamic = "force-dynamic";
 const ALPHA_VANTAGE_BASE = "https://www.alphavantage.co/query";
 
 const SYMBOL_MAP: Record<string, string> = {
-  "XAUUSD": "XAU/USD",
+  "XAUT/USD": "XAUT",
   "USOIL": "WTI",
-  "BTC/USD": "BTC/USD",
-  "ETH/USD": "ETH/USD",
-  "SOL/USD": "SOL/USD",
-  "XRP/USD": "XRP/USD",
-  "KAS/USDT": "KAS/USDT",
+  "BTC/USD": "BTC",
+  "ETH/USD": "ETH",
+  "SOL/USD": "SOL",
+  "XRP/USD": "XRP",
+  "KAS/USDT": "KAS",
   "NASDAQ": "^IXIC",
   "SP500": "^GSPC",
   "AAPL": "AAPL",
@@ -27,10 +27,19 @@ const SYMBOL_MAP: Record<string, string> = {
   "TSM": "TSM",
 };
 
-const FREE_PAIRS = ["XAUUSD", "USOIL", "BTC/USD"];
+const COINMARKETCAP_SYMBOLS: Record<string, string> = {
+  "BTC/USD": "BTC",
+  "ETH/USD": "ETH",
+  "SOL/USD": "SOL",
+  "XRP/USD": "XRP",
+  "KAS/USDT": "KAS",
+  "XAUT/USD": "XAUT"
+};
+
+const FREE_PAIRS = ["XAUT/USD", "USOIL", "BTC/USD"];
 
 const DUMMY_INDICATORS: Record<string, any> = {
-  "XAUUSD": { currentPrice: 4427.50, rsi: 45, macd: "buy", sma20: 4410, sma50: 4400, trend: "bullish", support: 4400, resistance: 4450, notes: "Moderate bullish trend" },
+  "XAUT/USD": { currentPrice: 2350.75, rsi: 45, macd: "buy", sma20: 2340, sma50: 2330, trend: "bullish", support: 2330, resistance: 2360, notes: "Moderate bullish trend" },
   "USOIL": { currentPrice: 88.45, rsi: 55, macd: "neutral", sma20: 87.5, sma50: 86.0, trend: "neutral", support: 86.5, resistance: 90.0, notes: "Consolidating" },
   "BTC/USD": { currentPrice: 68500.00, rsi: 62, macd: "buy", sma20: 67800, sma50: 66500, trend: "bullish", support: 67000, resistance: 69500, notes: "Strong uptrend" },
   "ETH/USD": { currentPrice: 3850.00, rsi: 58, macd: "buy", sma20: 3800, sma50: 3720, trend: "bullish", support: 3780, resistance: 3900, notes: "Momentum buying" },
@@ -128,6 +137,12 @@ export async function GET(request: NextRequest) {
   const results: Record<string, any> = {};
 
   for (const symbol of symbols) {
+    // Skip historical fetch for crypto symbols (use dummy)
+    if (COINMARKETCAP_SYMBOLS[symbol]) {
+      results[symbol] = DUMMY_INDICATORS[symbol];
+      continue;
+    }
+
     try {
       const closes = await fetchTimeSeries(symbol, apiKey);
       if (closes.length < 50) {
