@@ -22,7 +22,7 @@ export default function LandingPage() {
               Quant AI
             </Link>
             <Link href="/pricing" className="text-gray-600 hover:text-gray-900">
-              Pricing
+              Pro Account
             </Link>
           </nav>
           <div className="flex items-center gap-4">
