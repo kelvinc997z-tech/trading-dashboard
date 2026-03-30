@@ -206,3 +206,4 @@ MIT – feel free to fork and adapt.
 
 Built with ❤️ by Klepon Team.  
 Questions? Reach out via [GitHub Issues](https://github.com/kelvinc997z-tech/trading-dashboard/issues).
+
