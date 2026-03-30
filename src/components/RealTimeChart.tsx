@@ -24,16 +24,17 @@ interface MarketData {
 
 interface RealTimeChartProps {
   symbol?: string;
+  timeframe?: string;
 }
 
-export default function RealTimeChart({ symbol = "XAUT/USD" }: RealTimeChartProps) {
+export default function RealTimeChart({ symbol = "XAUT/USD", timeframe = "1h" }: RealTimeChartProps) {
   const [data, setData] = useState<MarketData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
-      const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}`);
+      const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: MarketData = await res.json();
       setData(json);

@@ -64,20 +64,22 @@ Fiturnya:
 - **Phase 4: Backtesting Lab**
   - Strategy backtesting, Sharpe/Sortino metrics, walk-forward optimization
 
-### 📋 Implementation Queue
+### 📋 Implementation Queue (Pro Features)
 
-**High Priority:**
-1. Custom Alerts (price, indicator thresholds)
-2. Multi-Timeframe Analysis
-3. Correlation Matrix
-4. Sentiment Analysis (crypto/forex news)
-5. Performance Analytics
-6. Quant AI Engine (ML predictions)
+**✅ Completed:**
+1. Custom Alerts (price, indicator thresholds) – CRUD + notifications
+2. Multi-Timeframe Analysis (1m, 5m, 15m, 1h, 4h, 1d) – global selector in dashboard
+3. Correlation Matrix – heatmap with averages
+4. Sentiment Analysis (Finnhub news + NLP scoring)
+5. Performance Analytics – Sharpe, drawdown, equity curve, metrics
+6. Quant AI Engine – price predictions (ensemble, LSTM, XGBoost) with confidence intervals
+7. Export Data – CSV export for trades
+8. Extended History – up to 30 days data points depending on timeframe
 
-**Completed:**
-- ✅ Economic Calendar (Finnhub API)
-- ✅ Trading Journal (CRUD + auto-close TP/SL)
-- ✅ CoinMarketCap API integration for real-time crypto prices
+**Completed Previously:**
+- Economic Calendar (Finnhub API)
+- Trading Journal (CRUD + auto-close TP/SL)
+- CoinMarketCap API integration for real-time crypto prices
 
 ---
 

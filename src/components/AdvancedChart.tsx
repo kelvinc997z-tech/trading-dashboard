@@ -27,6 +27,7 @@ interface IndicatorData {
 interface AdvancedChartProps {
   symbol?: string;
   indicators?: string[];
+  timeframe?: string; // "1h", "4h", "1d", "1w"
 }
 
 // Calculate RSI manually (simplified)
@@ -107,7 +108,7 @@ function calculateBollingerBands(prices: number[], period: number = 20, stdDev: 
   return { upper, lower };
 }
 
-export default function AdvancedChart({ symbol = "XAUT/USD", indicators = ["rsi", "macd"] }: AdvancedChartProps) {
+export default function AdvancedChart({ symbol = "XAUT/USD", indicators = ["rsi", "macd"], timeframe = "1h" }: AdvancedChartProps) {
   const [data, setData] = useState<IndicatorData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showIndicators, setShowIndicators] = useState<Set<string>>(new Set(indicators));
@@ -129,7 +130,7 @@ export default function AdvancedChart({ symbol = "XAUT/USD", indicators = ["rsi"
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}`);
+        const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}`);
         if (!res.ok) throw new Error("Failed to fetch");
         const result = await res.json();
         

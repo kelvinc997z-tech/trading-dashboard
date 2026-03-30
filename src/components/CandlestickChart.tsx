@@ -14,9 +14,10 @@ interface CandlestickData {
 interface CandlestickChartProps {
   symbol: string;
   height?: number;
+  timeframe?: string;
 }
 
-export default function CandlestickChart({ symbol, height = 400 }: CandlestickChartProps) {
+export default function CandlestickChart({ symbol, height = 400, timeframe = "1h" }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const seriesRef = useRef<any>(null);
@@ -25,7 +26,7 @@ export default function CandlestickChart({ symbol, height = 400 }: CandlestickCh
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}`);
+      const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}`);
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
       if (data.current) {

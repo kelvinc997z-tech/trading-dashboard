@@ -57,6 +57,7 @@ export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [markets, setMarkets] = useState<Record<string, { price: number }>>({});
   const [user, setUser] = useState<User | null>(null);
+  const [timeframe, setTimeframe] = useState("1h");
 
   // Map DB trade -> UI trade, plus compute unrealized
   const mapTrade = useCallback((dbTrade: DbTrade, currentPrice?: number): Trade => {
@@ -103,7 +104,7 @@ export default function Dashboard() {
       const symbols = [...new Set([...CRYPTO_PAIRS.map(p => p.symbol)])];
       const promises = symbols.map(async sym => {
         try {
-          const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(sym)}`);
+          const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(sym)}&timeframe=${timeframe}`);
           if (res.ok) {
             const data = await res.json();
             return { symbol: sym, price: data.current?.price ?? data.current?.close ?? null };
@@ -120,7 +121,7 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Failed to fetch market data:", err);
     }
-  }, []);
+  }, [timeframe]);
 
   const updateTrade = async (id: string, updates: Partial<DbTrade>) => {
     try {
@@ -202,10 +203,12 @@ export default function Dashboard() {
   // Initial load & polling
   useEffect(() => {
     fetchSession();
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       const dbTrades = await fetchTrades();
       await fetchMarketData();
-      // Map trades using current market prices
       const mapped: Trade[] = dbTrades.map(db => mapTrade(db, markets[db.symbol]?.price));
       setTrades(mapped);
     };
@@ -213,6 +216,11 @@ export default function Dashboard() {
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, [fetchMarketData, mapTrade]);
+
+  // Refetch market data when timeframe changes
+  useEffect(() => {
+    fetchMarketData();
+  }, [timeframe, fetchMarketData]);
 
   // Separate effect for auto-close (runs after markets/trades update)
   useEffect(() => {
@@ -260,9 +268,19 @@ export default function Dashboard() {
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-          <Activity className="h-4 w-4 text-green-500" />
-          <span>Market Open</span>
+        <div className="flex items-center gap-4">
+          <select value={timeframe} onChange={e => setTimeframe(e.target.value)} className="select select-bordered text-sm">
+            <option value="1m">1m</option>
+            <option value="5m">5m</option>
+            <option value="15m">15m</option>
+            <option value="1h">1h</option>
+            <option value="4h">4h</option>
+            <option value="1d">1d</option>
+          </select>
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+            <Activity className="h-4 w-4 text-green-500" />
+            <span>Market Open</span>
+          </div>
         </div>
       </div>
 
@@ -302,11 +320,14 @@ export default function Dashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {CRYPTO_PAIRS.map((pair) => (
           <div key={pair.symbol} className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-            <h2 className="text-lg font-semibold mb-4">{pair.name} Live</h2>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-semibold">{pair.name}</h2>
+              <span className="text-xs text-gray-500">TF: {timeframe}</span>
+            </div>
             {user?.role === "pro" ? (
-              <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} />
+              <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
             ) : (
-              <RealTimeChart symbol={pair.symbol} />
+              <RealTimeChart symbol={pair.symbol} timeframe={timeframe} />
             )}
           </div>
         ))}

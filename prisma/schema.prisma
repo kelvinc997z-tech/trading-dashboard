@@ -13,10 +13,14 @@ model User {
   password          String
   verified          Boolean   @default(false)
   verificationToken String?
+  role              String    @default("free") // "free" | "pro"
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  trades Trade[]
+  trades            Trade[]
+  alerts            Alert[]
+  performanceMetrics PerformanceMetric[]
+  // correlationCaches, sentimentCaches, predictionCaches are global (not per-user)
 }
 
 model Trade {
@@ -40,4 +44,90 @@ model Trade {
   screenshotUrl   String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model Alert {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  type        String   // "price" | "indicator" | "pattern"
+  symbol      String?  // null = all symbols
+  condition   String   // e.g., "above", "below", "cross_above", "cross_below"
+  value       Decimal? // target price or indicator level
+  indicator   String?  // e.g., "rsi", "macd", "bollinger"
+  timeframe   String?  // "1m", "5m", "15m", "1h", "4h", "1d"
+  notificationChannel String? // "email", "telegram", "push"
+  isActive    Boolean  @default(true)
+  lastTriggered DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([symbol])
+}
+
+model PerformanceMetric {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  period       String   // "daily", "weekly", "monthly", "all-time"
+  startDate    DateTime
+  endDate      DateTime
+  totalTrades  Int
+  winRate      Decimal?
+  avgWin       Decimal?
+  avgLoss      Decimal?
+  profitFactor Decimal?
+  sharpeRatio  Decimal?
+  sortinoRatio Decimal?
+  maxDrawdown  Decimal?
+  totalPnL     Decimal?
+  avgTradePnL  Decimal?
+  bestTrade    Decimal?
+  worstTrade   Decimal?
+  avgHoldingMs Int?     // average holding time in milliseconds
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, period, startDate])
+  @@index([userId])
+}
+
+model CorrelationCache {
+  id           String   @id @default(cuid())
+  date         DateTime @default(now())
+  data         String   // JSON: { "BTC/USD": { "ETH/USD": 0.75, ... }, ... }
+  period       String   // "1h", "4h", "1d"
+  createdAt    DateTime @default(now())
+
+  @@unique([date, period])
+}
+
+model SentimentCache {
+  id           String   @id @default(cuid())
+  symbol       String
+  source       String   // "news", "social", "combined"
+  score        Decimal  // -1 to 1
+  articles     String?  // JSON array of articles
+  period       String?  // "1h", "4h", "1d"
+  date         DateTime @default(now())
+
+  @@unique([symbol, source, period, date])
+  @@index([symbol])
+}
+
+model PredictionCache {
+  id           String   @id @default(cuid())
+  symbol       String
+  timeframe    String   // "1h", "4h", "1d"
+  modelType    String   // "lstm", "xgboost", "ensemble"
+  predictedPrice Decimal?
+  confidence   Decimal? // 0-1
+  features     String?  // JSON: feature importance
+  periodStart  DateTime
+  periodEnd    DateTime
+  createdAt    DateTime @default(now())
+
+  @@unique([symbol, timeframe, modelType, periodStart, periodEnd])
+  @@index([symbol])
 }
