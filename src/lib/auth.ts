@@ -94,7 +94,11 @@ export async function login(formData: FormData) {
     "trader@test.com": { password: "password123", role: "free" },
     "test@test.com": { password: "password123", role: "free" },
     "free@test.com": { password: "password123", role: "free" },
+    // Pro accounts
     "pro@test.com": { password: "password123", role: "pro" },
+    "pro2@test.com": { password: "password123", role: "pro" },
+    "vip@test.com": { password: "password123", role: "pro" },
+    "gold@test.com": { password: "password123", role: "pro" },
   };
   
   const account = testAccounts[email];

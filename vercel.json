@@ -3,11 +3,5 @@
   "outputDirectory": ".next",
   "env": {
     "NODE_ENV": "production"
-  },
-  "crons": [
-    {
-      "path": "/api/alerts/check",
-      "schedule": "*/1 * * * *"
-    }
-  ]
+  }
 }

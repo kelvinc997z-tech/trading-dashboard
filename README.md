@@ -159,10 +159,16 @@ Ensure you add:
 
 ## 👥 Test Accounts (bypass verification)
 
-| Email | Password |
-|-------|----------|
-| `admin@test.com` | `password123` |
-| `trader@test.com` | `trader123` |
+| Email | Password | Role |
+|-------|----------|------|
+| `admin@test.com` | `password123` | Free |
+| `trader@test.com` | `password123` | Free |
+| `pro@test.com` | `password123` | Pro |
+| `pro2@test.com` | `password123` | Pro |
+| `vip@test.com` | `password123` | Pro |
+| `gold@test.com` | `password123` | Pro |
+
+All test accounts skip email verification.
 
 ---
 
