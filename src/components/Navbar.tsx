@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { logOut } from "@/lib/auth";
-import { useDarkMode } from "@/contexts/DarkModeContext";
-import { LayoutDashboard, BarChart2, Crown, Brain, Calendar, BookOpen, Cpu, LogOut as LogOutIcon, Moon, Sun } from "lucide-react";
+import { LayoutDashboard, BarChart2, Crown, Brain, Calendar, BookOpen, Cpu, LogOut as LogOutIcon } from "lucide-react";
 
 export default function Navbar({ user }: { user: { email: string } }) {
-  const { dark, toggle } = useDarkMode();
-
   return (
     <nav className="border-b bg-white dark:bg-gray-800">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -46,12 +43,12 @@ export default function Navbar({ user }: { user: { email: string } }) {
               href="/quant-trading" 
               className="text-sm text-gray-600 dark:text-gray-300 hover:text-primary flex items-center gap-1"
             >
-              <Cpu className="w-4 h-4" />
+              <Cpu className="w-4 w-4" />
               Quant Trading
             </Link>
             <Link 
               href="/economic-calendar" 
-              className="text-sm text-gray-600 dark:text-gray-300 hover:*transition flex items-center gap-1"
+              className="text-sm text-gray-600 dark:text-gray-300 hover:text-primary flex items-center gap-1"
             >
               <Calendar className="w-4 h-4" />
               Economic Calendar
@@ -66,13 +63,6 @@ export default function Navbar({ user }: { user: { email: string } }) {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button
-            onClick={toggle}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
-            aria-label="Toggle dark mode"
-          >
-            {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </button>
           <span className="text-sm text-gray-600 dark:text-gray-300 hidden sm:inline">
             {user.email}
           </span>
