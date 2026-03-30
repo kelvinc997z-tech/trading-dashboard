@@ -145,27 +145,40 @@ export default function QuantAIPage() {
         </div>
       </section>
 
-      {/* Next Implementation Queue */}
+      {/* Implementation Status */}
       <section className="py-20 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-white">📦 Next Implementation Queue</h2>
+            <h2 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-white">🛠️ Implementation Status</h2>
             <div className="grid md:grid-cols-2 gap-4">
               {[
-                "Economic Calendar (high priority)",
-                "Trading Journal (track your trades)",
-                "Custom Alerts (price, indicator thresholds)",
-                "Multi-Timeframe Analysis (1m, 5m, 15m, 1h, 4h, 1d)",
-                "Correlation Matrix",
-                "Sentiment Analysis (crypto/forex news)",
-                "Performance Analytics",
-                "Quant AI Engine (ML predictions)"
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                  <span className="text-lg">•</span>
-                  <span className="text-gray-700 dark:text-gray-300">{item}</span>
-                </div>
-              ))}
+                { name: "Economic Calendar (high priority)", status: "done", href: "/economic-calendar" },
+                { name: "Trading Journal (track your trades)", status: "done", href: "/trading-journal" },
+                { name: "Custom Alerts (price, indicator thresholds)", status: "in-progress" },
+                { name: "Multi-Timeframe Analysis (1m, 5m, 15m, 1h, 4h, 1d)", status: "planned" },
+                { name: "Correlation Matrix", status: "planned" },
+                { name: "Sentiment Analysis (crypto/forex news)", status: "planned" },
+                { name: "Performance Analytics", status: "planned" },
+                { name: "Quant AI Engine (ML predictions)", status: "planned" },
+              ].map((item, idx) => {
+                const badge = {
+                  done: <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">✅ Done</span>,
+                  "in-progress": <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">⏳ In Progress</span>,
+                  planned: <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">🔄 Planned</span>,
+                }[item.status];
+                return (
+                  <div key={idx} className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    {badge}
+                    {item.href ? (
+                      <Link href={item.href} className="text-gray-700 dark:text-gray-300 hover:underline">
+                        {item.name}
+                      </Link>
+                    ) : (
+                      <span className="text-gray-700 dark:text-gray-300">{item.name}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
