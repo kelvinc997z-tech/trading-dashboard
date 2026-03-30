@@ -13,6 +13,7 @@ interface Alert {
   timeframe: string | null;
   notificationChannel: string | null;
   isActive: boolean;
+  lastTriggered?: string | null;
   createdAt: string;
 }
 
@@ -169,10 +170,9 @@ export default function AlertsPage() {
                 <th>Symbol</th>
                 <th>Condition</th>
                 <th>Value</th>
-                <th>Indicator</th>
-                <th>Timeframe</th>
                 <th>Notify</th>
                 <th>Status</th>
+                <th>Last Triggered</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
@@ -184,14 +184,13 @@ export default function AlertsPage() {
                   <td>{alert.symbol || "All"}</td>
                   <td>{alert.condition}</td>
                   <td>{alert.value ?? "-"}</td>
-                  <td>{alert.indicator ?? "-"}</td>
-                  <td>{alert.timeframe}</td>
                   <td>{alert.notificationChannel}</td>
                   <td>
                     <span className={`badge ${alert.isActive ? "badge-success" : "badge-neutral"}`}>
                       {alert.isActive ? "Active" : "Disabled"}
                     </span>
                   </td>
+                  <td>{alert.lastTriggered ? new Date(alert.lastTriggered).toLocaleString() : "-"}</td>
                   <td>{new Date(alert.createdAt).toLocaleDateString()}</td>
                   <td className="flex gap-2">
                     <button onClick={() => toggleAlert(alert.id, alert.isActive)} className="btn btn-xs">

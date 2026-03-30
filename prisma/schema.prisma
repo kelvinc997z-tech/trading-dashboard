@@ -47,20 +47,22 @@ model Trade {
 }
 
 model Alert {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  type        String   // "price" | "indicator" | "pattern"
-  symbol      String?  // null = all symbols
-  condition   String   // e.g., "above", "below", "cross_above", "cross_below"
-  value       Decimal? // target price or indicator level
-  indicator   String?  // e.g., "rsi", "macd", "bollinger"
-  timeframe   String?  // "1m", "5m", "15m", "1h", "4h", "1d"
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  type            String   // "price" | "indicator" | "pattern"
+  symbol          String?  // null = all symbols
+  condition       String   // e.g., "above", "below", "cross_above", "cross_below"
+  value           Decimal? // target price or indicator level
+  indicator       String?  // e.g., "rsi", "macd", "bollinger"
+  timeframe       String?  // "1m", "5m", "15m", "1h", "4h", "1d"
   notificationChannel String? // "email", "telegram", "push"
-  isActive    Boolean  @default(true)
-  lastTriggered DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive        Boolean  @default(true)
+  lastTriggered   DateTime?
+  lastCheckedAt   DateTime?
+  lastCheckedPrice Decimal?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([userId])
   @@index([symbol])
