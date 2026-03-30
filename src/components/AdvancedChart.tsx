@@ -12,6 +12,8 @@ import {
   ReferenceLine,
 } from "recharts";
 
+// Fixed: ReferenceLine component capitalization (was referenceLine error on Vercel)
+
 interface IndicatorData {
   time: string;
   price: number;
