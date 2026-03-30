@@ -18,6 +18,7 @@ const features = {
     "Priority support",
     "API access",
     "Historical data export",
+    "Quant AI Engine (ML predictions, signals, backtesting lab)",
   ],
 };
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { logOut } from "@/lib/auth";
-import { LayoutDashboard, BarChart2, Crown, Brain, Calendar, BookOpen, LogOut as LogOutIcon } from "lucide-react";
+import { LayoutDashboard, BarChart2, Crown, Brain, Calendar, BookOpen, Cpu, LogOut as LogOutIcon } from "lucide-react";
 
 export default function Navbar({ user }: { user: { email: string } }) {
   return (
@@ -38,6 +38,13 @@ export default function Navbar({ user }: { user: { email: string } }) {
             >
               <Brain className="w-4 h-4" />
               Quant AI
+            </Link>
+            <Link 
+              href="/quant-trading" 
+              className="text-sm text-gray-600 dark:text-gray-300 hover:text-primary flex items-center gap-1"
+            >
+              <Cpu className="w-4 h-4" />
+              Quant Trading
             </Link>
             <Link 
               href="/economic-calendar" 
