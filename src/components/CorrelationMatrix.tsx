@@ -48,7 +48,8 @@ export default function CorrelationMatrix() {
   if (!data) return <div className="p-4">No data</div>;
 
   const symbols = Object.keys(data);
-  const heatmapData = symbols.map(s1 => ({
+  type HeatmapRow = { pair: string } & Record<string, number>;
+  const heatmapData: HeatmapRow[] = symbols.map(s1 => ({
     pair: s1,
     ...data[s1],
   }));
