@@ -119,8 +119,8 @@ export async function GET(request: Request) {
       } else if (alert.indicator === 'macd') {
         if (alert.condition === 'above' && latestMACD !== null && latestMACD > value) conditionMet = true;
         if (alert.condition === 'below' && latestMACD !== null && latestMACD < value) conditionMet = true;
-        if (alert.condition === 'cross_above' && prevMACD !== null && latestSignal !== null && prevMACD < prevSignal && latestMACD >= latestSignal) conditionMet = true;
-        if (alert.condition === 'cross_below' && prevMACD !== null && latestSignal !== null && prevMACD > prevSignal && latestMACD <= latestSignal) conditionMet = true;
+        if (alert.condition === 'cross_above' && prevMACD !== null && latestMACD !== null && prevSignal !== null && latestSignal !== null && prevMACD < prevSignal && latestMACD >= latestSignal) conditionMet = true;
+        if (alert.condition === 'cross_below' && prevMACD !== null && latestMACD !== null && prevSignal !== null && latestSignal !== null && prevMACD > prevSignal && latestMACD <= latestSignal) conditionMet = true;
       } else if (alert.indicator === 'bollinger') {
         if (alert.condition === 'above_upper' && latestUpper !== null && currentPrice > latestUpper) conditionMet = true;
         if (alert.condition === 'below_lower' && latestLower !== null && currentPrice < latestLower) conditionMet = true;
@@ -173,7 +173,9 @@ export async function GET(request: Request) {
         const lastTriggered = alert.lastTriggered ? new Date(alert.lastTriggered) : null;
         if (!lastTriggered || (now.getTime() - lastTriggered.getTime()) >= COOLDOWN_MS) {
           try {
-            const currentPrice = candles[candles.length - 1]?.close || null;
+            const lastCandle = candles[candles.length - 1];
+            if (!lastCandle) continue;
+            const currentPrice = lastCandle.close;
             await sendAlertNotification(alert, currentPrice, symbol, alert.user.email);
             await db.alert.update({ where: { id: alert.id }, data: { lastTriggered: now, lastCheckedAt: now } });
             triggered++;
