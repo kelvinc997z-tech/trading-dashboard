@@ -35,6 +35,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const res = await fetch("/api/notifications?limit=20");
       if (res.ok) {
         const data = await res.json();
+        // data.notifications already have data parsed by API
         setNotifications(data.notifications);
         setUnreadCount(data.unreadCount);
       }
