@@ -94,8 +94,8 @@ export default function MarketOutlook() {
                   {pair.currentPrice !== undefined && (
                     <span className="text-base font-mono">
                       ${formatPrice(pair.currentPrice)}
-                      <span className={`ml-1 text-xs ${pair.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        ({pair.change >= 0 ? '+' : ''}{pair.change.toFixed(2)}%)
+                      <span className={`ml-1 text-xs ${(pair.change ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        ({(pair.change ?? 0) >= 0 ? '+' : ''}{(pair.change ?? 0).toFixed(2)}%)
                       </span>
                     </span>
                   )}
