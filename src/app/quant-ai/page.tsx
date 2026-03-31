@@ -1,220 +1,301 @@
-import Link from "next/link";
-import { Brain, BarChart2, TrendingUp, GitBranch, ListTodo } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { Activity, TrendingUp, TrendingDown, Minus, Brain, Zap } from "lucide-react";
+
+interface Prediction {
+  id: string;
+  symbol: string;
+  timeframe: string;
+  direction: "buy" | "sell" | "neutral";
+  confidence: number;
+  predictedPrice: number;
+  predictedChange: number;
+  entryPrice: number;
+  takeProfit: number;
+  stopLoss: number;
+  timestamp: string;
+}
+
+const CRYPTO_SYMBOLS = ["BTC", "ETH", "XAUT", "SOL", "XRP"];
 
 export default function QuantAIPage() {
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTimeframe, setSelectedTimeframe] = useState("1h");
+
+  const fetchPredictions = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/quant-ai/predictions?limit=20");
+      if (res.ok) {
+        const data = await res.json();
+        setPredictions(data.predictions || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch predictions:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generatePrediction = async (symbol: string) => {
+    try {
+      const res = await fetch("/api/quant-ai/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol, timeframe: selectedTimeframe }),
+      });
+      if (res.ok) {
+        const newPred = await res.json();
+        setPredictions(prev => [newPred, ...prev].slice(0, 20));
+      }
+    } catch (err) {
+      console.error("Failed to generate prediction:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPredictions();
+    // Refresh predictions every hour
+    const interval = setInterval(fetchPredictions, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [selectedTimeframe]);
+
+  const formatPrice = (price: number) => {
+    return price >= 1 ? price.toFixed(2) : price.toFixed(4);
+  };
+
+  const formatPercent = (pct: number) => {
+    return `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
+  };
+
+  const getDirectionIcon = (direction: string) => {
+    switch (direction) {
+      case "buy":
+        return <TrendingUp className="w-4 h-4 text-green-600" />;
+      case "sell":
+        return <TrendingDown className="w-4 h-4 text-red-600" />;
+      default:
+        return <Minus className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  const getDirectionColor = (direction: string) => {
+    switch (direction) {
+      case "buy":
+        return "text-green-600 dark:text-green-400";
+      case "sell":
+        return "text-red-600 dark:text-red-400";
+      default:
+        return "text-gray-600 dark:text-gray-400";
+    }
+  };
+
+  const getCardColor = (direction: string) => {
+    switch (direction) {
+      case "buy":
+        return "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
+      case "sell":
+        return "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800";
+      default:
+        return "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700";
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto px-4">
-        {/* Back to Home */}
-        <div className="mb-6">
-          <Link href="/dashboard" className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Home
-          </Link>
+    <div className="space-y-8">
+      {/* Hero Header */}
+      <div className="text-center">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full text-sm font-medium text-blue-800 dark:text-blue-200 mb-4">
+          <Brain className="w-4 h-4" />
+          Quant AI Engine
+        </div>
+        <h1 className="text-4xl font-bold mb-4">AI-Powered Market Predictions</h1>
+        <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          Advanced machine learning models (LSTM, XGBoost, Ensemble) analyze market data 
+          to generate high-probability trading signals with confidence scoring.
+        </p>
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg border">
+        <div>
+          <h2 className="text-lg font-semibold">Prediction Dashboard</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Generate and view AI-powered price predictions
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <select
+            value={selectedTimeframe}
+            onChange={(e) => setSelectedTimeframe(e.target.value)}
+            className="px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600"
+          >
+            <option value="1h">1 Hour</option>
+            <option value="4h">4 Hours</option>
+            <option value="1d">1 Day</option>
+          </select>
+          <button
+            onClick={fetchPredictions}
+            disabled={loading}
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
+          >
+            Refresh
+          </button>
         </div>
       </div>
 
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-gray-900 dark:text-white">
-            Klepon Market Research
-          </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-primary">
-              Dashboard
-            </Link>
-            <Link href="/market" className="text-gray-600 dark:text-gray-300 hover:text-primary">
-              Market
-            </Link>
-            <Link href="/pricing" className="text-gray-600 dark:text-gray-300 hover:text-primary">
-              Plan
-            </Link>
-            <Link href="/quant-ai" className="text-primary font-medium">
-              Quant AI
-            </Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-primary">
-              Sign In
-            </Link>
-            <Link href="/login" className="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition">
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="py-20 text-center bg-white dark:bg-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-center mb-6">
-            <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full">
-              <Brain className="h-12 w-12 text-white" />
-            </div>
-          </div>
-          <h1 className="text-5xl font-bold mb-6 tracking-tight text-gray-900 dark:text-white">
-            🤖 Quant AI
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Coming Soon: Advanced machine learning-powered market prediction and portfolio optimization engine.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Link href="/pricing" className="bg-black text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 transition">
-              Get Early Access
-            </Link>
-            <Link href="#roadmap" className="border border-gray-300 dark:border-gray-600 px-8 py-3 rounded-lg font-medium hover:border-gray-400 transition text-gray-700 dark:text-gray-300">
-              View Roadmap
-            </Link>
-          </div>
+      {/* Generate Quick Predictions */}
+      <section>
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Zap className="w-5 h-5" /> Quick Generate
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          {CRYPTO_SYMBOLS.map((symbol) => (
+            <button
+              key={symbol}
+              onClick={() => generatePrediction(symbol)}
+              className="p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition text-left"
+            >
+              <div className="font-semibold">{symbol}</div>
+              <div className="text-xs text-gray-500">Generate prediction</div>
+            </button>
+          ))}
         </div>
       </section>
 
-      {/* Phases */}
-      <section id="roadmap" className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3 text-gray-900 dark:text-white">Implementation Roadmap</h2>
-            <p className="text-gray-600 dark:text-gray-400">We're building Quant AI in phases. Here's what's coming.</p>
+      {/* Recent Predictions */}
+      <section>
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Activity className="w-5 h-5" /> Recent Predictions
+        </h3>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-gray-500">Loading predictions...</p>
           </div>
-
-          <div className="grid gap-8 max-w-5xl mx-auto">
-            {/* Phase 1 */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-8">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <BarChart2 className="h-8 w-8 text-blue-600 dark:text-blue-300" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Phase 1: Market Prediction Engine</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Core ML models for price forecasting</p>
-                </div>
-              </div>
-              <ul className="space-y-3 text-gray-700 dark:text-gray-300">
-                <li>• Machine Learning models untuk price prediction (1h, 4h, 1d)</li>
-                <li>• Probability scores dengan threshold 70% confidence</li>
-                <li>• Multiple models: LSTM, XGBoost, Random Forest</li>
-                <li>• Feature importance analysis untuk interpretability</li>
-              </ul>
-            </div>
-
-            {/* Phase 2 */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-8">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
-                  <TrendingUp className="h-8 w-8 text-green-600 dark:text-green-300" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Phase 2: Smart Signals</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">AI-generated signals with risk management</p>
-                </div>
-              </div>
-              <ul className="space-y-3 text-gray-700 dark:text-gray-300">
-                <li>• AI-generated signals menggabungkan technical + sentiment analysis</li>
-                <li>• Confidence scoring untuk setiap signal</li>
-                <li>• Risk-adjusted position sizing recommendations</li>
-              </ul>
-            </div>
-
-            {/* Phase 3 */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-8">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                  <GitBranch className="h-8 w-8 text-purple-600 dark:text-purple-300" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Phase 3: Portfolio Optimization</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Advanced portfolio theory in practice</p>
-                </div>
-              </div>
-              <ul className="space-y-3 text-gray-700 dark:text-gray-300">
-                <li>• Efficient frontier analysis</li>
-                <li>• Risk parity allocation</li>
-                <li>• Monte Carlo simulations untuk stress-testing</li>
-              </ul>
-            </div>
-
-            {/* Phase 4 */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-8">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                  <ListTodo className="h-8 w-8 text-orange-600 dark:text-orange-300" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Phase 4: Backtesting Lab</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Test strategies against historical data</p>
-                </div>
-              </div>
-              <ul className="space-y-3 text-gray-700 dark:text-gray-300">
-                <li>• Strategy backtesting dengan historical data</li>
-                <li>• Performance metrics (Sharpe, Sortino, Max Drawdown)</li>
-                <li>• Walk-forward optimization untuk out-of-sample testing</li>
-              </ul>
-            </div>
+        ) : predictions.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <Brain className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-500 mb-4">No predictions yet. Click a symbol above to generate.</p>
           </div>
-        </div>
-      </section>
-
-      {/* Implementation Status */}
-      <section className="py-20 bg-white dark:bg-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-white">🛠️ Implementation Status</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              {[
-                { name: "Economic Calendar (high priority)", status: "done", href: "/economic-calendar" },
-                { name: "Trading Journal (track your trades)", status: "done", href: "/trading-journal" },
-                { name: "Custom Alerts (price, indicator thresholds)", status: "in-progress" },
-                { name: "Multi-Timeframe Analysis (1m, 5m, 15m, 1h, 4h, 1d)", status: "planned" },
-                { name: "Correlation Matrix", status: "planned" },
-                { name: "Sentiment Analysis (crypto/forex news)", status: "planned" },
-                { name: "Performance Analytics", status: "planned" },
-                { name: "Quant AI Engine (ML predictions)", status: "planned" },
-              ].map((item, idx) => {
-                const badge = {
-                  done: <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">✅ Done</span>,
-                  "in-progress": <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">⏳ In Progress</span>,
-                  planned: <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">🔄 Planned</span>,
-                }[item.status];
-                return (
-                  <div key={idx} className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    {badge}
-                    {item.href ? (
-                      <Link href={item.href} className="text-gray-700 dark:text-gray-300 hover:underline">
-                        {item.name}
-                      </Link>
-                    ) : (
-                      <span className="text-gray-700 dark:text-gray-300">{item.name}</span>
-                    )}
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {predictions.map((pred) => (
+              <div
+                key={pred.id}
+                className={`p-4 rounded-lg border ${getCardColor(pred.direction)}`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h4 className="font-bold text-lg">{pred.symbol}</h4>
+                    <span className={`text-sm font-medium ${getDirectionColor(pred.direction)}`}>
+                      {pred.direction.toUpperCase()}
+                    </span>
                   </div>
-                );
-              })}
+                  <div className="text-right">
+                    <div className={`font-bold ${getDirectionColor(pred.direction)}`}>
+                      {formatPercent(pred.predictedChange)}
+                    </div>
+                    <div className="text-xs text-gray-500">{pred.timeframe}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Entry:</span>
+                    <span className="font-mono">{formatPrice(pred.entryPrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-green-600 dark:text-green-400">Target:</span>
+                    <span className="font-mono text-green-600">{formatPrice(pred.takeProfit)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-red-600 dark:text-red-400">Stop Loss:</span>
+                    <span className="font-mono text-red-600">{formatPrice(pred.stopLoss)}</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">Confidence</span>
+                    <span className="font-semibold">{pred.confidence.toFixed(1)}%</span>
+                  </div>
+                  <div className="mt-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${
+                        pred.confidence > 70
+                          ? "bg-green-500"
+                          : pred.confidence > 50
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                      }`}
+                      style={{ width: `${pred.confidence}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-2 text-xs text-gray-500 text-right">
+                  {new Date(pred.timestamp).toLocaleTimeString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* How It Works */}
+      <section className="border-t pt-8">
+        <h2 className="text-2xl font-bold mb-6">How It Works</h2>
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border">
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-4">
+              <Activity className="w-6 h-6 text-blue-600" />
             </div>
+            <h3 className="font-semibold mb-2">1. Data Collection</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Real-time OHLC data from 15+ cryptocurrency pairs. Technical indicators calculated 
+              using RSI, MACD, Bollinger Bands, ATR, ADX, and more.
+            </p>
+          </div>
+
+          <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border">
+            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-4">
+              <Brain className="w-6 h-6 text-purple-600" />
+            </div>
+            <h3 className="font-semibold mb-2">2. AI Prediction</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Ensemble of LSTM neural networks and XGBoost models analyze patterns. 
+              Each prediction includes confidence score and risk metrics.
+            </p>
+          </div>
+
+          <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border">
+            <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center mb-4">
+              <TrendingUp className="w-6 h-6 text-emerald-600" />
+            </div>
+            <h3 className="font-semibold mb-2">3. Actionable Signals</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Clear entry, take profit, and stop loss levels. Confidence scoring helps you 
+              filter high-probability trades and manage risk.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 bg-black text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to supercharge your trading?</h2>
-          <p className="text-gray-400 mb-8 max-w-xl mx-auto">
-            Be the first to access Quant AI when it launches. Early adopters get exclusive perks.
+      {/* Disclaimer */}
+      <div className="border-t pt-6">
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-red-800 dark:text-red-200 font-medium mb-2">⚠️ Disclaimer</p>
+          <p className="text-sm text-red-700 dark:text-red-300">
+            Quant AI predictions are experimental and based on historical patterns. 
+            Past performance does not guarantee future results. Always conduct your own research 
+            and use proper risk management. Trading cryptocurrencies involves significant risk.
           </p>
-          <Link href="/pricing" className="inline-block bg-white text-black px-8 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
-            View Plans
-          </Link>
         </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-8 text-center text-gray-500 text-sm bg-white dark:bg-gray-800 border-t">
-        <div className="container mx-auto px-4">
-          <p>&copy; {new Date().getFullYear()} Trading Dashboard. All rights reserved.</p>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 }
