@@ -11,7 +11,6 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
   const [proMenuOpen, setProMenuOpen] = useState(false);
   
   const proLinks = [
-    { href: "/dashboard/alerts", icon: Bell, label: "Alerts" },
     { href: "/dashboard/correlations", icon: PieChart, label: "Correlations" },
     { href: "/dashboard/sentiment", icon: MessageSquare, label: "Sentiment" },
     { href: "/dashboard/performance", icon: TrendingUp, label: "Performance" },
