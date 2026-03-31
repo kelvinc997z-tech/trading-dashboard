@@ -14,13 +14,14 @@ model User {
   verified          Boolean   @default(false)
   verificationToken String?
   role              String    @default("free") // "free" | "pro"
+  subscriptionEndsAt DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   trades            Trade[]
   alerts            Alert[]
   performanceMetrics PerformanceMetric[]
-  // correlationCaches, sentimentCaches, predictionCaches are global (not per-user)
+  payments          Payment[]
 }
 
 model Trade {
@@ -132,4 +133,22 @@ model PredictionCache {
 
   @@unique([symbol, timeframe, modelType, periodStart, periodEnd])
   @@index([symbol])
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  plan            String   // "monthly" | "lifetime"
+  amount          Decimal
+  status          String   @default("pending") // "pending" | "confirmed" | "cancelled"
+  method          String   @default("whatsapp") // "whatsapp" | "stripe" | "xendit"
+  whatsappMessage String?
+  confirmedAt     DateTime?
+  confirmedBy     String?  // admin user id
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([status])
 }

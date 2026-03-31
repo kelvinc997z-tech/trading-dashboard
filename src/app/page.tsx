@@ -1,150 +1,60 @@
 import Link from "next/link";
-import RealTimeChart from "@/components/RealTimeChart";
-import MarketOutlook from "@/components/MarketOutlook";
-import SignalsTicker from "@/components/SignalsTicker";
-import MiniChartsBar from "@/components/MiniChartsBar";
-import Testimonials from "@/components/Testimonials";
-import Header from "@/components/Header";
+import { signIn } from "@/auth";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
-      <Header />
-
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
       {/* Hero */}
-      <section className="py-20 text-center">
-        <div className="container mx-auto px-4">
-          <h1 className="text-5xl font-bold mb-6 tracking-tight">
-            Institutional Quality Analysis
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Built for independent thinkers, not insiders. Real-time trading signals, 
-            market outlook, and technical analysis for serious traders.
-          </p>
-          <div className="flex justify-center gap-4 mb-12">
-            <Link href="/login" className="bg-black text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 transition">
-              Start Trading
-            </Link>
-            <Link href="/market" className="border border-gray-300 dark:border-gray-600 px-8 py-3 rounded-lg font-medium hover:border-gray-400 dark:hover:border-gray-500 transition">
-              View Market
-            </Link>
-          </div>
-
-          {/* Stats */}
-          <div className="flex justify-center gap-16 flex-wrap mb-8">
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-1">388K</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Followers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-1">42M</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Organic Views</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-1">+14%</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">MoM Return</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Live Price Preview */}
-      <section className="py-16 bg-gray-50 dark:bg-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold mb-2">Live Tether Gold Price</h2>
-              <p className="text-gray-600 dark:text-gray-300">Real-time XAUT/USD chart - updates every 30 seconds</p>
-            </div>
-            <div className="rounded-lg border bg-white dark:bg-gray-800 p-6 shadow-sm">
-              <RealTimeChart symbol="XAUT/USD" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Live Signals Ticker */}
-      <SignalsTicker />
-
-      {/* Mini Charts Bar */}
-      <section className="py-12 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold">All Markets</h2>
-            <p className="text-gray-600">Live candlestick charts (1H)</p>
-          </div>
-          <MiniChartsBar />
-        </div>
-      </section>
-
-      {/* Framework / Features */}
-      <section className="py-20 bg-gray-50 dark:bg-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3">The Framework</h2>
-            <p className="text-gray-600 dark:text-gray-300">We study markets the way the best funds study equities.</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-sm border">
-              <div className="text-4xl font-bold mb-4">01</div>
-              <h3 className="font-bold text-lg mb-3">Find What the Market is Missing</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-                The best opportunities come from studying what matters before the market agrees with you. 
-                Our AI Agents thesis was published when the idea was deeply unpopular. That was the point.
-              </p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-sm border">
-              <div className="text-4xl font-bold mb-4">02</div>
-              <h3 className="font-bold text-lg mb-3">Understand the Value, Not Just the Price</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-                Going up doesn't mean worth buying. Going down doesn't mean broken. 
-                We study the actual fundamentals underneath and whether the price makes sense.
-              </p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-sm border">
-              <div className="text-4xl font-bold mb-4">03</div>
-              <h3 className="font-bold text-lg mb-3">Know When the Thesis is Done</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-                Every great trade has an exit plan. We help you define your thesis and know exactly when it's no longer valid.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Market Outlook Preview */}
-      <section className="py-20 bg-white dark:bg-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-3">Today's Market Outlook</h2>
-              <p className="text-gray-600 dark:text-gray-300">Latest trading signals and market analysis</p>
-            </div>
-            <MarketOutlook />
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <Testimonials />
-
-      {/* CTA */}
-      <section className="py-20 bg-black text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to start trading?</h2>
-          <p className="text-gray-400 mb-8 max-w-xl mx-auto">
-            Join thousands of traders using our platform for daily market insights and trading signals.
-          </p>
-          <Link href="/login" className="inline-block bg-white text-black px-8 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
+      <header className="container mx-auto px-4 py-20 text-center">
+        <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+          Trading Dashboard Pro
+        </h1>
+        <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+          Real-time crypto, forex & commodities charts with AI-powered signals, 
+          alerts, correlation matrix, and performance analytics.
+        </p>
+        <div className="flex justify-center gap-4">
+          <Link href="/signup" className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-semibold transition">
             Get Started Free
           </Link>
+          <Link href="/pricing" className="px-8 py-3 border border-gray-600 hover:border-gray-400 rounded-lg font-semibold transition">
+            View Pricing
+          </Link>
+        </div>
+      </header>
+
+      {/* Features */}
+      <section className="container mx-auto px-4 py-20">
+        <h2 className="text-3xl font-bold mb-12 text-center">Features</h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[
+            ["Live Multi-Timeframe Charts", "1m to 1d candles with Pro Indicators (RSI, MACD, Bollinger)"],
+            ["Custom Alerts", "Price, indicator, and candlestick pattern alerts via email/Telegram"],
+            ["Correlation Matrix", "See how crypto and forex pairs move together"],
+            ["Sentiment Analysis", "News sentiment from Finnhub integrated"],
+            ["Performance Analytics", "Sharpe ratio, drawdown, equity curve, trade metrics"],
+            ["AI Predictions", "Ensemble LSTM/XGBoost forecasts with confidence intervals"],
+          ].map(([title, desc], i) => (
+            <div key={i} className="p-6 rounded-lg bg-gray-800/50 border border-gray-700">
+              <h3 className="text-xl font-semibold mb-2">{title}</h3>
+              <p className="text-gray-400">{desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      <footer className="py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-        <div className="container mx-auto px-4">
-          <p>&copy; {new Date().getFullYear()} Trading Dashboard. All rights reserved.</p>
-        </div>
+      {/* Pricing teaser */}
+      <section className="container mx-auto px-4 py-20 text-center">
+        <h2 className="text-3xl font-bold mb-4">Simple Pricing</h2>
+        <p className="text-gray-300 mb-8">Free tier with basic charts. Upgrade to Pro for all features.</p>
+        <Link href="/pricing" className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition">
+          See Plans
+        </Link>
+      </section>
+
+      {/* Footer */}
+      <footer className="container mx-auto px-4 py-8 border-t border-gray-800 text-center text-gray-500">
+        <p>&copy; {new Date().getFullYear()} Trading Dashboard. All rights reserved.</p>
       </footer>
     </div>
   );
