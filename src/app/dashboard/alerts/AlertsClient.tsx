@@ -70,7 +70,7 @@ export default function AlertsPage() {
   const handleIndicatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newIndicator = e.target.value;
     const allowed = newIndicator ? indicatorConditions[newIndicator as keyof typeof indicatorConditions] : ["above", "below", "cross_above", "cross_below"];
-    if (!allowed.includes(form.condition)) {
+    if (!allowed.includes(form.condition as any)) {
       setForm({ ...form, indicator: newIndicator, condition: allowed[0] });
     } else {
       setForm({ ...form, indicator: newIndicator });
