@@ -389,7 +389,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <MarketOutlook />
     </div>
   );
 }
