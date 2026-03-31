@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { sendAlertNotification } from "@/lib/notifications";
 import { calculateRSI, calculateMACD, calculateBollingerBands } from "@/lib/indicators";
-import { detectPatterns } from "@/lib/patterns";
+import { detectPatterns, Candle } from "@/lib/patterns";
 
 export async function GET() {
   const session = await getSession();
