@@ -54,10 +54,11 @@ export default function CorrelationMatrix() {
   }));
 
   // For bar chart of average correlations
-  const avgCorrs = symbols.map(s => ({
-    symbol: s,
-    avgCorr: Object.values(data[s]).filter((v, i, arr) => v !== 1).reduce((a, b) => a + b, 0) / (arr.length - 1),
-  }));
+  const avgCorrs = symbols.map(s => {
+    const values = Object.values(data[s]).filter(v => v !== 1);
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    return { symbol: s, avgCorr: avg };
+  });
 
   return (
     <div className="p-6">
