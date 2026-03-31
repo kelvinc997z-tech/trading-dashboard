@@ -333,6 +333,8 @@ export default function Dashboard() {
         ))}
       </div>
 
+      <MarketOutlook />
+
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
         <h2 className="text-lg font-semibold mb-4">Recent Trades</h2>
         <div className="overflow-x-auto">

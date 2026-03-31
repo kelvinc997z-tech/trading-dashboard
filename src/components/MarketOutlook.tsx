@@ -1,93 +1,117 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TrendingUp, TrendingDown, Activity } from "lucide-react";
-import { useTheme } from "./ThemeProvider";
 
-interface MarketData {
+interface Signal {
   symbol: string;
-  current: {
-    close: number;
-    change: number;
-    changePercent: number;
-    high: number;
-    low: number;
-  };
-  history: Array<{
-    time: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume?: number;
-  }>;
+  name: string;
+  signal: "buy" | "sell";
+  entry: number;
+  tp: number;
+  sl: number;
+  confidence: number;
+  reasoning: string;
 }
 
-const PAIRS = [
-  { symbol: "XAUT/USD", name: "Gold" },
-  { symbol: "BTC/USD", name: "Bitcoin" },
-  { symbol: "ETH/USD", name: "Ethereum" },
-  { symbol: "SOL/USD", name: "Solana" },
-  { symbol: "XRP/USD", name: "Ripple" },
-];
+interface OutlookData {
+  generatedAt: string;
+  pairs: Signal[];
+}
 
 export default function MarketOutlook() {
-  const { theme } = useTheme();
-  const [markets, setMarkets] = useState<Record<string, MarketData>>({});
+  const [data, setData] = useState<OutlookData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchOutlook = async () => {
+    try {
+      const res = await fetch("/api/market-outlook");
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch (e) {
+      console.error("Failed to fetch market outlook:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchAll() {
-      const data: Record<string, MarketData> = {};
-      await Promise.all(
-        PAIRS.map(async (pair) => {
-          try {
-            const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(pair.symbol)}`);
-            if (res.ok) {
-              const json = await res.json();
-              data[pair.symbol] = json;
-            }
-          } catch (err) {
-            console.error(`Failed to fetch ${pair.symbol}`, err);
-          }
-        })
-      );
-      setMarkets(data);
-    }
-    fetchAll();
-    const interval = setInterval(fetchAll, 30000);
+    fetchOutlook();
+    // Refresh every 30 minutes
+    const interval = setInterval(fetchOutlook, 30 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const getChangeClass = (change: number) => {
-    return change >= 0 ? "text-green-500" : "text-red-500";
+  if (loading) return <div className="p-4">Loading market outlook...</div>;
+  if (!data) return <div className="p-4 text-red-500">Failed to load outlook</div>;
+
+  const formatPrice = (price: number, decimals: number = 2) => {
+    if (price >= 1000) return price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    if (price < 1) return price.toFixed(4);
+    return price.toFixed(2);
+  };
+
+  const getSignalColor = (signal: string) => {
+    return signal === "buy" ? "bg-green-600" : "bg-red-600";
   };
 
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Market Outlook</h2>
-        <Activity className="w-5 h-5 text-gray-400" />
+    <div className="card p-6 bg-white dark:bg-gray-800 rounded-lg shadow h-full">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">Market Outlook</h2>
+        <span className="text-xs text-gray-500">
+          {new Date(data.generatedAt).toLocaleTimeString()}
+        </span>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {PAIRS.map((pair) => {
-          const market = markets[pair.symbol];
-          const price = market?.current?.close ?? 0;
-          const change = market?.current?.change ?? 0;
-          const changePercent = market?.current?.changePercent ?? 0;
-          const changeClass = getChangeClass(change);
-          const Icon = change >= 0 ? TrendingUp : TrendingDown;
+      <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-300px)]">
+        {data.pairs.map((pair, idx) => (
+          <div key={idx} className={`p-4 rounded-lg border-l-4 ${pair.signal === 'buy' ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-red-500 bg-red-50 dark:bg-red-900/20'}`}>
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h3 className="font-semibold text-lg">{pair.name}</h3>
+                <p className="text-xs text-gray-500">{pair.symbol}</p>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-white text-sm font-bold ${getSignalColor(pair.signal)}`}>
+                {pair.signal.toUpperCase()}
+              </span>
+            </div>
 
-          return (
-            <div key={pair.symbol} className="rounded-lg border p-4 bg-white dark:bg-gray-800">
-              <div className="text-sm text-gray-500 mb-1">{pair.name}</div>
-              <div className="text-xl font-bold mb-1">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-              <div className={`flex items-center gap-1 text-sm ${changeClass}`}>
-                <Icon className="w-4 h-4" />
-                <span>{change >= 0 ? "+" : ""}{change.toFixed(2)} ({changePercent.toFixed(2)}%)</span>
+            <div className="grid grid-cols-3 gap-2 mb-2 text-sm">
+              <div>
+                <span className="text-gray-500">Entry</span>
+                <p className="font-mono font-semibold">{formatPrice(pair.entry)}</p>
+              </div>
+              <div>
+                <span className="text-gray-500">TP</span>
+                <p className="font-mono font-semibold text-green-600">{formatPrice(pair.tp)}</p>
+              </div>
+              <div>
+                <span className="text-gray-500">SL</span>
+                <p className="font-mono font-semibold text-red-600">{formatPrice(pair.sl)}</p>
               </div>
             </div>
-          );
-        })}
+
+            <div className="mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Confidence</span>
+                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full ${pair.confidence >= 0.7 ? 'bg-green-500' : pair.confidence >= 0.5 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                    style={{ width: `${pair.confidence * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs font-semibold">{(pair.confidence * 100).toFixed(0)}%</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-600 dark:text-gray-300 italic">{pair.reasoning}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 text-xs text-gray-500 text-center">
+        <p className="italic">Disclaimer: Signals are recommendations, not profit guarantees. Based on current market analysis.</p>
       </div>
     </div>
   );
