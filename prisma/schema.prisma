@@ -127,20 +127,27 @@ model SentimentCache {
   @@index([symbol])
 }
 
-model PredictionCache {
-  id           String   @id @default(cuid())
-  symbol       String
-  timeframe    String   // "1h", "4h", "1d"
-  modelType    String   // "lstm", "xgboost", "ensemble"
-  predictedPrice Decimal?
-  confidence   Decimal? // 0-1
-  features     String?  // JSON: feature importance
-  periodStart  DateTime
-  periodEnd    DateTime
-  createdAt    DateTime @default(now())
+// Generated predictions (cached/archived)
+model Prediction {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  symbol        String
+  timeframe     String   // "1h", "4h", "1d"
+  modelType     String   // "lstm", "xgboost", "ensemble"
+  direction     String   // "buy" | "sell" | "neutral"
+  confidence    Decimal  // 0-100
+  price         Decimal  // predicted price
+  features      String?  // JSON: feature importance/used
+  expiresAt     DateTime?
+  timestamp     DateTime @default(now()) // when generated
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@unique([symbol, timeframe, modelType, periodStart, periodEnd])
-  @@index([symbol])
+  @@index([userId])
+  @@index([symbol, timeframe])
+  @@index([timestamp])
+  @@index([expiresAt])
 }
 
 model Payment {

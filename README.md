@@ -68,6 +68,13 @@ Fiturnya:
 - ⚡ **Real-time Updates** – Auto-refresh trades every 30 seconds
 - ✨ **Visual Polish** – Smooth animations with Framer Motion
 
+**Quant AI (Beta):**
+- 🤖 **AI Price Predictions** – Generate forecasts for BTC, ETH, SOL, XRP, XAUT across 1h/4h/1d timeframes
+- 📊 **Prediction History** – View recent predictions with confidence intervals and directions
+- 🌍 **Market Sentiment Analysis** – Aggregate news sentiment across symbols with bullish/bearish/neutral trends
+- 🧠 **ML Model Infrastructure** – Training scripts (Python) for LSTM & XGBoost, feature engineering pipeline, and model serving API
+- 💾 **Prediction Caching** – Stored predictions with expiry, user attribution, and queryable history
+
 **Signup & Auth:**
 - Enhanced signup form with name & phone number
 - Login flow with 2FA verification
@@ -88,7 +95,17 @@ Fiturnya:
 
 ### 📋 Implementation History
 
-**v2.0 – UX Revolution (Latest)**
+**v2.1 – Quant AI & Market Sentiment (Latest)**
+- ✅ Prediction database model + Prisma integration
+- ✅ `/api/quant-ai/predict` endpoint for generating & storing predictions
+- ✅ `/api/quant-ai/predictions` endpoint for fetching recent predictions
+- ✅ Market Sentiment API + UI component (`/api/market-sentiment`, `MarketSentiment.tsx`)
+- ✅ Prediction training scripts (Python: TensorFlow, XGBoost) in `scripts/`
+- ✅ Feature data pipeline (OHLC, indicators) and model trainer infrastructure
+- ✅ User attribution for predictions (userId stored with each prediction)
+- ✅ Prisma schema fix: added `Prediction` model (resolved missing type error)
+
+**v2.0 – UX Revolution**
 - ✅ Notification Center with real-time updates via polling
 - ✅ High Contrast Mode for accessibility (WCAG)
 - ✅ First-Time User Onboarding tour (Framer Motion)

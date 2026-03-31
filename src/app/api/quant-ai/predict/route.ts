@@ -76,9 +76,10 @@ export async function POST(request: NextRequest) {
     // Get prediction
     const prediction = await predict(symbol, timeframe, features);
 
-    // Save prediction to database
+    // Save prediction to database (tied to user)
     await db.prediction.create({
       data: {
+        userId: session.user.id,
         symbol,
         timeframe,
         modelType: prediction.modelType,
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
         price: prediction.predictedPrice,
         features: JSON.stringify(prediction.featuresUsed),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h expiry
+        timestamp: new Date(),
       },
     });
 
