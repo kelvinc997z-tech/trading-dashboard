@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { sendAlertNotification } from "@/lib/notifications";
 import { calculateRSI, calculateMACD, calculateBollingerBands } from "@/lib/indicators";
 import { detectPatterns, Candle } from "@/lib/patterns";
+// confirm Candle import for type checking
 
 export async function GET() {
   const session = await getSession();
