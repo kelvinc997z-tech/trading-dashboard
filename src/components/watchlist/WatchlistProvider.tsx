@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 interface WatchlistContextType {
   watchlist: string[];
@@ -13,27 +13,24 @@ const WatchlistContext = createContext<WatchlistContextType | undefined>(undefin
 
 export function WatchlistProvider({ children }: { children: React.ReactNode }) {
   const [watchlist, setWatchlist] = useState<string[]>([]);
-  const [initialized, setInitialized] = useState(false);
 
-  const fetchWatchlist = async () => {
+  const fetchWatchlist = useCallback(async () => {
     try {
       const res = await fetch("/api/watchlist");
       if (res.ok) {
         const data = await res.json();
-        setWatchlist(data.watchlist || []);
+        // Parse JSON string if needed
+        const wl = typeof data.watchlist === "string" ? JSON.parse(data.watchlist) : (data.watchlist || []);
+        setWatchlist(Array.isArray(wl) ? wl : []);
       }
     } catch (err) {
       console.error("Failed to fetch watchlist:", err);
     }
-  };
-
-  const refresh = async () => {
-    await fetchWatchlist();
-  };
+  }, []);
 
   useEffect(() => {
-    fetchWatchlist().finally(() => setInitialized(true));
-  }, []);
+    fetchWatchlist();
+  }, [fetchWatchlist]);
 
   const toggleSymbol = async (symbol: string) => {
     const isAdding = !watchlist.includes(symbol);
@@ -54,8 +51,7 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) {
         throw new Error("Failed to update watchlist");
       }
-
-      // Silent success - UI already updated
+      // Silent success
     } catch (err) {
       // Revert on error
       setWatchlist(watchlist);
@@ -64,6 +60,8 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isInWatchlist = (symbol: string) => watchlist.includes(symbol);
+
+  const refresh = () => fetchWatchlist();
 
   return (
     <WatchlistContext.Provider value={{ watchlist, toggleSymbol, isInWatchlist, refresh }}>

@@ -13,10 +13,10 @@ model User {
   password          String
   name              String?
   phone             String?
-  watchlist         String[]  @default([]) // Array of symbols: ["BTC", "ETH", "XAUT"]
+  watchlist         String    @default("[]") // JSON stringified array of symbols
   twoFactorEnabled  Boolean   @default(false)
   twoFactorSecret   String?
-  preferences       Json?     @default("{}") // User preferences: { theme, notifications, etc. }
+  preferences       String    @default("{}") // JSON stringified preferences
   verified          Boolean   @default(false)
   verificationToken String?
   role              String    @default("free") // "free" | "pro"
@@ -167,7 +167,7 @@ model Notification {
   type      String   // "signal", "alert", "system", "price"
   title     String
   message   String
-  data      Json?    // Additional data (e.g., tradeId, symbol, price)
+  data      String?  // JSON stringified additional data (e.g., tradeId, symbol, price)
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 

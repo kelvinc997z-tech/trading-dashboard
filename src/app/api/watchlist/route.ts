@@ -14,7 +14,17 @@ export async function GET() {
     select: { watchlist: true },
   });
 
-  return NextResponse.json({ watchlist: user?.watchlist || [] });
+  // Parse JSON string to array
+  let watchlist: string[] = [];
+  if (user?.watchlist) {
+    try {
+      watchlist = typeof user.watchlist === "string" ? JSON.parse(user.watchlist) : [];
+    } catch {
+      watchlist = [];
+    }
+  }
+
+  return NextResponse.json({ watchlist });
 }
 
 // POST /api/watchlist - body: { symbols: string[] }
@@ -32,14 +42,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Symbols must be an array" }, { status: 400 });
     }
 
-    // Update watchlist
+    // Store as JSON string
     const user = await db.user.update({
       where: { id: session.user.id },
-      data: { watchlist: symbols },
+      data: { watchlist: JSON.stringify(symbols) },
       select: { watchlist: true },
     });
 
-    return NextResponse.json({ watchlist: user.watchlist });
+    // Parse the stored string back to array for response
+    let watchlist: string[] = [];
+    if (user.watchlist) {
+      try {
+        watchlist = typeof user.watchlist === "string" ? JSON.parse(user.watchlist) : [];
+      } catch {
+        watchlist = [];
+      }
+    }
+
+    return NextResponse.json({ watchlist });
   } catch (error) {
     console.error("Watchlist update error:", error);
     return NextResponse.json({ error: "Failed to update watchlist" }, { status: 500 });

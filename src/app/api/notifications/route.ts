@@ -24,12 +24,20 @@ export async function GET(request: NextRequest) {
     take: limit,
   });
 
+  // Parse JSON data fields
+  const parsedNotifications = notifications.map(n => ({
+    ...n,
+    data: n.data ? (() => {
+      try { return typeof n.data === "string" ? JSON.parse(n.data) : n.data; } catch { return null; }
+    })() : null,
+  }));
+
   const unreadCount = await db.notification.count({
     where: { userId: session.user.id, read: false },
   });
 
   return NextResponse.json({
-    notifications,
+    notifications: parsedNotifications,
     unreadCount,
   });
 }
@@ -81,17 +89,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
+  // Store data as JSON string
   const notification = await db.notification.create({
     data: {
       userId: session.user.id,
       type,
       title,
       message,
-      data,
+      data: data ? JSON.stringify(data) : null,
     },
   });
 
-  return NextResponse.json(notification, { status: 201 });
+  // Return parsed version
+  const parsedNotification = {
+    ...notification,
+    data: notification.data ? (() => {
+      try { return typeof notification.data === "string" ? JSON.parse(notification.data) : notification.data; } catch { return null; }
+    })() : null,
+  };
+
+  return NextResponse.json(parsedNotification, { status: 201 });
 }
 
 // DELETE /api/notifications - delete all read or specific ones
