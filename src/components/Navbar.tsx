@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { logOut } from "@/lib/auth";
 import { useState } from "react";
-import { LayoutDashboard, BarChart2, Crown, Brain, Calendar, BookOpen, Cpu, LogOut as LogOutIcon, Bell, PieChart, MessageSquare, TrendingUp, Settings } from "lucide-react";
+import { LayoutDashboard, BarChart2, Crown, Brain, Calendar, BookOpen, Cpu, LogOut as LogOutIcon, PieChart, MessageSquare, TrendingUp, Settings } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationProvider";
+import ContrastToggle from "@/components/contrast/ContrastToggle";
 
 export default function Navbar({ user }: { user: { email: string; role?: string } }) {
   const [proMenuOpen, setProMenuOpen] = useState(false);
@@ -62,6 +64,8 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <NotificationBell />
+          <ContrastToggle />
           <span className="text-sm text-gray-600 dark:text-gray-300 hidden sm:inline">{user.email}</span>
           <form action={logOut}>
             <button type="submit" className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400">

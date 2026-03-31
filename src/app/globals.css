@@ -57,3 +57,54 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* High Contrast Mode */
+html.high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 0%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 220 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 30%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 30%;
+  --muted-foreground: 0 0% 80%;
+  --accent: 0 0% 30%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 0%;
+  --border: 0 0% 50%;
+  --input: 0 0% 30%;
+  --ring: 220 100% 50%;
+}
+
+html.high-contrast .border-gray-200,
+html.high-contrast .border-gray-300,
+html.high-contrast .border-gray-400 {
+  border-color: #fff !important;
+}
+
+html.high-contrast .text-gray-600,
+html.high-contrast .text-gray-700,
+html.high-contrast .text-gray-800 {
+  color: #fff !important;
+}
+
+html.high-contrast .bg-gray-50,
+html.high-contrast .bg-gray-100,
+html.high-contrast .bg-gray-200 {
+  background-color: #000 !important;
+}
+
+html.high-contrast .dark .border-gray-700,
+html.high-contrast .dark .border-gray-600 {
+  border-color: #fff !important;
+}
+
+html.high-contrast .dark .text-gray-300,
+html.high-contrast .dark .text-gray-400 {
+  color: #fff !important;
+}

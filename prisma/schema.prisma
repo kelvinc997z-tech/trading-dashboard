@@ -16,6 +16,7 @@ model User {
   watchlist         String[]  @default([]) // Array of symbols: ["BTC", "ETH", "XAUT"]
   twoFactorEnabled  Boolean   @default(false)
   twoFactorSecret   String?
+  preferences       Json?     @default("{}") // User preferences: { theme, notifications, etc. }
   verified          Boolean   @default(false)
   verificationToken String?
   role              String    @default("free") // "free" | "pro"
@@ -27,6 +28,7 @@ model User {
   alerts            Alert[]
   performanceMetrics PerformanceMetric[]
   payments          Payment[]
+  notifications     Notification[]
 }
 
 model Trade {
@@ -156,4 +158,18 @@ model Payment {
 
   @@index([userId, status])
   @@index([status])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // "signal", "alert", "system", "price"
+  title     String
+  message   String
+  data      Json?    // Additional data (e.g., tradeId, symbol, price)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt])
 }

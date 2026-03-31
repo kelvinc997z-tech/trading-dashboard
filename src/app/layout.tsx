@@ -3,6 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { WatchlistProvider } from "@/components/watchlist/WatchlistProvider";
+import { NotificationProvider } from "@/components/notifications/NotificationProvider";
+import { ContrastProvider } from "@/components/contrast/ContrastProvider";
+import OnboardingProvider from "@/components/onboarding/OnboardingProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,7 +23,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
-          <WatchlistProvider>{children}</WatchlistProvider>
+          <ContrastProvider>
+            <NotificationProvider>
+              <WatchlistProvider>
+                <OnboardingProvider>{children}</OnboardingProvider>
+              </WatchlistProvider>
+            </NotificationProvider>
+          </ContrastProvider>
         </ThemeProvider>
       </body>
     </html>
