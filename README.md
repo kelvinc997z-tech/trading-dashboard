@@ -41,17 +41,24 @@ Fiturnya:
 ## 📦 Features
 
 ### ✅ Already Implemented
-- User registration & login with email verification
+- User registration & login with email verification (Resend)
 - Protected dashboard with real-time trade table
-- Multi-pair live price charts (XAU/USD, BTC/USD, ETH/USD, SOL/USD, XRP/USD)
-- Market Outlook component (daily signals)
+- Multi-pair live price charts (XAUT, BTC, ETH, SOL, XRP)
+- Market Outlook component (daily trading signals)
+- Trading Signals table (Pro-only, with upgrade prompt)
+- 📋 **Watchlist Sync** – Save favorite pairs; sync across devices
+- 🔐 **Two-Factor Authentication (2FA)** – TOTP-based via Google Authenticator
 - Economic Calendar (Finnhub API)
 - Trading Journal (full CRUD, auto-close on TP/SL)
 - Responsive design (mobile & desktop)
 - Dark mode toggle (via system preference)
 - CoinMarketCap API integration for real-time crypto prices
+- Modern landing page with professional copy & CTAs
+- Pricing page with WhatsApp payment integration
+- WhatsApp admin contact: `6281367351643`
+- Pro features gating with role-based access
 
-### 🚧 Coming Soon (Quant AI Roadmap
+### 🚧 Coming Soon (Quant AI Roadmap)
 - **Phase 1: Market Prediction Engine**
   - LSTM, XGBoost, Random Forest models
   - 1h / 4h / 1d price predictions
@@ -64,22 +71,29 @@ Fiturnya:
 - **Phase 4: Backtesting Lab**
   - Strategy backtesting, Sharpe/Sortino metrics, walk-forward optimization
 
-### 📋 Implementation Queue (Pro Features)
+### 📋 Implementation History (Selected Milestones)
 
-**✅ Completed:**
-1. Custom Alerts (price, indicator thresholds) – CRUD + notifications
-2. Multi-Timeframe Analysis (1m, 5m, 15m, 1h, 4h, 1d) – global selector in dashboard
-3. Correlation Matrix – heatmap with averages
-4. Sentiment Analysis (Finnhub news + NLP scoring)
-5. Performance Analytics – Sharpe, drawdown, equity curve, metrics
-6. Quant AI Engine – price predictions (ensemble, LSTM, XGBoost) with confidence intervals
-7. Export Data – CSV export for trades
-8. Extended History – up to 30 days data points depending on timeframe
+**v1.2 – Security & User Experience**
+- ✓ Watchlist sync (cross-device)
+- ✓ Two-Factor Authentication (2FA) with TOTP
+- ✓ Login flow enhanced with 2FA verification
+- ✓ 2FA management page at `/2fa`
 
-**Completed Previously:**
-- Economic Calendar (Finnhub API)
-- Trading Journal (CRUD + auto-close TP/SL)
-- CoinMarketCap API integration for real-time crypto prices
+**v1.1 – Trading Signals & Monetization**
+- ✓ Trading Signals restricted to Pro users
+- ✓ WhatsApp payment integration for upgrades
+- ✓ Professional landing page copy
+- ✓ Signup form enhanced with name & phone fields
+- ✓ Resend email integration configured
+- ✓ Theme-aware landing page (light/dark mode toggle)
+
+**v1.0 – Core Platform**
+- ✓ Multi-pair live charts
+- ✓ Market Outlook & signals
+- ✓ Economic Calendar
+- ✓ Trading Journal with TP/SL auto-close
+- ✓ User authentication (JWT + email verification)
+- ✓ Responsive design with dark mode
 
 ---
 
@@ -94,6 +108,7 @@ Fiturnya:
 | `/pricing` | Subscription plans (Free / Pro) |
 | `/payment` | Payment integration |
 | `/login` | Authentication (login/register) |
+| `/2fa` | Two-Factor Authentication management |
 
 ---
 
