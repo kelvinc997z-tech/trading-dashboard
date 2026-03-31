@@ -224,7 +224,9 @@ export async function GET() {
           continue;
         }
         try {
-          const currentPrice = candles[candles.length - 1]?.close || null;
+          const lastCandle = candles[candles.length - 1];
+          if (!lastCandle) continue; // safety check, shouldn't happen
+          const currentPrice = lastCandle.close;
           await sendAlertNotification(alert, currentPrice, symbol, alert.user.email);
           await db.alert.update({
             where: { id: alert.id },
