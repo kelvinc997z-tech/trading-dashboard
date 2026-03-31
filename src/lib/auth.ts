@@ -22,32 +22,53 @@ export async function getSession() {
 }
 
 export async function register(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const name = formData.get("name") as string | null;
-  const phone = formData.get("phone") as string | null;
-  
-  if (!email || !password) {
-    return { error: "Email and password required" };
+  try {
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const name = formData.get("name") as string | null;
+    const phone = formData.get("phone") as string | null;
+    
+    if (!email || !password) {
+      return { error: "Email and password are required" };
+    }
+    
+    const existing = await db.user.findUnique({ where: { email } });
+    if (existing) {
+      return { error: "An account with this email already exists" };
+    }
+    
+    const hashed = await bcrypt.hash(password, 10);
+    const verificationToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
+    
+    try {
+      await db.user.create({
+        data: {
+          email,
+          password: hashed,
+          name: name || null,
+          phone: phone || null,
+          verificationToken,
+          verified: false,
+        },
+      });
+    } catch (dbError: any) {
+      console.error("Database error during registration:", dbError);
+      return { error: "Failed to create account. Please try again." };
+    }
+    
+    // Send verification email (non-blocking, don't fail registration if email fails)
+    try {
+      await sendVerificationEmail(email, verificationToken);
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError);
+      // Still return success - user can be created even if email fails
+    }
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Registration error:", error);
+    return { error: "An unexpected error occurred. Please try again." };
   }
-  const existing = await db.user.findUnique({ where: { email } });
-  if (existing) {
-    return { error: "User already exists" };
-  }
-  const hashed = await bcrypt.hash(password, 10);
-  const verificationToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
-  const user = await db.user.create({
-    data: {
-      email,
-      password: hashed,
-      name: name || null,
-      phone: phone || null,
-      verificationToken,
-      verified: false,
-    },
-  });
-  await sendVerificationEmail(email, verificationToken);
-  return { success: true };
 }
 
 async function sendVerificationEmail(to: string, token: string) {

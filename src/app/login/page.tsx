@@ -30,6 +30,10 @@ function LoginForm() {
     const formData = new FormData();
     formData.append("email", email);
     formData.append("password", password);
+    if (!isLogin) {
+      if (name) formData.append("name", name);
+      if (phone) formData.append("phone", phone);
+    }
     
     try {
       const res = await fetch(endpoint, {
@@ -45,11 +49,11 @@ function LoginForm() {
         return;
       }
       
-      // Show error message
+      // Show error message from API
       setMessage(data.error || "Something went wrong");
     } catch (err) {
-      setMessage("Network error. Please try again.");
-      console.error("Login error:", err);
+      setMessage("Network error. Please check your connection and try again.");
+      console.error("Auth error:", err);
     } finally {
       setLoading(false);
     }
