@@ -49,10 +49,12 @@ export default function CorrelationMatrix() {
 
   const symbols = Object.keys(data);
   type HeatmapRow = { pair: string } & Record<string, number>;
-  const heatmapData: HeatmapRow[] = symbols.map(s1 => ({
-    pair: s1,
-    ...data[s1],
-  }));
+  const heatmapData: HeatmapRow[] = symbols.map(s1 => {
+    const item = data[s1] as Record<string, number>;
+    // Exclude 'pair' from spread to avoid conflict with explicit pair property
+    const { pair: _ignore, ...rest } = item;
+    return { pair: s1, ...rest };
+  });
 
   // For bar chart of average correlations
   const avgCorrs = symbols.map(s => {
