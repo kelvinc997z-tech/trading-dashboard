@@ -1,11 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    // If URL has ?mode=signup, show signup form
+    const mode = searchParams.get("mode");
+    if (mode === "signup") {
+      setIsLogin(false);
+    }
+  }, [searchParams]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -121,7 +131,10 @@ export default function LoginPage() {
           <div className="text-center">
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                const newMode = isLogin ? "signup" : "login";
+                router.push(`/login?mode=${newMode}`);
+              }}
               className="text-sm text-primary hover:text-primary/80"
               disabled={loading}
             >

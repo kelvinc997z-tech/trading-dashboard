@@ -26,7 +26,7 @@ export default function LandingPage() {
             <LogIn className="w-4 h-4" />
             Login
           </Link>
-          <Link href="/signup" className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-semibold text-white transition">
+          <Link href="/login?mode=signup" className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-semibold text-white transition">
             Sign Up
           </Link>
         </div>
