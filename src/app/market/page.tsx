@@ -8,6 +8,7 @@ import NewsCard from "@/components/NewsCard";
 import SearchBar from "@/components/SearchBar";
 import BreakingTicker from "@/components/BreakingTicker";
 import { useTheme } from "@/components/ThemeProvider";
+import { Crown, Lock, ArrowRight } from "lucide-react";
 
 const categories = ["all", "crypto", "macro", "commodities", "forex"];
 const timeframes = ["24h", "7d", "30d"];
@@ -23,6 +24,8 @@ export default function MarketPage() {
   const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookmarksOnly, setBookmarksOnly] = useState(false);
+  const [userRole, setUserRole] = useState<string>("free");
+  const [userLoading, setUserLoading] = useState(true);
 
   const fetchNews = useCallback(async () => {
     setLoading(true);
@@ -47,6 +50,24 @@ export default function MarketPage() {
   useEffect(() => {
     fetchNews();
   }, [fetchNews]);
+
+  // Fetch user session to check role
+  useEffect(() => {
+    async function fetchSession() {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (res.ok) {
+          const data = await res.json();
+          setUserRole(data.user?.role || "free");
+        }
+      } catch (err) {
+        console.error("Failed to fetch session:", err);
+      } finally {
+        setUserLoading(false);
+      }
+    }
+    fetchSession();
+  }, []);
 
   const displayedNews = bookmarksOnly
     ? news.filter((n) => JSON.parse(localStorage.getItem("newsBookmarks") || "[]").includes(n.id))
@@ -137,7 +158,40 @@ export default function MarketPage() {
             )}
             {activeTab === "signals" && (
               <div className="lg:col-span-3">
-                <MarketSignals />
+                {userLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  </div>
+                ) : userRole === "pro" ? (
+                  <MarketSignals />
+                ) : (
+                  <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-12 text-center">
+                    <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
+                      <Lock className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2">Pro Feature</h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                      Trading Signals are available exclusively for Pro subscribers. 
+                      Upgrade your account to access AI-powered buy/sell recommendations for 15+ cryptocurrencies.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <Link
+                        href="/pricing"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition"
+                      >
+                        <Crown className="w-4 h-4" />
+                        Upgrade to Pro
+                      </Link>
+                      <Link
+                        href="/dashboard"
+                        className="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-700 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                      >
+                        Back to Dashboard
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
