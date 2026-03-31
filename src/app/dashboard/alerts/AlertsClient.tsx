@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 interface Alert {
   id: string;
@@ -119,7 +118,7 @@ export default function AlertsPage() {
         alert("Failed to create alert");
       }
     } catch (e) {
-      toast.error("Error creating alert");
+      alert("Error creating alert");
     }
   };
 
