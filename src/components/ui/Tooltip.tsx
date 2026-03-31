@@ -11,7 +11,6 @@ interface TooltipProps {
 export default function Tooltip({ content, children, position = "top" }: TooltipProps) {
   const [visible, setVisible] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const childRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -40,7 +39,6 @@ export default function Tooltip({ content, children, position = "top" }: Tooltip
   return (
     <div className="relative inline-block" ref={tooltipRef}>
       <div
-        ref={childRef}
         onMouseEnter={() => setVisible(true)}
         onMouseLeave={() => setVisible(false)}
         onClick={() => setVisible(!visible)}
