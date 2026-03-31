@@ -149,8 +149,7 @@ export async function GET() {
         if (condition === 'below' && latestMACD !== null && latestMACD < value) conditionMet = true;
         if (condition === 'cross_above' && prevMACD !== null && latestMACD !== null && prevSignal !== null && latestSignal !== null) {
           if (prevMACD < prevSignal && latestMACD >= latestSignal) conditionMet = true;
-        }
-        if (condition === 'cross_below' && prevMACD !== null && latestMACD !== null && prevSignal !== null && latestSignal !== null) {
+        } else if (condition === 'cross_below' && prevMACD !== null && latestMACD !== null && prevSignal !== null && latestSignal !== null) {
           if (prevMACD > prevSignal && latestMACD <= latestSignal) conditionMet = true;
         }
       } else if (indicator === 'bollinger') {
