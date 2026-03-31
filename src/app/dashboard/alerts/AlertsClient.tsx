@@ -51,7 +51,7 @@ export default function AlertsPage() {
   };
 
   const isIndicatorType = form.type === "indicator";
-  const allowedConditions: string[] = isIndicatorType && form.indicator
+  const allowed: string[] = isIndicatorType && form.indicator
     ? [...indicatorConditions[form.indicator as keyof typeof indicatorConditions]]
     : ["above", "below", "cross_above", "cross_below"];
 
@@ -70,7 +70,7 @@ export default function AlertsPage() {
   const handleIndicatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newIndicator = e.target.value;
     const allowed = newIndicator ? indicatorConditions[newIndicator as keyof typeof indicatorConditions] : ["above", "below", "cross_above", "cross_below"];
-    if (!allowed.includes(form.condition as any)) {
+    if (!allowed.includes(form.condition)) {
       setForm({ ...form, indicator: newIndicator, condition: allowed[0] });
     } else {
       setForm({ ...form, indicator: newIndicator });
@@ -167,7 +167,7 @@ export default function AlertsPage() {
               <label className="block text-sm mb-1">Pattern / Condition</label>
               {isIndicatorType ? (
                 <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value })} className="input w-full">
-                  {allowedConditions.map(c => (
+                  {allowed.map(c => (
                     <option key={c} value={c}>{conditionLabels[c] || c.replace('_', ' ')}</option>
                   ))}
                 </select>
