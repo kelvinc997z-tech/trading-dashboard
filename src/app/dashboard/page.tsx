@@ -98,6 +98,16 @@ export default function Dashboard() {
     return [];
   };
 
+  // Auto-refresh trades every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchTrades().then(trades => {
+        setTrades(trades);
+      });
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchMarketData = useCallback(async () => {
     try {
       // Fetch all symbols we need (from trades and CRYPTO_PAIRS)
