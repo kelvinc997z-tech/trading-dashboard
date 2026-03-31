@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { signIn } from "@/auth";
 
 export default function LandingPage() {
   return (
