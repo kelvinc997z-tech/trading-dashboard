@@ -180,7 +180,7 @@ export default function AlertsPage() {
                 </select>
               ) : (
                 <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value })} className="input w-full">
-                  {allowedConditions.map(c => (
+                  {allowed.map(c => (
                     <option key={c} value={c}>{conditionLabels[c] || c.replace('_', ' ')}</option>
                   ))}
                 </select>
