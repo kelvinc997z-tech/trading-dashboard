@@ -13,6 +13,9 @@ model User {
   password          String
   name              String?
   phone             String?
+  watchlist         String[]  @default([]) // Array of symbols: ["BTC", "ETH", "XAUT"]
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?
   verified          Boolean   @default(false)
   verificationToken String?
   role              String    @default("free") // "free" | "pro"

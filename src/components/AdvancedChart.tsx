@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import WatchlistButton from "@/components/watchlist/WatchlistButton";
 
 // Fixed: ReferenceLine component capitalization (was referenceLine error on Vercel)
 
@@ -212,15 +213,23 @@ export default function AdvancedChart({ symbol = "XAUT", indicators = ["rsi", "m
 
   return (
     <div className="space-y-4">
-      {/* Current Price */}
-      {currentPrice !== null && (
-        <div className="text-center text-2xl font-bold">
-          ${currentPrice.toFixed(2)}
-          <span className={`ml-2 text-base ${priceChange >= 0 ? "text-green-600" : "text-red-600"}`}>
-            ({priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%)
-          </span>
+      {/* Header with symbol and watchlist */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {symbol}
+          </h3>
+          {currentPrice !== null && (
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              ${currentPrice.toFixed(2)} ({priceChange >= 0 ? "+" : ""}{priceChange.toFixed(2)}%)
+            </p>
+          )}
         </div>
-      )}
+        <WatchlistButton symbol={symbol} size={24} />
+      </div>
+
+      {/* Current Price (removed duplicate) */}
+      {/* (The current price is now shown in the header above) */}
 
       {/* Price Chart */}
       <div className="h-64">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import WatchlistButton from "@/components/watchlist/WatchlistButton";
 
 interface MarketData {
   symbol: string;
@@ -77,8 +78,21 @@ export default function RealTimeChart({ symbol = "XAUT", timeframe = "1h" }: Rea
   const isPositive = data.current.change >= 0;
 
   return (
-    <ResponsiveContainer width="100%" height={400}>
-      <LineChart data={chartData}>
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {symbol}
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {data.current.change >= 0 ? "+" : ""}
+            {data.current.changePercent.toFixed(2)}% (24h)
+          </p>
+        </div>
+        <WatchlistButton symbol={symbol} size={24} />
+      </div>
+      <ResponsiveContainer width="100%" height={400}>
+        <LineChart data={chartData}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300 dark:stroke-gray-600" />
         <XAxis 
           dataKey="time" 
