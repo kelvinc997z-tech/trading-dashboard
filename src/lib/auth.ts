@@ -5,6 +5,7 @@ import { db } from "./db";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { redirect } from "next/navigation";
+import { verify2FACode } from "./2fa";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret-change-me";
 const RESEND_VERIFY_URL = process.env.RESEND_VERIFY_URL || "http://localhost:3000/api/auth/verify";
@@ -114,6 +115,7 @@ export async function verifyEmail(token: string) {
 export async function login(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const twoFactorToken = formData.get("twoFactorToken") as string | null;
   
   // Test accounts with roles
   const testAccounts: Record<string, {password: string, role: string}> = {
@@ -133,7 +135,8 @@ export async function login(formData: FormData) {
     const token = jwt.sign({ 
       email, 
       id: email,
-      role: account.role 
+      role: account.role,
+      twoFactorVerified: true, // skip 2FA for test accounts
     }, JWT_SECRET, {
       expiresIn: "7d",
     });
@@ -152,10 +155,23 @@ export async function login(formData: FormData) {
   if (!valid) {
     return { error: "Invalid credentials" };
   }
+  
+  // Check 2FA
+  if (user.twoFactorEnabled) {
+    if (!twoFactorToken) {
+      return { requires2FA: true, userId: user.id };
+    }
+    const isValid = verify2FACode(user.twoFactorSecret!, twoFactorToken);
+    if (!isValid) {
+      return { error: "Invalid 2FA code" };
+    }
+  }
+  
   const token = jwt.sign({ 
     email: user.email, 
     id: user.id,
-    role: "free" // default role for normal users
+    role: user.role || "free",
+    twoFactorVerified: true,
   }, JWT_SECRET, {
     expiresIn: "7d",
   });

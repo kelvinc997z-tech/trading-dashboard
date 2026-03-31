@@ -19,6 +19,8 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [twoFactorToken, setTwoFactorToken] = useState("");
+  const [requires2FA, setRequires2FA] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -33,6 +35,9 @@ function LoginForm() {
     if (!isLogin) {
       if (name) formData.append("name", name);
       if (phone) formData.append("phone", phone);
+    } else {
+      // Include 2FA token if required (empty string if not yet provided)
+      formData.append("twoFactorToken", twoFactorToken);
     }
     
     try {
@@ -46,6 +51,13 @@ function LoginForm() {
       if (res.ok && data.success) {
         // Login successful, redirect to dashboard
         window.location.href = "/dashboard";
+        return;
+      }
+      
+      // Check if 2FA is required
+      if (data.requires2FA) {
+        setRequires2FA(true);
+        setMessage("Please enter your 2FA code from your authenticator app");
         return;
       }
       
@@ -142,6 +154,30 @@ function LoginForm() {
                 disabled={loading}
               />
             </div>
+            {requires2FA && (
+              <div>
+                <label htmlFor="twoFactorToken" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Two-Factor Authentication Code
+                </label>
+                <input
+                  id="twoFactorToken"
+                  name="twoFactorToken"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  required
+                  value={twoFactorToken}
+                  onChange={(e) => setTwoFactorToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm dark:bg-gray-700 dark:text-white"
+                  placeholder="6-digit code"
+                  disabled={loading}
+                  maxLength={6}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Enter the 6-digit code from your authenticator app (Google Authenticator, Authy, etc.)
+                </p>
+              </div>
+            )}
           </div>
 
           {message && (
