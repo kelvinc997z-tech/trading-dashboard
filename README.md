@@ -41,13 +41,13 @@ Fiturnya:
 ## 📦 Features
 
 ### ✅ Already Implemented
+
+**Core Platform:**
 - User registration & login with email verification (Resend)
 - Protected dashboard with real-time trade table
 - Multi-pair live price charts (XAUT, BTC, ETH, SOL, XRP)
 - Market Outlook component (daily trading signals)
 - Trading Signals table (Pro-only, with upgrade prompt)
-- 📋 **Watchlist Sync** – Save favorite pairs; sync across devices
-- 🔐 **Two-Factor Authentication (2FA)** – TOTP-based via Google Authenticator
 - Economic Calendar (Finnhub API)
 - Trading Journal (full CRUD, auto-close on TP/SL)
 - Responsive design (mobile & desktop)
@@ -57,6 +57,21 @@ Fiturnya:
 - Pricing page with WhatsApp payment integration
 - WhatsApp admin contact: `6281367351643`
 - Pro features gating with role-based access
+
+**User Experience Enhancements:**
+- 📋 **Watchlist Sync** – Save favorite pairs; sync across devices with star button
+- 🔐 **Two-Factor Authentication (2FA)** – TOTP-based via Google Authenticator
+- 🔔 **In-App Notification Center** – Bell icon with dropdown, real-time updates
+- ♿ **High Contrast Mode** – WCAG-compliant accessibility toggle
+- 🎯 **First-Time User Onboarding** – Interactive tour (3 steps) for new users
+- 💡 **Tooltips & Help Text** – Contextual help throughout the UI
+- ⚡ **Real-time Updates** – Auto-refresh trades every 30 seconds
+- ✨ **Visual Polish** – Smooth animations with Framer Motion
+
+**Signup & Auth:**
+- Enhanced signup form with name & phone number
+- Login flow with 2FA verification
+- 2FA management page at `/2fa`
 
 ### 🚧 Coming Soon (Quant AI Roadmap)
 - **Phase 1: Market Prediction Engine**
@@ -71,21 +86,38 @@ Fiturnya:
 - **Phase 4: Backtesting Lab**
   - Strategy backtesting, Sharpe/Sortino metrics, walk-forward optimization
 
-### 📋 Implementation History (Selected Milestones)
+### 📋 Implementation History
 
-**v1.2 – Security & User Experience**
-- ✓ Watchlist sync (cross-device)
-- ✓ Two-Factor Authentication (2FA) with TOTP
-- ✓ Login flow enhanced with 2FA verification
-- ✓ 2FA management page at `/2fa`
+**v2.0 – UX Revolution (Latest)**
+- ✅ Notification Center with real-time updates via polling
+- ✅ High Contrast Mode for accessibility (WCAG)
+- ✅ First-Time User Onboarding tour (Framer Motion)
+- ✅ Tooltips throughout the interface
+- ✅ Real-time auto-refresh for dashboard trades
+- ✅ Enhanced visual polish with animations
+
+**v1.2 – Security & Device Sync**
+- ✅ Watchlist sync (cross-device persistence)
+- ✅ Two-Factor Authentication (2FA) with TOTP
+- ✅ 2FA setup & management page at `/2fa`
+- ✅ Login flow with 2FA verification
 
 **v1.1 – Trading Signals & Monetization**
-- ✓ Trading Signals restricted to Pro users
-- ✓ WhatsApp payment integration for upgrades
-- ✓ Professional landing page copy
-- ✓ Signup form enhanced with name & phone fields
-- ✓ Resend email integration configured
-- ✓ Theme-aware landing page (light/dark mode toggle)
+- ✅ Trading Signals restricted to Pro users
+- ✅ WhatsApp payment integration for upgrades
+- ✅ Professional landing page copy
+- ✅ Enhanced signup (name, phone)
+- ✅ Resend email integration
+- ✅ Full theme-aware landing page (light/dark mode)
+
+**v1.0 – Core Platform**
+- ✅ User authentication (JWT + email verification)
+- ✅ Multi-pair live charts (XAUT, BTC, ETH, SOL, XRP)
+- ✅ Market Outlook & Trading Signals
+- ✅ Economic Calendar (Finnhub)
+- ✅ Trading Journal with TP/SL auto-close
+- ✅ Responsive design + Dark mode
+- ✅ CoinMarketCap API integration
 
 **v1.0 – Core Platform**
 - ✓ Multi-pair live charts
@@ -103,12 +135,14 @@ Fiturnya:
 |-------|-------------|
 | `/` | Landing page – info, stats, CTA |
 | `/dashboard` | Main trading dashboard (protected) |
-| `/market` | Market overview & signals |
+| `/market` | Market overview & signals (Pro gated) |
 | `/quant-ai` | Quant AI product page & roadmap |
 | `/pricing` | Subscription plans (Free / Pro) |
-| `/payment` | Payment integration |
-| `/login` | Authentication (login/register) |
+| `/payment` | Payment integration (WhatsApp) |
+| `/login` | Authentication (login/register with 2FA) |
 | `/2fa` | Two-Factor Authentication management |
+| `/economic-calendar` | Economic events calendar (Finnhub) |
+| `/trading-journal` | Personal trade journal & analytics |
 
 ---
 
