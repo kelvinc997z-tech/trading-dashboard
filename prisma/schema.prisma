@@ -16,7 +16,7 @@ model User {
   watchlist         String    @default("[]") // JSON stringified array of symbols
   twoFactorEnabled  Boolean   @default(false)
   twoFactorSecret   String?
-  preferences       String    @default("{}") // JSON stringified preferences
+  preferences       String    @default("{}") // JSON stringified preferences: { theme, notifications, quant_ai_enabled, etc. }
   verified          Boolean   @default(false)
   verificationToken String?
   role              String    @default("free") // "free" | "pro"
@@ -29,6 +29,7 @@ model User {
   performanceMetrics PerformanceMetric[]
   payments          Payment[]
   notifications     Notification[]
+  predictions       Prediction[]  // User's saved/seen predictions
 }
 
 model Trade {
@@ -172,4 +173,60 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId, read, createdAt])
+}
+
+// OHLC Data for ML training
+model OHLCData {
+  id            String   @id @default(cuid())
+  symbol        String
+  timeframe     String   // "1h", "4h", "1d"
+  timestamp     DateTime
+  open          Float
+  high          Float
+  low           Float
+  close         Float
+  volume        Float
+
+  @@unique([symbol, timeframe, timestamp])
+  @@index([symbol, timeframe])
+  @@index([timestamp])
+}
+
+// Technical Indicators (calculated from OHLC)
+model Indicator {
+  id            String   @id @default(cuid())
+  symbol        String
+  timeframe     String   // "1h", "4h", "1d"
+  timestamp     DateTime
+  // RSI
+  rsi           Float?
+  // MACD
+  macd          Float?
+  macdSignal    Float?
+  macdHist      Float?
+  // Moving Averages
+  sma20         Float?
+  sma50         Float?
+  sma200        Float?
+  ema12         Float?
+  ema26         Float?
+  // Bollinger Bands
+  bollingerUpper Float?
+  bollingerMiddle Float?
+  bollingerLower Float?
+  // Volatility
+  atr           Float?
+  adx           Float?
+  // Stochastic
+  stochK        Float?
+  stochD        Float?
+  // Other oscillators
+  williamsR     Float?
+  cci           Float?
+  mfi           Float?
+  // Volume
+  obv           Float?
+
+  @@unique([symbol, timeframe, timestamp])
+  @@index([symbol, timeframe])
 }
