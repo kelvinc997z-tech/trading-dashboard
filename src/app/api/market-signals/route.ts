@@ -95,7 +95,7 @@ export async function GET() {
           impact,
           reason: `SMA(12) vs SMA(24): ${sma12.toFixed(2)} > ${sma24.toFixed(2) ? "Buy" : "Sell"}`
         });
-      } catch (err) {
+      } catch (err: any) {
         console.error(`Error generating signal for ${symbol}:`, err.message);
         // skip this symbol on error, continue with others
       }
