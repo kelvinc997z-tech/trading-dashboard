@@ -101,12 +101,13 @@ export default function Dashboard() {
   // Auto-refresh trades every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchTrades().then(trades => {
-        setTrades(trades);
+      fetchTrades().then(dbTrades => {
+        const mappedTrades = dbTrades.map(trade => mapTrade(trade, markets[trade.symbol]?.price));
+        setTrades(mappedTrades);
       });
     }, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [markets]);
 
   const fetchMarketData = useCallback(async () => {
     try {
