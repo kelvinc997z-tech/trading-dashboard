@@ -46,11 +46,11 @@ interface User {
 }
 
 const CRYPTO_PAIRS = [
-  { symbol: "XAUT/USD", name: "Tether Gold" },
-  { symbol: "BTC/USD", name: "Bitcoin" },
-  { symbol: "ETH/USD", name: "Ethereum" },
-  { symbol: "SOL/USD", name: "Solana" },
-  { symbol: "XRP/USD", name: "Ripple" },
+  { symbol: "XAUT", name: "Tether Gold" },
+  { symbol: "BTC", name: "Bitcoin" },
+  { symbol: "ETH", name: "Ethereum" },
+  { symbol: "SOL", name: "Solana" },
+  { symbol: "XRP", name: "Ripple" },
 ];
 
 export default function Dashboard() {

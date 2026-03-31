@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 
-const CRYPTO_SYMBOLS = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
+const CRYPTO_SYMBOLS = ["XAUT", "BTC", "ETH", "SOL", "XRP"];
 const SUPPORTED_SYMBOLS = CRYPTO_SYMBOLS;
 
 function generateOHLC(symbol: string, timeframe: string = "1h") {
   const basePrices: Record<string, number> = {
-    "XAUT/USD": 2350,
-    "BTC/USD": 65000,
-    "ETH/USD": 3500,
-    "SOL/USD": 150,
-    "XRP/USD": 0.6,
+    "XAUT": 2350,
+    "BTC": 65000,
+    "ETH": 3500,
+    "SOL": 150,
+    "XRP": 0.6,
   };
   const base = basePrices[symbol] || 100;
   
@@ -68,7 +68,7 @@ function generateOHLC(symbol: string, timeframe: string = "1h") {
 }
 
 async function fetchCoinMarketCap(symbol: string, apiKey: string, timeframe: string = "1h") {
-  const cmcSymbol = symbol === "XAUT/USD" ? "XAUT" : symbol.replace("/", "");
+  const cmcSymbol = symbol; // symbol is already simple like "BTC", "ETH"
   const url = `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`;
   const res = await fetch(url, {
     headers: { 'X-CMC_PRO_API_KEY': apiKey },
@@ -134,7 +134,7 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string, timeframe: str
 export async function GET(request: Request) {
   const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
   const { searchParams } = new URL(request.url);
-  const symbol = searchParams.get("symbol") || "XAUT/USD";
+  const symbol = searchParams.get("symbol") || "XAUT";
   const timeframe = searchParams.get("timeframe") || "1h";
 
   if (!SUPPORTED_SYMBOLS.includes(symbol)) {

@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const [isLogin, setIsLogin] = useState(true);
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
-    // If URL has ?mode=signup, show signup form
     const mode = searchParams.get("mode");
     if (mode === "signup") {
       setIsLogin(false);
@@ -144,5 +143,14 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+// Wrap in Suspense to support useSearchParams()
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

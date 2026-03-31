@@ -27,7 +27,7 @@ interface RealTimeChartProps {
   timeframe?: string;
 }
 
-export default function RealTimeChart({ symbol = "XAUT/USD", timeframe = "1h" }: RealTimeChartProps) {
+export default function RealTimeChart({ symbol = "XAUT", timeframe = "1h" }: RealTimeChartProps) {
   const [data, setData] = useState<MarketData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -35,7 +35,7 @@ export async function GET() {
     const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
     if (!cmcApiKey) {
       // If no CMC key, return dummy signals for test
-      const symbols = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
+      const symbols = ["XAUT", "BTC", "ETH", "SOL", "XRP"];
       const dummy = symbols.flatMap(sym => generateDummySignals(sym, 1));
       return NextResponse.json({
         date: new Date().toISOString().split("T")[0],
@@ -45,13 +45,13 @@ export async function GET() {
       });
     }
 
-    const symbols = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
+    const symbols = ["XAUT", "BTC", "ETH", "SOL", "XRP"];
     const allSignals: any[] = [];
     const date = new Date().toISOString().split("T")[0];
 
     for (const symbol of symbols) {
       try {
-        const cmcSymbol = symbol === "XAUT/USD" ? "XAUT" : symbol.replace("/", "");
+        const cmcSymbol = symbol; // symbol is already simple like "BTC", "ETH"
         const res = await fetch(`https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`, {
           headers: { 'X-CMC_PRO_API_KEY': cmcApiKey },
           next: { revalidate: 30 }
