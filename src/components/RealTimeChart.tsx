@@ -93,34 +93,35 @@ export default function RealTimeChart({ symbol = "XAUT", timeframe = "1h" }: Rea
       </div>
       <ResponsiveContainer width="100%" height={400}>
         <LineChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300 dark:stroke-gray-600" />
-        <XAxis 
-          dataKey="time" 
-          tick={{ fontSize: 12 }}
-          className="text-gray-600 dark:text-gray-300"
-        />
-        <YAxis 
-          domain={['auto', 'auto']}
-          tick={{ fontSize: 12 }}
-          className="text-gray-600 dark:text-gray-300"
-        />
-        <Tooltip 
-          contentStyle={{ 
-            backgroundColor: 'var(--tooltip-bg, white)',
-            border: '1px solid var(--tooltip-border, #e5e7eb)',
-            borderRadius: '0.5rem',
-            color: 'var(--tooltip-color, #111827)'
-          }}
-        />
-        <Line 
-          type="monotone" 
-          dataKey="price" 
-          stroke={isPositive ? "#16a34a" : "#dc2626"} 
-          strokeWidth={2}
-          dot={false}
-          activeDot={{ r: 4 }}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300 dark:stroke-gray-600" />
+          <XAxis 
+            dataKey="time" 
+            tick={{ fontSize: 12 }}
+            className="text-gray-600 dark:text-gray-300"
+          />
+          <YAxis 
+            domain={['auto', 'auto']}
+            tick={{ fontSize: 12 }}
+            className="text-gray-600 dark:text-gray-300"
+          />
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: 'var(--tooltip-bg, white)',
+              border: '1px solid var(--tooltip-border, #e5e7eb)',
+              borderRadius: '0.5rem',
+              color: 'var(--tooltip-color, #111827)'
+            }}
+          />
+          <Line 
+            type="monotone" 
+            dataKey="price" 
+            stroke={isPositive ? "#16a34a" : "#dc2626"} 
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </>
   );
 }
