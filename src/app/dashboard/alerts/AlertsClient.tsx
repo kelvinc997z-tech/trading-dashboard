@@ -30,11 +30,11 @@ export default function AlertsPage() {
     notificationChannel: "email",
   });
 
-  const indicatorConditions = {
+  const indicatorConditions: Record<string, string[]> = {
     rsi: ["above", "below"],
     macd: ["above", "below", "cross_above", "cross_below"],
     bollinger: ["above_upper", "below_lower"],
-  } as const;
+  };
 
   const patternOptions = [
     { value: "doji", label: "Doji" },
@@ -51,8 +51,8 @@ export default function AlertsPage() {
   };
 
   const isIndicatorType = form.type === "indicator";
-  const allowed: string[] = isIndicatorType && form.indicator
-    ? (indicatorConditions[form.indicator as keyof typeof indicatorConditions] as string[])
+  const allowed = isIndicatorType && form.indicator
+    ? indicatorConditions[form.indicator as keyof typeof indicatorConditions] || ["above", "below", "cross_above", "cross_below"]
     : ["above", "below", "cross_above", "cross_below"];
 
   // Label mappings for display
