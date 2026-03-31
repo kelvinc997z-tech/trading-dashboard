@@ -51,9 +51,12 @@ export default function AlertsPage() {
   };
 
   const isIndicatorType = form.type === "indicator";
-  const allowed: string[] = isIndicatorType && form.indicator
-    ? [...indicatorConditions[form.indicator as keyof typeof indicatorConditions]] as string[]
-    : ["above", "below", "cross_above", "cross_below"];
+  let allowed: string[];
+  if (isIndicatorType && form.indicator) {
+    allowed = Array.from(indicatorConditions[form.indicator as keyof typeof indicatorConditions]);
+  } else {
+    allowed = ["above", "below", "cross_above", "cross_below"];
+  }
 
   // Label mappings for display
   const conditionLabels: Record<string, string> = {
