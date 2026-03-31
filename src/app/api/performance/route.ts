@@ -106,10 +106,9 @@ export async function GET(request: NextRequest) {
     },
     create: {
       userId: session.user.id,
-      period,
       startDate,
       endDate,
-      ...result,
+      ...result, // result already includes period
     },
   });
 
