@@ -1,10 +1,39 @@
+"use client";
+
 import Link from "next/link";
+import { useTheme } from "@/components/ThemeProvider";
+import { Sun, Moon, LogIn, UserPlus } from "lucide-react";
 
 export default function LandingPage() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+      {/* Header with theme toggle and auth buttons */}
+      <header className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <Link href="/" className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+          TradingDash
+        </Link>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition"
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+          <Link href="/login" className="flex items-center gap-2 px-4 py-2 border border-gray-600 hover:border-gray-400 rounded-lg transition">
+            <LogIn className="w-4 h-4" />
+            Login
+          </Link>
+          <Link href="/signup" className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-semibold transition">
+            Sign Up
+          </Link>
+        </div>
+      </header>
+
       {/* Hero */}
-      <header className="container mx-auto px-4 py-20 text-center">
+      <section className="container mx-auto px-4 py-20 text-center">
         <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
           Trading Dashboard Pro
         </h1>
@@ -20,7 +49,7 @@ export default function LandingPage() {
             View Pricing
           </Link>
         </div>
-      </header>
+      </section>
 
       {/* Features */}
       <section className="container mx-auto px-4 py-20">
