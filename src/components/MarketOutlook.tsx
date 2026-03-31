@@ -11,6 +11,8 @@ interface Signal {
   sl: number;
   confidence: number;
   reasoning: string;
+  currentPrice?: number;
+  change?: number; // percentage
 }
 
 interface OutlookData {
@@ -27,7 +29,25 @@ export default function MarketOutlook() {
       const res = await fetch("/api/market-outlook");
       if (res.ok) {
         const json = await res.json();
-        setData(json);
+        // Fetch current prices for all symbols
+        const pairsWithPrices = await Promise.all(
+          json.pairs.map(async (pair: Signal) => {
+            try {
+              const symbol = pair.symbol.replace("USD", "/USD"); // ensure format
+              const priceRes = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}`);
+              if (priceRes.ok) {
+                const priceData = await priceRes.json();
+                const currentPrice = priceData.current?.price ?? priceData.current?.close ?? pair.entry;
+                const change = priceData.current?.changePercent ?? 0;
+                return { ...pair, currentPrice, change };
+              }
+            } catch (e) {
+              console.error(`Failed to fetch price for ${pair.symbol}:`, e);
+            }
+            return pair;
+          })
+        );
+        setData({ ...json, pairs: pairsWithPrices });
       }
     } catch (e) {
       console.error("Failed to fetch market outlook:", e);
@@ -69,7 +89,17 @@ export default function MarketOutlook() {
           <div key={idx} className={`p-4 rounded-lg border-l-4 ${pair.signal === 'buy' ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-red-500 bg-red-50 dark:bg-red-900/20'}`}>
             <div className="flex justify-between items-start mb-2">
               <div>
-                <h3 className="font-semibold text-lg">{pair.name}</h3>
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  {pair.name}
+                  {pair.currentPrice !== undefined && (
+                    <span className="text-base font-mono">
+                      ${formatPrice(pair.currentPrice)}
+                      <span className={`ml-1 text-xs ${pair.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        ({pair.change >= 0 ? '+' : ''}{pair.change.toFixed(2)}%)
+                      </span>
+                    </span>
+                  )}
+                </h3>
                 <p className="text-xs text-gray-500">{pair.symbol}</p>
               </div>
               <span className={`px-3 py-1 rounded-full text-white text-sm font-bold ${getSignalColor(pair.signal)}`}>
