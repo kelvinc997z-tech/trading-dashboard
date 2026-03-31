@@ -24,6 +24,9 @@ export async function getSession() {
 export async function register(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const name = formData.get("name") as string | null;
+  const phone = formData.get("phone") as string | null;
+  
   if (!email || !password) {
     return { error: "Email and password required" };
   }
@@ -37,6 +40,8 @@ export async function register(formData: FormData) {
     data: {
       email,
       password: hashed,
+      name: name || null,
+      phone: phone || null,
       verificationToken,
       verified: false,
     },
@@ -47,6 +52,7 @@ export async function register(formData: FormData) {
 
 async function sendVerificationEmail(to: string, token: string) {
   const verifyLink = `${RESEND_VERIFY_URL}?token=${token}`;
+  const fromEmail = process.env.RESEND_EMAIL_FROM || "noreply@yourdomain.com";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -54,7 +60,7 @@ async function sendVerificationEmail(to: string, token: string) {
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "Trading Dashboard <noreply@yourdomain.com>",
+      from: `Trading Dashboard <${fromEmail}>`,
       to,
       subject: "Verify your email",
       html: `<p>Click <a href="${verifyLink}">here</a> to verify your email.</p>`,
