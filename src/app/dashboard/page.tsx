@@ -51,16 +51,6 @@ const CRYPTO_PAIRS = [
   { symbol: "ETH/USD", name: "Ethereum" },
   { symbol: "SOL/USD", name: "Solana" },
   { symbol: "XRP/USD", name: "Ripple" },
-  { symbol: "DOGE/USD", name: "Dogecoin" },
-  { symbol: "ADA/USD", name: "Cardano" },
-  { symbol: "DOT/USD", name: "Polkadot" },
-  { symbol: "AVAX/USD", name: "Avalanche" },
-  { symbol: "MATIC/USD", name: "Polygon" },
-  { symbol: "LINK/USD", name: "Chainlink" },
-  { symbol: "UNI/USD", name: "Uniswap" },
-  { symbol: "SHIB/USD", name: "Shiba Inu" },
-  { symbol: "LTC/USD", name: "Litecoin" },
-  { symbol: "NEAR/USD", name: "NEAR Protocol" },
 ];
 
 export default function Dashboard() {

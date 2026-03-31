@@ -35,10 +35,7 @@ export async function GET() {
     const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
     if (!cmcApiKey) {
       // If no CMC key, return dummy signals for test
-      const symbols = [
-        "XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD",
-        "DOGE/USD", "ADA/USD", "DOT/USD", "AVAX/USD", "MATIC/USD"
-      ];
+      const symbols = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
       const dummy = symbols.flatMap(sym => generateDummySignals(sym, 1));
       return NextResponse.json({
         date: new Date().toISOString().split("T")[0],
@@ -48,12 +45,7 @@ export async function GET() {
       });
     }
 
-    // Extended list of symbols to generate signals for
-    const symbols = [
-      "XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD",
-      "DOGE/USD", "ADA/USD", "DOT/USD", "AVAX/USD", "MATIC/USD",
-      "LINK/USD", "UNI/USD", "SHIB/USD", "LTC/USD", "NEAR/USD"
-    ];
+    const symbols = ["XAUT/USD", "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD"];
     const allSignals: any[] = [];
     const date = new Date().toISOString().split("T")[0];
 
@@ -104,8 +96,8 @@ export async function GET() {
           reason: `SMA(12) vs SMA(24): ${sma12.toFixed(2)} > ${sma24.toFixed(2) ? "Buy" : "Sell"}`
         });
       } catch (err) {
-        console.error(`Error generating signal for ${symbol}:`, err);
-        // skip this symbol on error
+        console.error(`Error generating signal for ${symbol}:`, err.message);
+        // skip this symbol on error, continue with others
       }
     }
 
