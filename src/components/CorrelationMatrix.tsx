@@ -53,7 +53,7 @@ export default function CorrelationMatrix() {
     const item = data[s1] as Record<string, number>;
     // Exclude 'pair' from spread to avoid conflict with explicit pair property
     const { pair: _ignore, ...rest } = item;
-    return { pair: s1, ...rest };
+    return { pair: s1, ...rest } as HeatmapRow;
   });
 
   // For bar chart of average correlations
