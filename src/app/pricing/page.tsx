@@ -25,7 +25,7 @@ export default function PricingPage() {
       const { requestId, whatsappMessage } = await res.json();
 
       // Open WhatsApp with pre-filled message
-      const waUrl = `https://wa.me/6285172300170?text=${encodeURIComponent(whatsappMessage)}`;
+      const waUrl = `https://wa.me/6281367351643?text=${encodeURIComponent(whatsappMessage)}`;
       window.open(waUrl, "_blank");
 
       alert("Payment request recorded! Complete payment via WhatsApp.");

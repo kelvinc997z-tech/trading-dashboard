@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-const ADMIN_WHATSAPP_NUMBER = "6285172300170"; // Your WhatsApp number (country code + number, no leading zero)
+const ADMIN_WHATSAPP_NUMBER = "6281367351643"; // Admin WhatsApp number for payment processing
 
 // POST /api/payment/request
 export async function POST(request: NextRequest) {
