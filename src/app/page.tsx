@@ -46,7 +46,7 @@ export default function LandingPage() {
             Start Free Trial
           </Link>
           <Link href="/pricing" className="px-8 py-3 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 rounded-lg font-semibold transition">
-            View Pricing
+            View Plan
           </Link>
         </div>
       </section>
@@ -74,9 +74,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing teaser */}
+      {/* Plan teaser */}
       <section className="container mx-auto px-4 py-20 text-center">
-        <h2 className="text-3xl font-bold mb-4">Flexible Pricing</h2>
+        <h2 className="text-3xl font-bold mb-4">Flexible Plan</h2>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
           Start with our free tier, then upgrade to Pro for advanced features. No hidden fees, cancel anytime.
         </p>

@@ -30,7 +30,7 @@ export default function QuantAIPage() {
               Market
             </Link>
             <Link href="/pricing" className="text-gray-600 dark:text-gray-300 hover:text-primary">
-              Pricing
+              Plan
             </Link>
             <Link href="/quant-ai" className="text-primary font-medium">
               Quant AI
@@ -204,7 +204,7 @@ export default function QuantAIPage() {
             Be the first to access Quant AI when it launches. Early adopters get exclusive perks.
           </p>
           <Link href="/pricing" className="inline-block bg-white text-black px-8 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
-            View Pricing Plans
+            View Plans
           </Link>
         </div>
       </section>

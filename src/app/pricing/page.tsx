@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-export default function PricingPage() {
+export default function PlanPage() {
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "lifetime">("monthly");
   const [loading, setLoading] = useState(false);
 
@@ -53,7 +53,7 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-16 px-4">
       <div className="max-w-4xl mx-auto text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Pricing</h1>
+        <h1 className="text-4xl font-bold mb-4">Plan</h1>
         <p className="text-gray-600 dark:text-gray-300">Simple, transparent pricing. No hidden fees.</p>
       </div>
 
