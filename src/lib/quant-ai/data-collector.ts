@@ -48,9 +48,9 @@ export interface Indicators {
 export async function saveOHLCData(data: OHLCData[]) {
   // Upsert OHLC data (avoid duplicates)
   for (const item of data) {
-    await db.oHLCDatum.upsert({
+    await db.oHLCData.upsert({
       where: {
-        symbol_timeframe_unique: {
+        symbol_timeframe_timestamp_unique: {
           symbol: item.symbol,
           timeframe: item.timeframe,
           timestamp: item.timestamp,
@@ -109,7 +109,7 @@ export async function getOHLCHistory(
   timeframe: string,
   limit: number = 500
 ) {
-  const data = await db.oHLCDatum.findMany({
+  const data = await db.oHLCData.findMany({
     where: {
       symbol,
       timeframe,
@@ -214,7 +214,7 @@ export async function prepareTrainingDataset(
       indicatorData.mfi,
       indicatorData.obv,
       // Past N closes (for LSTM-style features)
-      ...ohlc.slice(i - lookback + 1, i + 1).map(d => d.close),
+      ...ohlc.slice(i - lookback + 1, i + 1).map((d: OHLCData) => d.close),
     ];
 
     X.push(features);
