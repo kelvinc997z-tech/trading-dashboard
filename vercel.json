@@ -7,7 +7,7 @@
   "crons": [
     {
       "path": "/api/cron/fetch-ohlc",
-      "schedule": "0 * * * *", // Every hour on the hour
+      "schedule": "0 * * * *",
       "timezone": "Asia/Jakarta"
     }
   ]
