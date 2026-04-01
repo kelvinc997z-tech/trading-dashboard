@@ -210,7 +210,7 @@ export function calculateStochastic(
   dPeriod: number = 3
 ): { k: number[]; d: number[] } {
   const k: number[] = new Array(highs.length).fill(NaN);
-  const d: number[] = new Array(highs.length).fill(NaN);
+  let d: number[] = new Array(highs.length).fill(NaN);
 
   for (let i = kPeriod - 1; i < highs.length; i++) {
     const highSlice = highs.slice(i - kPeriod + 1, i + 1);
