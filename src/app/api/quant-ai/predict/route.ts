@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getOHLCHistory, getIndicators, OHLCData } from "@/lib/quant-ai/data-collector";
+import { getOHLCHistory, getIndicators, saveIndicators, OHLCData } from "@/lib/quant-ai/data-collector";
+import { calculateAllIndicators } from "@/lib/quant-ai/indicators";
 import { predict } from "@/lib/quant-ai/models";
 
 // POST /api/quant-ai/predict
@@ -22,17 +23,66 @@ export async function POST(request: NextRequest) {
 
     // Fetch latest OHLC and indicators
     const ohlc = await getOHLCHistory(symbol, timeframe, 200);
-    const indicatorData = await getIndicators(symbol, timeframe, 200);
+    let indicatorData = await getIndicators(symbol, timeframe, 200);
 
     if (ohlc.length < 60) {
-      return NextResponse.json({ error: "Insufficient historical data" }, { status: 400 });
+      return NextResponse.json({ error: "Insufficient historical data. Please fetch more data via /api/finnhub/fetch" }, { status: 400 });
     }
 
-    // Use the latest indicator values from database
+    // If no indicators exist, auto-calculate them
+    if (indicatorData.length === 0) {
+      // Calculate indicators from OHLC
+      const ohlcForIndicators = ohlc.map(d => ({
+        high: d.high,
+        low: d.low,
+        close: d.close,
+        volume: d.volume,
+        timestamp: d.timestamp,
+      }));
+
+      const calculatedIndicators = calculateAllIndicators(ohlcForIndicators);
+
+      // Save calculated indicators to database
+      for (const ind of calculatedIndicators) {
+        if (!ind.timestamp) continue;
+        await saveIndicators(
+          symbol.toUpperCase(),
+          timeframe,
+          ind.timestamp,
+          {
+            rsi: ind.rsi,
+            macd: ind.macd,
+            macdSignal: ind.macdSignal,
+            macdHist: ind.macdHist,
+            sma20: ind.sma20,
+            sma50: ind.sma50,
+            sma200: ind.sma200,
+            ema12: ind.ema12,
+            ema26: ind.ema26,
+            bollingerUpper: ind.bollingerUpper,
+            bollingerMiddle: ind.bollingerMiddle,
+            bollingerLower: ind.bollingerLower,
+            atr: ind.atr,
+            adx: ind.adx,
+            stochK: ind.stochK,
+            stochD: ind.stochD,
+            williamsR: ind.williamsR,
+            cci: ind.cci,
+            mfi: ind.mfi,
+            obv: ind.obv,
+          }
+        );
+      }
+
+      // Reload indicators from DB after saving
+      indicatorData = await getIndicators(symbol, timeframe, 200);
+    }
+
+    // Use the latest indicator values
     const latestIndicators = indicatorData[indicatorData.length - 1];
 
     if (!latestIndicators) {
-      return NextResponse.json({ error: "No indicator data available. Please ensure indicators are calculated." }, { status: 400 });
+      return NextResponse.json({ error: "Failed to get indicator data" }, { status: 500 });
     }
 
     // Build feature vector (same order as in training)
