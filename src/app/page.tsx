@@ -52,6 +52,81 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Quant AI Highlight Section */}
+      <section className="container mx-auto px-4 py-20 bg-gradient-to-br from-emerald-900/20 to-blue-900/20 rounded-2xl my-12">
+        <div className="text-center mb-12">
+          <span className="inline-block px-4 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm font-medium mb-4">NEW IN V2</span>
+          <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-blue-400">
+            Quant AI: AI-Powered Trading Intelligence
+          </h2>
+          <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+            Harness the power of machine learning with our ensemble of LSTM neural networks, XGBoost, and Random Forest models. Get price predictions with confidence scores and automatically generated risk levels.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {[
+            {
+              title: "Ensemble Models",
+              desc: "Combined predictions from LSTM, XGBoost, and Random Forest for higher accuracy",
+              icon: "🧠"
+            },
+            {
+              title: "Confidence Scoring",
+              desc: "Each prediction includes a probability score (0–100%) so you know how much to trust it",
+              icon: "📊"
+            },
+            {
+              title: "Auto SL/TP",
+              desc: "AI suggests entry, take-profit, and stop-loss levels based on predicted volatility",
+              icon: "🎯"
+            },
+            {
+              title: "Quick Generate",
+              desc: "One-click predictions for any crypto symbol across multiple timeframes (1h, 4h, 1d)",
+              icon: "⚡"
+            },
+            {
+              title: "Prediction History",
+              desc: "Track past predictions and their accuracy to refine your strategy over time",
+              icon: "📈"
+            },
+            {
+              title: "Model Selection",
+              desc: "Choose between LSTM, XGBoost, Random Forest, or use the ensemble mode",
+              icon: "🔬"
+            },
+            {
+              title: "How It Works",
+              desc: "Educational guide explaining the ML pipeline from data collection to model inference",
+              icon: "📚"
+            },
+            {
+              title: "Pro Access Only",
+              desc: "Quant AI features are available exclusively for Pro subscribers. Upgrade to unlock.",
+              icon: "👑",
+              pro: true
+            },
+          ].map((feature, i) => (
+            <div key={i} className={`p-6 rounded-xl border ${feature.pro ? 'bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30' : 'bg-gray-800/50 border-gray-700'} hover:border-emerald-500/50 transition group`}>
+              <div className="text-4xl mb-4">{feature.icon}</div>
+              <h3 className="text-xl font-semibold mb-2 group-hover:text-emerald-400 transition">{feature.title}</h3>
+              <p className="text-gray-400">{feature.desc}</p>
+              {feature.pro && (
+                <span className="inline-block mt-3 px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold rounded-full">PRO</span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center mt-12">
+          <Link href="/quant-ai" className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 rounded-lg font-semibold text-white transition shadow-lg shadow-emerald-500/25">
+            Try Quant AI Now
+          </Link>
+          <p className="text-sm text-gray-400 mt-3">Available for Pro subscribers. Free trial available.</p>
+        </div>
+      </section>
+
       {/* XAUT Live Price & Signal */}
       <section className="container mx-auto px-4 py-8">
         <XAUTLivePrice />
