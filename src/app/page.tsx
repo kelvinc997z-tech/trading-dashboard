@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 import { Sun, Moon, LogIn, UserPlus } from "lucide-react";
+import XAUTLivePrice from "@/components/XAUTLivePrice";
 
 export default function LandingPage() {
   const { theme, toggleTheme } = useTheme();
@@ -49,6 +50,11 @@ export default function LandingPage() {
             View Plan
           </Link>
         </div>
+      </section>
+
+      {/* XAUT Live Price & Signal */}
+      <section className="container mx-auto px-4 py-8">
+        <XAUTLivePrice />
       </section>
 
       {/* Features */}

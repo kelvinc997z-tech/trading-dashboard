@@ -45,7 +45,11 @@ Fiturnya:
 **Core Platform:**
 - User registration & login with email verification (Resend)
 - Protected dashboard with real-time trade table
-- Multi-pair live price charts (XAUT, BTC, ETH, SOL, XRP)
+- Multi-pair live price charts (Crypto, Forex, Commodities, US Stocks)
+  - *Crypto*: BTC, ETH, SOL, XRP, XAUT
+  - *Forex*: EURUSD, USDJPY, GBPUSD
+  - *Commodities*: OIL, SILVER
+  - *US Stocks*: AAPL, AMD, NVDA, MSFT, GOOGL (via Massive API)
 - Market Outlook component (daily trading signals)
 - Trading Signals table (Pro-only, with upgrade prompt)
 - Economic Calendar (Finnhub API)
@@ -69,7 +73,8 @@ Fiturnya:
 - ✨ **Visual Polish** – Smooth animations with Framer Motion
 
 **Quant AI (Beta):**
-- 🤖 **AI Price Predictions** – Generate forecasts for BTC, ETH, SOL, XRP, XAUT across 1h/4h/1d timeframes
+- 🤖 **AI Price Predictions** – Generate forecasts for Crypto, Forex, Commodities, and US Stocks
+  - *Supported symbols*: BTC, ETH, SOL, XRP, XAUT, EURUSD, USDJPY, GBPUSD, OIL, SILVER, AAPL, AMD, NVDA, MSFT, GOOGL
   - *Auto-calculates technical indicators if missing*
   - *Uses trained ML models (XGBoost/LSTM) or falls back to heuristic*
 - 📊 **Prediction History** – View recent predictions with confidence intervals and directions
@@ -78,8 +83,9 @@ Fiturnya:
   - *Per-symbol sentiment with article count and top headlines*
 - 📈 **Market Outlook** – Daily trading signals for Forex & Commodities with TP/SL
 - 🧠 **ML Model Infrastructure** – Training scripts (Python) for LSTM & XGBoost, feature engineering pipeline
-- 💾 **Data Pipeline** – Automated OHLC fetching (Finnhub) → Indicators calculation → Prediction generation
-- 📥 **Finnhub Integration** – `/api/finnhub/fetch` populates historical OHLC data
+- 💾 **Data Pipeline** – Automated OHLC fetching (Finnhub + Massive) → Indicators calculation → Prediction generation
+- 📥 **Finnhub Integration** – `/api/finnhub/fetch` populates crypto/forex/commodities OHLC data
+- 📥 **Massive Integration** – `/api/massive/fetch` populates US stocks OHLC data (Pro feature)
 - 🔄 **Auto Indicator Calculation** – Indicators auto-computed during prediction if not present
 - 🔙 **UX Navigation** – Back to Dashboard button on Quant AI and Sentiment pages
 
@@ -103,7 +109,16 @@ Fiturnya:
 
 ### 📋 Implementation History
 
-**v2.1 – Quant AI & Market Sentiment (Latest)**
+**v2.2 – US Stocks Expansion & Landing Live Price (Latest)**
+- ✅ US Stock data integration via Massive.com API (AAPL, AMD, NVDA, MSFT, GOOGL)
+- ✅ `/api/massive/fetch` endpoint for fetching US stock OHLC & indicators
+- ✅ Updated cron job to fetch both crypto/forex (Finnhub) and US stocks (Massive) daily
+- ✅ Added `MASSIVE_API_KEY` environment variable support
+- ✅ XAUT live price & signal widget on landing page (auto-refresh 30s)
+- ✅ Extended Quant AI predictions support to US stocks
+- ✅ Updated watchlist and symbol coverage in documentation
+
+**v2.1 – Quant AI & Market Sentiment**
 - ✅ Prediction database model + Prisma integration
 - ✅ `/api/quant-ai/predict` endpoint for generating & storing predictions
 - ✅ `/api/quant-ai/predictions` endpoint for fetching recent predictions
@@ -188,8 +203,10 @@ Fiturnya:
 ### Data Collection
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/finnhub/fetch` | POST | Fetch OHLC from Finnhub & auto-calc indicators. Body: `{ symbol, timeframe, count? }` |
-| `/api/finnhub/status` | GET | Check data status. Query: `?symbol=BTC&timeframe=1h` |
+| `/api/finnhub/fetch` | POST | Fetch OHLC from Finnhub (crypto/forex/commodities) & auto-calc indicators. Body: `{ symbol, timeframe, count? }` |
+| `/api/finnhub/status` | GET | Check Finnhub data status. Query: `?symbol=BTC&timeframe=1h` |
+| `/api/massive/fetch` | POST | Fetch US stock OHLC from Massive.com (AAPL, AMD, NVDA, MSFT, GOOGL). Body: `{ symbol, timeframe, count? }` |
+| `/api/massive/status` | GET | Check US stock data status. Query: `?symbol=AAPL&timeframe=1h` |
 | `/api/indicators/calculate` | POST | Manually calculate indicators from OHLC. Body: `{ symbol, timeframe, limit? }` |
 | `/api/indicators/calculate` | GET | Check indicator coverage. Query: `?symbol=BTC&timeframe=1h` |
 
@@ -227,6 +244,7 @@ cp .env.example .env.local
 | `DATABASE_URL` | `file:./dev.db` for SQLite dev; Postgres URL for production |
 | `COINMARKETCAP_API_KEY` | CoinMarketCap Pro API key for real-time crypto prices (required for live data) |
 | `FINNHUB_API_KEY` | Finnhub API key for fetching OHLC data and indicators (optional but recommended for Quant AI) |
+| `MASSIVE_API_KEY` | Massive.com API key for US stocks data (AAPL, AMD, NVDA, MSFT, GOOGL) – Pro feature |
 
 ### 3. Initialize Database
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fetchOHLC, convertOHLCtoDatabaseFormat } from "@/lib/finnhub";
+import { fetchStockOHLC, convertStockToDatabaseFormat } from "@/lib/massive";
 import { calculateAllIndicators } from "@/lib/quant-ai/indicators";
 import { saveOHLCData, saveIndicators } from "@/lib/quant-ai/data-collector";
 
@@ -27,36 +28,55 @@ export async function POST(request: NextRequest) {
     console.warn("Fetch-ohlc called without CRON_SECRET and without admin auth");
   }
 
-  // List of symbols to fetch (could also come from DB/watchlist table)
+  // List of symbols to fetch (provider-specific)
   const symbols = [
-    { symbol: "BTC", timeframe: "1h" },
-    { symbol: "ETH", timeframe: "1h" },
-    { symbol: "SOL", timeframe: "1h" },
-    { symbol: "XRP", timeframe: "1h" },
-    { symbol: "XAUT", timeframe: "1h" },
-    { symbol: "EURUSD", timeframe: "1h" },
-    { symbol: "USDJPY", timeframe: "1h" },
-    { symbol: "GBPUSD", timeframe: "1h" },
-    { symbol: "OIL", timeframe: "1h" },
-    { symbol: "SILVER", timeframe: "1h" },
+    // Crypto & Forex (Finnhub)
+    { symbol: "BTC", timeframe: "1h", provider: "finnhub" },
+    { symbol: "ETH", timeframe: "1h", provider: "finnhub" },
+    { symbol: "SOL", timeframe: "1h", provider: "finnhub" },
+    { symbol: "XRP", timeframe: "1h", provider: "finnhub" },
+    { symbol: "XAUT", timeframe: "1h", provider: "finnhub" },
+    { symbol: "EURUSD", timeframe: "1h", provider: "finnhub" },
+    { symbol: "USDJPY", timeframe: "1h", provider: "finnhub" },
+    { symbol: "GBPUSD", timeframe: "1h", provider: "finnhub" },
+    { symbol: "OIL", timeframe: "1h", provider: "finnhub" },
+    { symbol: "SILVER", timeframe: "1h", provider: "finnhub" },
+    // US Stocks (Massive)
+    { symbol: "AAPL", timeframe: "1h", provider: "massive" },
+    { symbol: "AMD", timeframe: "1h", provider: "massive" },
+    { symbol: "NVDA", timeframe: "1h", provider: "massive" },
+    { symbol: "MSFT", timeframe: "1h", provider: "massive" },
+    { symbol: "GOOGL", timeframe: "1h", provider: "massive" },
   ];
 
   const results = [];
   const errors = [];
-  const rateLimitDelay = 650; // ms between Finnhub calls (free tier: 60/min = ~1 call/sec)
+  const rateLimitDelay = 650; // ms between API calls (Finnhub free tier: 60/min)
 
-  for (const { symbol, timeframe } of symbols) {
+  for (const { symbol, timeframe, provider } of symbols) {
     try {
-      // Fetch OHLC from Finnhub (last 200 periods)
-      const rawData = await fetchOHLC(symbol, timeframe, 200);
-      
-      if (!rawData.c || rawData.c.length === 0) {
-        results.push({ symbol, timeframe, status: "no_data" });
-        continue;
+      let rawData: any;
+      let ohlcRecords: any[];
+
+      if (provider === "massive") {
+        // Fetch US stock from Massive
+        rawData = await fetchStockOHLC(symbol, timeframe, 200);
+        if (!rawData.c || rawData.c.length === 0) {
+          results.push({ symbol, timeframe, provider, status: "no_data" });
+          continue;
+        }
+        ohlcRecords = convertStockToDatabaseFormat(rawData, symbol, timeframe);
+      } else {
+        // Fetch from Finnhub (crypto/forex)
+        rawData = await fetchOHLC(symbol, timeframe, 200);
+        if (!rawData.c || rawData.c.length === 0) {
+          results.push({ symbol, timeframe, provider, status: "no_data" });
+          continue;
+        }
+        ohlcRecords = convertOHLCtoDatabaseFormat(rawData, symbol, timeframe);
       }
 
-      // Convert and save OHLC
-      const ohlcRecords = convertOHLCtoDatabaseFormat(rawData, symbol, timeframe);
+      // Save OHLC data
       await saveOHLCData(ohlcRecords);
 
       // Calculate indicators for the latest data points (last 200)
@@ -100,6 +120,7 @@ export async function POST(request: NextRequest) {
       results.push({ 
         symbol, 
         timeframe, 
+        provider,
         status: "success", 
         ohlcCount: ohlcRecords.length,
         indicatorCount: recentOHLC.length >= 50 ? indicatorsList.length : 0
@@ -109,9 +130,9 @@ export async function POST(request: NextRequest) {
       await new Promise(resolve => setTimeout(resolve, rateLimitDelay));
       
     } catch (error: any) {
-      console.error(`Cron fetch failed for ${symbol}:`, error);
-      errors.push({ symbol, timeframe, error: error.message });
-      results.push({ symbol, timeframe, status: "error", error: error.message });
+      console.error(`Cron fetch failed for ${symbol} (${provider}):`, error);
+      errors.push({ symbol, timeframe, provider, error: error.message });
+      results.push({ symbol, timeframe, provider, status: "error", error: error.message });
     }
   }
 
