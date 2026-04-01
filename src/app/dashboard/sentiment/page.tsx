@@ -1,5 +1,3 @@
-"use client";
-
 import MarketSentiment from "@/components/MarketSentiment";
 import Link from "next/link";
 import { ArrowLeft, Newspaper } from "lucide-react";
