@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { fetchStockOHLC, convertStockToDatabaseFormat } from "@/lib/massive";
 
 const CRYPTO_SYMBOLS = ["XAUT", "BTC", "ETH", "SOL", "XRP"];
-const SUPPORTED_SYMBOLS = CRYPTO_SYMBOLS;
+const US_STOCKS = ["AAPL", "AMD", "NVDA", "MSFT", "GOOGL"];
+const SUPPORTED_SYMBOLS = [...CRYPTO_SYMBOLS, ...US_STOCKS];
 
 function generateOHLC(symbol: string, timeframe: string = "1h") {
   const basePrices: Record<string, number> = {
@@ -10,6 +12,11 @@ function generateOHLC(symbol: string, timeframe: string = "1h") {
     "ETH": 3500,
     "SOL": 150,
     "XRP": 0.6,
+    "AAPL": 170,
+    "AMD": 120,
+    "NVDA": 240,
+    "MSFT": 330,
+    "GOOGL": 140,
   };
   const base = basePrices[symbol] || 100;
   
@@ -131,8 +138,49 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string, timeframe: str
   };
 }
 
-export async function GET(request: Request) {
-  const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
+async function fetchMassiveOHLC(symbol: string, timeframe: string = "1h") {
+  try {
+    // Fetch from Massive API (use our lib)
+    const rawData = await fetchStockOHLC(symbol, timeframe, 200);
+    if (!rawData.c || rawData.c.length === 0) {
+      throw new Error("No data from Massive");
+    }
+    // Convert to our format
+    const ohlcRecords = convertStockToDatabaseFormat(rawData, symbol, timeframe);
+    // Map to history array shape
+    const history = ohlcRecords.map(rec => ({
+      time: rec.timestamp.toISOString(),
+      open: rec.open,
+      high: rec.high,
+      low: rec.low,
+      close: rec.close,
+      price: rec.close,
+      volume: rec.volume,
+    }));
+    const latest = history[history.length - 1];
+    const previous = history.length > 1 ? history[history.length - 2] : latest;
+    const change = latest.close - previous.close;
+    const changePercent = (change / previous.close) * 100;
+    return {
+      symbol,
+      current: {
+        price: latest.close,
+        close: latest.close,
+        change: Number(change.toFixed(2)),
+        changePercent: Number(changePercent.toFixed(2)),
+        high: latest.high,
+        low: latest.low,
+      },
+      history,
+    };
+  } catch (error) {
+    console.error(`Massive fetch failed for ${symbol}:`, error);
+    // Fallback to dummy data so charts still render
+    return generateOHLC(symbol, timeframe);
+  }
+}
+
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get("symbol") || "XAUT";
   const timeframe = searchParams.get("timeframe") || "1h";
@@ -144,17 +192,20 @@ export async function GET(request: Request) {
     );
   }
 
-  // Use CoinMarketCap for all crypto symbols if API key is set
-  if (cmcApiKey && CRYPTO_SYMBOLS.includes(symbol)) {
-    try {
-      return NextResponse.json(await fetchCoinMarketCap(symbol, cmcApiKey, timeframe));
-    } catch (error) {
-      console.error(`CoinMarketCap error for ${symbol}:`, error);
-      // Fallback to dummy data on CMC failure (no TwelveData fallback)
+  try {
+    if (US_STOCKS.includes(symbol)) {
+      // Fetch US stock from Massive API
+      return NextResponse.json(await fetchMassiveOHLC(symbol, timeframe));
+    } else {
+      // Crypto: use CoinMarketCap if available, else dummy
+      const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
+      if (cmcApiKey) {
+        return NextResponse.json(await fetchCoinMarketCap(symbol, cmcApiKey, timeframe));
+      }
       return NextResponse.json(generateOHLC(symbol, timeframe));
     }
+  } catch (error: any) {
+    console.error(`Market data fetch error for ${symbol}:`, error);
+    return NextResponse.json(generateOHLC(symbol, timeframe));
   }
-
-  // If no CMC key, fallback to dummy (TwelveData not used for crypto)
-  return NextResponse.json(generateOHLC(symbol, timeframe));
 }

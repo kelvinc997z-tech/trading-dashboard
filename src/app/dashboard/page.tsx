@@ -53,6 +53,16 @@ const CRYPTO_PAIRS = [
   { symbol: "XRP", name: "Ripple" },
 ];
 
+const US_STOCKS = [
+  { symbol: "AAPL", name: "Apple Inc." },
+  { symbol: "AMD", name: "Advanced Micro Devices" },
+  { symbol: "NVDA", name: "NVIDIA Corporation" },
+  { symbol: "MSFT", name: "Microsoft Corporation" },
+  { symbol: "GOOGL", name: "Alphabet Inc." },
+];
+
+const ALL_PAIRS = [...CRYPTO_PAIRS, ...US_STOCKS];
+
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [markets, setMarkets] = useState<Record<string, { price: number }>>({});
@@ -111,8 +121,8 @@ export default function Dashboard() {
 
   const fetchMarketData = useCallback(async () => {
     try {
-      // Fetch all symbols we need (from trades and CRYPTO_PAIRS)
-      const symbols = [...new Set([...CRYPTO_PAIRS.map(p => p.symbol)])];
+      // Fetch all symbols we need (from trades and ALL_PAIRS)
+      const symbols = [...new Set([...ALL_PAIRS.map(p => p.symbol)])];
       const promises = symbols.map(async sym => {
         try {
           const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(sym)}&timeframe=${timeframe}`);
@@ -329,7 +339,7 @@ export default function Dashboard() {
 
       {/* Multiple Pair Charts */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {CRYPTO_PAIRS.map((pair) => (
+        {ALL_PAIRS.map((pair) => (
           <div key={pair.symbol} className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-lg font-semibold">{pair.name}</h2>
