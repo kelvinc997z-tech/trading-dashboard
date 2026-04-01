@@ -13,7 +13,7 @@
     "quant:seed": "tsx scripts/seed-quant.ts",
     "quant:train": "tsx scripts/train-models.ts",
     "market:seed": "tsx scripts/seed-market-data.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && prisma db push"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
