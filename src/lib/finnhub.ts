@@ -80,6 +80,30 @@ export async function fetchNews(
   return await res.json();
 }
 
+// Fetch news for a specific company/crypto
+export async function fetchCompanyNews(
+  symbol: string,
+  count: number = 10
+) {
+  // For crypto, use ticker format (e.g., BTC)
+  const ticker = symbol.toUpperCase().replace("USD", "").replace("/", "");
+  const params = new URLSearchParams({
+    symbol: ticker,
+    count: count.toString(),
+  });
+
+  const res = await fetch(`${FINNHUB_BASE}/company-news?${params}`, {
+    headers: getFinnhubHeaders(),
+    next: { revalidate: 900 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Finnhub company news fetch failed: ${res.status}`);
+  }
+
+  return await res.json();
+}
+
 // Fetch sentiment (not available in free tier, placeholder for future)
 export async function fetchSentiment(symbol: string) {
   // Finnhub sentiment requires paid subscription
