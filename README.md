@@ -390,6 +390,50 @@ We're building it in the open. Track progress on the `/quant-ai` page or in the 
 
 ---
 
+## ⏱️ Automated Data Fetching (Cron Jobs)
+
+Vercel Hobby plan only allows **daily** cron jobs. To fetch data more frequently (e.g., hourly), use an **external free cron service**:
+
+### **Option A: External Cron (Recommended - Free)**
+
+1. **Set CRON_SECRET** in Vercel environment variables:
+   - Go to Vercel Dashboard → Settings → Environment Variables
+   - Add `CRON_SECRET` with a random string (e.g., `openssl rand -hex 32`)
+   - Redeploy
+
+2. **Use a free cron provider**:
+   - [cron-job.org](https://cron-job.org) (free, 5 jobs)
+   - [EasyCron](https://www.easycron.com) (free tier)
+   - [Cronhub](https://cronhub.io) (free tier)
+   - [GitHub Actions](https://github.com/features/actions) (free with limits)
+
+3. **Configure the cron job**:
+   - URL: `https://your-app.vercel.app/api/cron/fetch-ohlc`
+   - Method: POST
+   - Schedule: `0 * * * *` (every hour) or `*/30 * * * *` (every 30 min)
+   - Headers: `x-vercel-cron-secret: YOUR_SECRET_HERE`
+   - Timeout: 60 seconds
+
+4. **Test the endpoint**:
+   ```bash
+   curl -X POST https://your-app.vercel.app/api/cron/fetch-ohlc \
+     -H "x-vercel-cron-secret: YOUR_SECRET_HERE"
+   ```
+
+### **Option B: Vercel Pro (Paid)**
+- Upgrade to Vercel Pro ($20/month)
+- Set `vercel.json` crons with any schedule (e.g., `0 * * * *` for hourly)
+- No external service needed
+
+### **Monitor Cron Runs**
+Check latest fetch status:
+```bash
+GET /api/cron/fetch-ohlc
+```
+Returns last 10 runs with success/failure counts.
+
+---
+
 ## 📝 License
 
 MIT – feel free to fork and adapt.
