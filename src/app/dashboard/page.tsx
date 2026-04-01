@@ -61,8 +61,6 @@ const US_STOCKS = [
   { symbol: "GOOGL", name: "Alphabet Inc." },
 ];
 
-const ALL_PAIRS = [...CRYPTO_PAIRS, ...US_STOCKS];
-
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [markets, setMarkets] = useState<Record<string, { price: number }>>({});
@@ -121,8 +119,8 @@ export default function Dashboard() {
 
   const fetchMarketData = useCallback(async () => {
     try {
-      // Fetch all symbols we need (from trades and ALL_PAIRS)
-      const symbols = [...new Set([...ALL_PAIRS.map(p => p.symbol)])];
+      // Fetch all symbols we need (from trades and both categories)
+      const symbols = [...new Set([...CRYPTO_PAIRS.map(p => p.symbol), ...US_STOCKS.map(p => p.symbol)])];
       const promises = symbols.map(async sym => {
         try {
           const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(sym)}&timeframe=${timeframe}`);
@@ -337,21 +335,45 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Multiple Pair Charts */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {ALL_PAIRS.map((pair) => (
-          <div key={pair.symbol} className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-semibold">{pair.name}</h2>
-              <span className="text-xs text-gray-500">TF: {timeframe}</span>
+      {/* Multiple Pair Charts - Separate Categories */}
+      {/* Crypto Charts */}
+      <div>
+        <h2 className="text-xl font-bold mb-4">Cryptocurrency</h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {CRYPTO_PAIRS.map((pair) => (
+            <div key={pair.symbol} className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-semibold">{pair.name}</h2>
+                <span className="text-xs text-gray-500">TF: {timeframe}</span>
+              </div>
+              {user?.role === "pro" ? (
+                <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
+              ) : (
+                <RealTimeChart symbol={pair.symbol} timeframe={timeframe} />
+              )}
             </div>
-            {user?.role === "pro" ? (
-              <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
-            ) : (
-              <RealTimeChart symbol={pair.symbol} timeframe={timeframe} />
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
+      </div>
+
+      {/* US Stocks Charts */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold mb-4">US Stocks</h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {US_STOCKS.map((pair) => (
+            <div key={pair.symbol} className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-semibold">{pair.name}</h2>
+                <span className="text-xs text-gray-500">TF: {timeframe}</span>
+              </div>
+              {user?.role === "pro" ? (
+                <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
+              ) : (
+                <RealTimeChart symbol={pair.symbol} timeframe={timeframe} />
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       <MarketOutlook />
