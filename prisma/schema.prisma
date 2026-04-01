@@ -150,6 +150,21 @@ model Prediction {
   @@index([expiresAt])
 }
 
+// Cron job execution logs
+model FetchLog {
+  id           String   @id @default(cuid())
+  jobName      String   // e.g., "fetch-ohlc", "retrain-model"
+  status       String   // "success", "failed", "partial"
+  symbolsFetched Int
+  successful   Int
+  failed       Int
+  details      String?  // JSON string with detailed results
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  
+  @@index([jobName, startedAt])
+}
+
 model Payment {
   id              String   @id @default(cuid())
   userId          String

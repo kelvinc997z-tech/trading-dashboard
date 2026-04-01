@@ -3,5 +3,12 @@
   "outputDirectory": ".next",
   "env": {
     "NODE_ENV": "production"
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/fetch-ohlc",
+      "schedule": "0 * * * *", // Every hour on the hour
+      "timezone": "Asia/Jakarta"
+    }
+  ]
 }
