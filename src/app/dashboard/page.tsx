@@ -68,6 +68,28 @@ export default function Dashboard() {
   const [timeframe, setTimeframe] = useState("1h");
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
+
+  // Get symbol from query params on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const symbol = urlParams.get('symbol');
+    if (symbol) {
+      setSelectedSymbol(symbol);
+      // Scroll to the section with this symbol after a short delay
+      setTimeout(() => {
+        const element = document.getElementById(`chart-${symbol.toLowerCase()}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Highlight effect
+          element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+          }, 2000);
+        }
+      }, 500);
+    }
+  }, []);
 
   // Map DB trade -> UI trade, plus compute unrealized
   const mapTrade = useCallback((dbTrade: DbTrade, currentPrice?: number): Trade => {
@@ -369,7 +391,11 @@ export default function Dashboard() {
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {CRYPTO_PAIRS.map((pair) => (
-            <div key={pair.symbol} className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all hover:shadow-lg">
+            <div 
+              key={pair.symbol} 
+              id={`chart-${pair.symbol.toLowerCase()}`}
+              className={`rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all hover:shadow-lg ${selectedSymbol === pair.symbol ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+            >
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-lg font-semibold">{pair.name}</h2>
                 <span className="text-xs text-gray-500 dark:bg-gray-800 px-2 py-1 rounded">TF: {timeframe}</span>
@@ -392,7 +418,11 @@ export default function Dashboard() {
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {US_STOCKS.map((pair) => (
-            <div key={pair.symbol} className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all hover:shadow-lg">
+            <div
+              key={pair.symbol}
+              id={`chart-${pair.symbol.toLowerCase()}`}
+              className={`rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all hover:shadow-lg ${selectedSymbol === pair.symbol ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+            >
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-lg font-semibold">{pair.name}</h2>
                 <span className="text-xs text-gray-500 dark:bg-gray-800 px-2 py-1 rounded">TF: {timeframe}</span>

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import Navbar from "@/components/Navbar";
+import DashboardShell from "@/components/DashboardShell";
 
 export default async function DashboardLayout({
   children,
@@ -14,7 +15,9 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar user={session.user} />
-      <main className="container mx-auto py-8">{children}</main>
+      <DashboardShell user={session.user}>
+        {children}
+      </DashboardShell>
     </div>
   );
 }
