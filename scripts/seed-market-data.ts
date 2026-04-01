@@ -167,7 +167,7 @@ async function seedSymbol(symbolConfig: SymbolConfig) {
       currentPrice = close;
       
       // Save OHLC to DB
-      await prisma.OHLCData.upsert({
+      await prisma.oHLCData.upsert({
         where: {
           symbol_timeframe_timestamp: {
             symbol: symbolConfig.symbol,
