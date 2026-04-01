@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fetchOHLC, convertOHLCtoDatabaseFormat } from "@/lib/finnhub";
 import { calculateAllIndicators } from "@/lib/quant-ai/indicators";
@@ -6,14 +7,24 @@ import { saveOHLCData, saveIndicators } from "@/lib/quant-ai/data-collector";
 
 // POST /api/cron/fetch-ohlc
 // Cron job to fetch OHLC data for all active symbols
-// This endpoint should be called by Vercel Cron (or manually) every hour
+// This endpoint should be called by Vercel Cron (daily on Hobby plan) or manually via admin
 export async function POST(request: NextRequest) {
   // Optional: verify cron secret (configured in Vercel)
   const cronSecret = request.headers.get("x-vercel-cron-secret");
   const expectedSecret = process.env.CRON_SECRET;
   
   if (expectedSecret && cronSecret !== expectedSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // If cron secret doesn't match, check if user is admin (manual trigger from dashboard)
+    const session = await getSession();
+    if (!session?.user || session.user.role !== "admin" && session.user.role !== "pro") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // For manual triggers, continue without rate limiting delay
+  } else if (expectedSecret) {
+    // Cron-triggered: respect rate limits
+  } else {
+    // No secret set and not admin: allow (for dev) but warn
+    console.warn("Fetch-ohlc called without CRON_SECRET and without admin auth");
   }
 
   // List of symbols to fetch (could also come from DB/watchlist table)
