@@ -50,7 +50,7 @@ export async function saveOHLCData(data: OHLCData[]) {
   for (const item of data) {
     await db.oHLCData.upsert({
       where: {
-        symbol_timeframe_timestamp_unique: {
+        symbol_timeframe_timestamp: {
           symbol: item.symbol,
           timeframe: item.timeframe,
           timestamp: item.timestamp,
@@ -85,7 +85,7 @@ export async function saveIndicators(
 ) {
   await db.indicator.upsert({
     where: {
-      symbol_timeframe_timestamp_unique: {
+      symbol_timeframe_timestamp: {
         symbol,
         timeframe,
         timestamp,
