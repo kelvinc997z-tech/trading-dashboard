@@ -38,11 +38,6 @@ export interface Indicators {
   cci: number;
   mfi: number;
   obv: number;
-  // Price action
-  change: number;
-  changePercent: number;
-  range: number;
-  volumeRatio: number;
 }
 
 export async function saveOHLCData(data: OHLCData[]) {
