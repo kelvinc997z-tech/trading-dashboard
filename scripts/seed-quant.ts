@@ -197,7 +197,7 @@ async function seedMLTrainingData(userId: string) {
         const timestamp = new Date(Date.now() - i * 60 * 60 * 1000); // 1h intervals
         
         // Check if exists
-        const existing = await prisma.OHLCData.findFirst({
+        const existing = await prisma.oHLCData.findFirst({
           where: { symbol, timeframe, timestamp },
         });
         
@@ -212,7 +212,7 @@ async function seedMLTrainingData(userId: string) {
           const low = Math.min(open, close) * (1 - Math.random() * 0.01);
           const volume = 1000 + Math.random() * 9000;
           
-          await prisma.OHLCData.create({
+          await prisma.oHLCData.create({
             data: {
               symbol,
               timeframe,
