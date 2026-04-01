@@ -20,16 +20,48 @@ export interface PredictionResult {
   timestamp: Date;
 }
 
-// Mock prediction for testing - replace with actual model inference
+// Prediction using real ML models (if available) with fallback to heuristic
 export async function predict(symbol: string, timeframe: string, features: number[]): Promise<PredictionResult> {
-  // This is a placeholder that returns random predictions
-  // In production, this will load a trained model and run inference
-
-  const currentPrice = features[0]; // First feature is close price
+  const currentPrice = features[0];
   
-  // Simple heuristic-based "prediction" for demo
-  const rsi = features[2] || 50; // RSI typically at index 2 in our feature vector
-  const macd = features[3] || 0; // MACD at index 3
+  // Try to use trained model via Python inference
+  try {
+    const modelPred = await runPythonInference(symbol, timeframe, features);
+    if (modelPred && !modelPred.error) {
+      // Calculate TP/SL based on predicted change
+      const { direction, confidence, predictedChange } = modelPred;
+      const atr = features[13] || (currentPrice * 0.01); // ATR at index 13 or 1% fallback
+      
+      const predictedPrice = currentPrice * (1 + predictedChange / 100);
+      const takeProfit = direction === "buy" 
+        ? predictedPrice 
+        : predictedPrice * (1 + 0.02);
+      const stopLoss = direction === "buy"
+        ? currentPrice - atr
+        : currentPrice + atr;
+
+      return {
+        symbol,
+        timeframe,
+        direction: direction as "buy" | "sell" | "neutral",
+        confidence: Number(confidence),
+        predictedPrice: Number(predictedPrice.toFixed(2)),
+        predictedChange: Number(predictedChange),
+        entryPrice: Number(currentPrice),
+        takeProfit: Number(takeProfit.toFixed(2)),
+        stopLoss: Number(stopLoss.toFixed(2)),
+        featuresUsed: ["RSI", "MACD", "SMAs", "ATR", "Volume", "PastCloses"],
+        modelType: modelPred.modelType || "ml-model",
+        timestamp: new Date(),
+      };
+    }
+  } catch (error) {
+    console.warn(`Model inference failed for ${symbol}, falling back to heuristic:`, error);
+  }
+
+  // Fallback: heuristic-based prediction
+  const rsi = features[2] || 50;
+  const macd = features[3] || 0;
   
   let direction: "buy" | "sell" | "neutral" = "neutral";
   let confidence = 50;
@@ -38,16 +70,41 @@ export async function predict(symbol: string, timeframe: string, features: numbe
   if (rsi < 30 && macd > 0) {
     direction = "buy";
     confidence = 60 + Math.random() * 30;
-    changePct = 1 + Math.random() * 3; // +1% to +4%
+    changePct = 1 + Math.random() * 3;
   } else if (rsi > 70 && macd < 0) {
     direction = "sell";
     confidence = 60 + Math.random() * 30;
-    changePct = -1 - Math.random() * 3; // -1% to -4%
+    changePct = -1 - Math.random() * 3;
   } else {
     direction = "neutral";
     confidence = 40 + Math.random() * 30;
-    changePct = (Math.random() - 0.5) * 1; // -0.5% to +0.5%
+    changePct = (Math.random() - 0.5) * 1;
   }
+
+  const predictedPrice = currentPrice * (1 + changePct / 100);
+  const atr = features[13] || (currentPrice * 0.01);
+  const takeProfit = direction === "buy" 
+    ? predictedPrice 
+    : predictedPrice * (1 + 0.02);
+  const stopLoss = direction === "buy"
+    ? currentPrice - atr
+    : currentPrice + atr;
+
+  return {
+    symbol,
+    timeframe,
+    direction,
+    confidence: Math.round(confidence),
+    predictedPrice: Number(predictedPrice.toFixed(2)),
+    predictedChange: Number(changePct.toFixed(4)),
+    entryPrice: Number(currentPrice),
+    takeProfit: Number(takeProfit.toFixed(2)),
+    stopLoss: Number(stopLoss.toFixed(2)),
+    featuresUsed: ["RSI", "MACD", "SMAs", "ATR", "Volume", "PastCloses"],
+    modelType: "heuristic-fallback",
+    timestamp: new Date(),
+  };
+}
 
   const predictedPrice = currentPrice * (1 + changePct / 100);
   const atr = features[13] || (currentPrice * 0.02); // ATR at index 13
@@ -202,4 +259,86 @@ export async function backtest(
     sharpeRatio,
     equityCurve,
   };
+}
+
+// Run Python inference script to get ML model prediction
+// Returns null if model not available or script fails (falls back to heuristic)
+async function runPythonInference(symbol: string, timeframe: string, features: number[]): Promise<any> {
+  // Only attempt inference if we're in Node.js environment (not browser)
+  if (typeof require !== 'function') {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    try {
+      const { spawn } = require('child_process');
+      const path = require('path');
+      const fs = require('fs');
+      
+      // Check if inference script exists
+      const scriptPath = path.join(process.cwd(), 'scripts', 'inference.py');
+      if (!fs.existsSync(scriptPath)) {
+        resolve(null);
+        return;
+      }
+
+      // Check if models directory exists for this symbol/timeframe
+      const modelDir = path.join(process.cwd(), 'models', `${symbol.toUpperCase()}-${timeframe}`);
+      if (!fs.existsSync(modelDir)) {
+        resolve(null);
+        return;
+      }
+
+      const pythonPath = process.env.PYTHON_PATH || 'python3';
+      
+      const input = JSON.stringify({
+        symbol: symbol.toUpperCase(),
+        timeframe,
+        features,
+      });
+
+      const proc = spawn(pythonPath, [scriptPath], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 10000,
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      proc.stdout.on('data', (data: Buffer) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr.on('data', (data: Buffer) => {
+        stderr += data.toString();
+      });
+
+      proc.on('close', (code: number) => {
+        if (code !== 0) {
+          console.warn(`Inference script exited with code ${code}: ${stderr}`);
+          resolve(null);
+          return;
+        }
+
+        try {
+          const result = JSON.parse(stdout);
+          resolve(result);
+        } catch (e) {
+          console.warn('Failed to parse inference output:', e);
+          resolve(null);
+        }
+      });
+
+      proc.on('error', (err: any) => {
+        console.warn('Failed to spawn inference process:', err);
+        resolve(null);
+      });
+
+      proc.stdin.write(input);
+      proc.stdin.end();
+    } catch (e) {
+      // require not available or other error
+      resolve(null);
+    }
+  });
 }

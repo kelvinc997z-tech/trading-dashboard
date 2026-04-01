@@ -104,11 +104,14 @@ Fiturnya:
 - ✅ Market Sentiment API + UI component (`/api/market-sentiment`, `MarketSentiment.tsx`)
 - ✅ Prediction training scripts (Python: TensorFlow, XGBoost) in `scripts/`
 - ✅ Feature data pipeline (OHLC, indicators) and model trainer infrastructure
+- ✅ Auto-calculate indicators during prediction if missing (`/api/indicators/calculate`)
+- ✅ Real-time news sentiment via Finnhub with keyword-based scoring
 - ✅ User attribution for predictions (userId stored with each prediction)
 - ✅ Finnhub API integration: `/api/finnhub/fetch` for automated OHLC & indicator data collection
 - ✅ Navigation: Added "Back to Dashboard" button on Quant AI page
 - ✅ Prisma schema fix: added `Prediction` model (resolved missing type error)
 - ✅ TypeScript fixes: nullable indicators, Prisma naming, interfaces, route structure
+- ✅ ML model inference integration (via Python subprocess) with heuristic fallback
 
 **v2.0 – UX Revolution**
 - ✅ Notification Center with real-time updates via polling
@@ -171,24 +174,24 @@ Fiturnya:
 ### ML & Predictions
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/quant-ai/predict` | POST | Generate AI prediction for a symbol (requires auth) |
-| `/api/quant-ai/predictions` | GET | Fetch recent predictions (optionally filter by symbol) |
-| `/api/quant-ai/train` | POST | Trigger model training (Pro users only) |
-| `/api/quant-ai/backtest` | POST | Run backtest on historical data (Pro users only) |
+| `/api/quant-ai/predict` | POST | Generate AI prediction (auto-calculates indicators if missing). Body: `{ symbol, timeframe }` |
+| `/api/quant-ai/predictions` | GET | Fetch recent predictions. Query: `?symbol=BTC&limit=10` |
+| `/api/quant-ai/train` | POST | Trigger model training (Pro users). Body: `{ symbol, timeframe }` |
+| `/api/quant-ai/backtest` | POST | Run backtest. Body: `{ symbol, timeframe, initialCapital? }` |
 
 ### Data Collection
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/finnhub/fetch` | POST | Fetch OHLC & indicators from Finnhub, store in DB (Pro users) |
-| `/api/finnhub/status` | GET | Check Finnhub configuration and data status |
+| `/api/finnhub/fetch` | POST | Fetch OHLC from Finnhub & auto-calc indicators. Body: `{ symbol, timeframe, count? }` |
+| `/api/finnhub/status` | GET | Check data status. Query: `?symbol=BTC&timeframe=1h` |
+| `/api/indicators/calculate` | POST | Manually calculate indicators from OHLC. Body: `{ symbol, timeframe, limit? }` |
+| `/api/indicators/calculate` | GET | Check indicator coverage. Query: `?symbol=BTC&timeframe=1h` |
 
-### Market & Signals
+### Sentiment & News
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/market-signals` | GET | Daily trading signals (Pro gated) |
-| `/api/market-outlook` | GET | Market outlook and analysis |
-| `/api/market-sentiment` | GET | Aggregate news sentiment for symbols |
-| `/api/economic-calendar` | GET | Economic events (Finnhub) |
+| `/api/market-sentiment` | GET | Aggregate sentiment. Query: `?symbol=BTC` |
+| `/api/sentiment` | GET | Per-symbol sentiment with news. Query: `?symbol=BTC&period=1d` |
 
 ---
 
@@ -304,6 +307,45 @@ Quant AI is our upcoming machine learning engine designed to:
 - Generate high-confidence trading signals
 - Optimize portfolio allocations using modern portfolio theory
 - Provide backtesting lab for strategy validation
+
+### 🏗️ Architecture
+
+1. **Data Layer**: OHLC + technical indicators stored in Prisma
+2. **Training**: Python scripts (`scripts/train_models.py`) train LSTM & XGBoost models
+3. **Inference**: Node.js calls Python subprocess (`scripts/inference.py`) for predictions
+4. **Fallback**: Heuristic-based predictions if models unavailable
+
+### 🎓 Training Models (Local Development)
+
+#### Prerequisites
+```bash
+cd scripts
+pip install -r requirements.txt
+```
+
+#### Train a Model
+```bash
+python train_models.py --symbol BTC --timeframe 1h --limit 5000
+```
+
+This generates model files:
+- `models/BTC-1h/xgb_model.json` (XGBoost)
+- `models/BTC-1h/lstm_model.h5` (TensorFlow)
+
+#### Deploy Models
+Copy the `models/` directory to your Vercel project (add to git or upload via Vercel dashboard). The inference script will automatically use them.
+
+If no model exists, the system falls back to heuristic predictions.
+
+### 📊 Prediction Flow
+
+1. **Fetch data**: `POST /api/finnhub/fetch` (populates OHLC)
+2. **Calculate indicators**: Automatic on first prediction (or manual via `/api/indicators/calculate`)
+3. **Generate prediction**: `POST /api/quant-ai/predict`
+   - Loads ML model if available
+   - Runs inference on feature vector
+   - Saves prediction to DB
+4. **View history**: `GET /api/quant-ai/predictions` or `/dashboard/predictions`
 
 We're building it in the open. Track progress on the `/quant-ai` page or in the [GitHub Issues](https://github.com/kelvinc997z-tech/trading-dashboard/issues).
 
