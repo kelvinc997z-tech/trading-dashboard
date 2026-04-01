@@ -19,11 +19,11 @@ async function fetchUSStocks() {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json() as any; // Type assertion for unknown
       throw new Error(`Failed to fetch US stocks: ${response.status} - ${errorData.error || response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any; // Type assertion for unknown
     console.log('US stock data fetched and saved successfully.');
     console.log(`Summary: ${data.summary.successful} successful, ${data.summary.failed} failed`);
     return data;

@@ -82,8 +82,9 @@ export async function POST(request: NextRequest) {
       // Calculate indicators for the latest data points (last 200)
       // Only calculate for the most recent entries to save processing
       const recentOHLC = ohlcRecords.slice(-100); // last 100 periods
+      let indicatorsList: any[] = [];
       if (recentOHLC.length >= 50) {
-        const indicatorsList = calculateAllIndicators(recentOHLC);
+        indicatorsList = calculateAllIndicators(recentOHLC);
         
         for (const ind of indicatorsList) {
           if (!ind.timestamp) continue;
@@ -165,23 +166,23 @@ export async function POST(request: NextRequest) {
   });
 }
 
-// GET /api/cron/fetch-ohlc
-// Check status of last fetch runs
-export async function GET(request: NextRequest) {
-  try {
-    const lastRuns = await db.fetchLog.findMany({
-      where: { jobName: "fetch-ohlc" },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    });
+  // GET /api/cron/fetch-ohlc
+  // Check status of last fetch runs
+  export async function GET(request: NextRequest) {
+    try {
+      const lastRuns = await db.fetchLog.findMany({
+        where: { jobName: "fetch-ohlc" },
+        orderBy: { startedAt: "desc" },
+        take: 10,
+      });
 
-    const latest = lastRuns[0];
-    
-    return NextResponse.json({
-      latest: latest || null,
-      recentRuns: lastRuns,
-    });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch logs" }, { status: 500 });
+      const latest = lastRuns[0];
+      
+      return NextResponse.json({
+        latest: latest || null,
+        recentRuns: lastRuns,
+      });
+    } catch (error) {
+      return NextResponse.json({ error: "Failed to fetch logs" }, { status: 500 });
+    }
   }
-}

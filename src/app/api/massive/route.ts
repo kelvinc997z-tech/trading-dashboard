@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { fetchStockOHLC, convertStockToDatabaseFormat } from "@/lib/massive";
+import { fetchStockOHLC, convertStockToDatabaseFormat, fetchStockQuote } from "@/lib/massive";
 import { calculateAllIndicators } from "@/lib/quant-ai/indicators";
 import { saveOHLCData, saveIndicators } from "@/lib/quant-ai/data-collector";
 
