@@ -331,10 +331,34 @@ export function calculateOBV(closes: number[], volumes: number[]): number[] {
   return obv;
 }
 
+// Result type for calculateAllIndicators
+export interface IndicatorResult {
+  rsi: number;
+  macd: number;
+  macdSignal: number;
+  macdHist: number;
+  sma20: number;
+  sma50: number;
+  sma200: number;
+  ema12: number;
+  ema26: number;
+  bollingerUpper: number;
+  bollingerMiddle: number;
+  bollingerLower: number;
+  atr: number;
+  adx: number;
+  stochK: number;
+  stochD: number;
+  williamsR: number;
+  cci: number;
+  mfi: number;
+  obv: number;
+}
+
 // Calculate all indicators for a series of OHLC data
 export function calculateAllIndicators(
   ohlc: { high: number; low: number; close: number; volume: number }[]
-): Indicators[] {
+): IndicatorResult[] {
   if (ohlc.length < 200) return [];
 
   const highs = ohlc.map(d => d.high);
