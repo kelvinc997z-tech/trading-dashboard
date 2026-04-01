@@ -9,6 +9,10 @@
     "lint": "next lint",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "tsx scripts/reset-db.ts",
+    "quant:seed": "tsx scripts/seed-quant.ts",
+    "quant:train": "tsx scripts/train-models.ts",
+    "market:seed": "tsx scripts/seed-market-data.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
