@@ -70,12 +70,18 @@ Fiturnya:
 
 **Quant AI (Beta):**
 - 🤖 **AI Price Predictions** – Generate forecasts for BTC, ETH, SOL, XRP, XAUT across 1h/4h/1d timeframes
+  - *Auto-calculates technical indicators if missing*
+  - *Uses trained ML models (XGBoost/LSTM) or falls back to heuristic*
 - 📊 **Prediction History** – View recent predictions with confidence intervals and directions
-- 🌍 **Market Sentiment Analysis** – Aggregate news sentiment across symbols with bullish/bearish/neutral trends
-- 🧠 **ML Model Infrastructure** – Training scripts (Python) for LSTM & XGBoost, feature engineering pipeline, and model serving API
-- 💾 **Prediction Caching** – Stored predictions with expiry, user attribution, and queryable history
-- 📥 **Finnhub Data Integration** – Automated OHLC & indicator fetching via `/api/finnhub/fetch` (requires Pro)
-- 🔙 **Navigation** – Back to Dashboard button on Quant AI page
+- 🌍 **Market Sentiment Analysis** – Real-time news aggregation + keyword-based sentiment scoring
+  - *Displays overall market trend (bullish/bearish/neutral)*
+  - *Per-symbol sentiment with article count and top headlines*
+- 📈 **Market Outlook** – Daily trading signals for Forex & Commodities with TP/SL
+- 🧠 **ML Model Infrastructure** – Training scripts (Python) for LSTM & XGBoost, feature engineering pipeline
+- 💾 **Data Pipeline** – Automated OHLC fetching (Finnhub) → Indicators calculation → Prediction generation
+- 📥 **Finnhub Integration** – `/api/finnhub/fetch` populates historical OHLC data
+- 🔄 **Auto Indicator Calculation** – Indicators auto-computed during prediction if not present
+- 🔙 **UX Navigation** – Back to Dashboard button on Quant AI and Sentiment pages
 
 **Signup & Auth:**
 - Enhanced signup form with name & phone number
@@ -229,7 +235,20 @@ npm run db:push   # Create tables
 npm run db:seed   # (Optional) Seed test users
 ```
 
-### 4. Run Dev Server
+### 4. (Optional) Train ML Models
+
+If you want real ML predictions instead of heuristics:
+
+```bash
+cd scripts
+pip install -r requirements.txt
+python train_models.py --symbol BTC --timeframe 1h --limit 5000
+# Repeat for other symbols: ETH, SOL, etc.
+```
+
+This creates model files in `models/` directory. Copy them to your project root.
+
+### 5. Run Dev Server
 
 ```bash
 npm run dev
@@ -348,6 +367,32 @@ If no model exists, the system falls back to heuristic predictions.
 4. **View history**: `GET /api/quant-ai/predictions` or `/dashboard/predictions`
 
 We're building it in the open. Track progress on the `/quant-ai` page or in the [GitHub Issues](https://github.com/kelvinc997z-tech/trading-dashboard/issues).
+
+### 🔧 Troubleshooting Quant AI
+
+**Problem**: Prediction returns "Insufficient historical data"
+- **Solution**: Fetch OHLC data first via `POST /api/finnhub/fetch` with sufficient `count` (e.g., 500 or 1000)
+
+**Problem**: Indicators not being calculated
+- **Solution**: The predict endpoint auto-calculates indicators. If it fails, manually trigger `POST /api/indicators/calculate`
+
+**Problem**: Prediction always falls back to heuristic
+- **Solution**: Ensure model files exist in `./models/SYMBOL-TIMEFRAME/` (e.g., `models/BTC-1h/xgb_model.json`). Check server logs for inference errors.
+
+**Problem**: Python inference fails on Vercel
+- **Solution**: Vercel serverless environment may not support `child_process`. Consider:
+  - Using ONNX runtime in Node.js (no Python dependency)
+  - Deploying inference as separate API route using Python runtime
+  - Using Vercel Cron/Serverless Functions with Python support (if available)
+
+**Problem**: Finnhub fetch returns no data
+- **Solution**: Verify `FINNHUB_API_KEY` is set and valid. Check rate limits (free tier: 60 calls/min). Ensure symbol format is correct (e.g., "BTC", "ETH", not "BTC/USD").
+
+---
+
+## 📝 License
+
+MIT – feel free to fork and adapt.
 
 ---
 
