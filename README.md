@@ -238,26 +238,82 @@ trading-dashboard/
 
 ---
 
+## 📦 Full Feature List (Complete Edition)
+
+### 🎯 **Dashboard V2** (Core Trading Interface)
+- [x] **10 Trading Pairs**: 5 Crypto (XAUT, BTC, ETH, SOL, XRP) + 5 US Stocks (AAPL, AMD, NVDA, MSFT, GOOGL)
+- [x] **Real-time Charts**: Interactive candlestick charts with 6 timeframes (1m to 1d)
+- [x] **Dynamic SL/TP**: ATR-based stop-loss & take-profit that adapts to volatility
+- [x] **Sidebar Mini Map**: Fixed overview with sparklines for all 10 pairs
+- [x] **Responsive Layout**: Mobile toggle sidebar, smooth scroll navigation
+- [x] **Trade Management**: Create, edit, delete, auto-close positions
+- [x] **P&L Tracking**: Realized & unrealized profit/loss with % calculations
+- [x] **Dark Mode**: Full theme support via Tailwind CSS
+- [x] **Live Status**: Ping animation, last update timestamp
+- [x] **Pro Features**: Advanced charts with RSI, MACD, Bollinger Bands
+
+### 🔮 **Quant AI** (AI-Powered Predictions)
+- [x] **Ensemble Models**: LSTM neural networks + XGBoost + Random Forest
+- [x] **Confidence Scoring**: Probability percentage for each prediction
+- [x] **Auto SL/TP**: AI-generated entry, target, and stop levels
+- [x] **Prediction History**: Stores last 20 predictions with timestamps
+- [x] **Quick Generate**: One-click prediction for any crypto symbol
+- [x] **Model Selector**: Switch between LSTM, XGBoost, Random Forest
+- [x] **Multi-timeframe**: 1h, 4h, 1d predictions
+- [x] **Live Updates**: Auto-refresh every hour
+- [x] **How it Works**: Educational section explaining ML pipeline
+- [x] **Pro/Free Tier**: Prediction limits based on subscription
+
+### 📊 **Quant Trading** (Backtesting & Strategy Lab)
+- [x] **Backtesting Engine**: Test strategies on historical OHLC data
+- [x] **Strategy Library**: MA crossover, RSI oversold/overbought, MACD signals
+- [x] **Custom Parameters**: Adjustable periods, thresholds, position sizing
+- [x] **Performance Metrics**: Win rate, Sharpe ratio, max drawdown, profit factor
+- [x] **Visualization**: Equity curve, drawdown chart, monthly returns heatmap
+- [x] **Trade List**: Full trade-by-trade breakdown with P&L
+- [x] **Export to CSV**: Download complete backtest results
+- [x] **Strategy Optimization**: Grid search, walk-forward analysis
+- [x] **Comparison Mode**: Side-by-side strategy comparison
+- [x] **Paper Trading**: Real-time simulated execution
+- [x] **Risk Constraints**: Position sizing, portfolio-level risk limits
+
+### 📰 **Market Overview** (News & Signals Hub)
+- [x] **Daily Outlook**: Pre-market analysis with buy/sell recommendations
+- [x] **Trading Signals**: 15+ crypto pairs with confidence scores (PRO)
+- [x] **News Feed**: Aggregated crypto, macro, commodities, forex news
+- [x] **Category Filters**: Filter by crypto, macro, commodities, forex
+- [x] **Timeframe Filters**: Last 24h, 7d, 30d
+- [x] **Language Support**: English & Bahasa Indonesia
+- [x] **Bookmarking**: Save important news articles
+- [x] **Breaking Ticker**: Scrolling marquee for urgent market news
+- [x] **Search**: Full-text search across news headlines
+- [x] **Infinite Scroll**: Paginated news loading
+
+### 🔐 **Authentication & Security**
+- [x] **JWT-based Auth**: Secure token-based sessions
+- [x] **2FA Support**: Optional two-factor authentication
+- [x] **Role-based Access**: Free vs Pro feature gating
+- [x] **Session Management**: Auto-refresh tokens, secure logout
+- [x] **Password Reset**: Email-based password recovery
+- [x] **Registration**: Email verification required
+- [x] **Rate Limiting**: API endpoint protection
+- [x] **CORS Config**: Secure cross-origin settings
+
+### 🛠 **Developer Experience**
+- [x] **TypeScript Strict**: Full type safety across codebase
+- [x] **ESLint + Prettier**: Consistent code style
+- [x] **Next.js 14**: Latest App Router with Server Components
+- [x] **Tailwind CSS**: Utility-first styling, dark mode ready
+- [x] **Lightweight Charts**: TradingView's charting library
+- [x] **Environment Config**: `.env.local` for secrets
+- [x] **API Routes**: Unified data fetching layer
+- [x] **Error Boundaries**: Graceful error handling
+- [x] **Loading States**: Skeleton screens & spinners
+- [x] **Vercel Ready**: Optimized for Vercel deployment
+
+---
+
 ## 🔄 Changelog
-
-### **V2.0.0** (2026-04-01) - "Volatility Edition"
-- ✨ Added ATR-based dynamic SL/TP calculation
-- ✨ Created SidebarMiniMap component for market overview
-- ✨ Implemented responsive DashboardShell with mobile toggle
-- ✨ Enhanced `/api/market-signals` with volatility metrics
-- ✨ Smooth scroll-to-chart navigation from sidebar
-- ✨ Updated README with comprehensive V2 documentation
-- 🐛 Fixed TypeScript type errors in market-signals route
-- 🚀 Production build optimized for Vercel
-
-### **V1.0.0** (Initial Release)
-- Multi-asset dashboard (5 Crypto + 5 US Stocks)
-- Real-time price updates (30s polling)
-- Interactive candlestick charts
-- Trade management (create, edit, delete, auto-close)
-- Dark mode support
-- JWT authentication
-- Multiple timeframes (1m to 1d)
 
 ---
 
