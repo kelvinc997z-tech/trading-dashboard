@@ -106,33 +106,6 @@ export async function predict(symbol: string, timeframe: string, features: numbe
   };
 }
 
-  const predictedPrice = currentPrice * (1 + changePct / 100);
-  const atr = features[13] || (currentPrice * 0.02); // ATR at index 13
-
-  const takeProfit = direction === "buy" 
-    ? predictedPrice 
-    : predictedPrice * (1 + 0.02);
-  
-  const stopLoss = direction === "buy"
-    ? currentPrice - atr
-    : currentPrice + atr;
-
-  return {
-    symbol,
-    timeframe,
-    direction,
-    confidence: Math.min(confidence, 99.9),
-    predictedPrice,
-    predictedChange: changePct,
-    entryPrice: currentPrice,
-    takeProfit: direction === "buy" ? takeProfit : currentPrice - (changePct * 0.5),
-    stopLoss: direction === "buy" ? stopLoss : currentPrice + (Math.abs(changePct) * 0.5),
-    featuresUsed: ["RSI", "MACD", "SMA20", "SMA50", "ATR", "Volume"],
-    modelType: "ensemble-mock",
-    timestamp: new Date(),
-  };
-}
-
 // Model training function (to be implemented with actual ML)
 export async function trainModel(
   symbol: string,
