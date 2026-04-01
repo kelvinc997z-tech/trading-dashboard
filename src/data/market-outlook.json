@@ -1,54 +1,54 @@
 {
-  "date": "2026-03-30",
+  "date": "2026-03-01",
   "market": "Forex And Commodities",
   "signals": [
     {
       "pair": "Gold",
       "emoji": "🪙",
-      "signal": "Sell",
-      "entry": 4555,
-      "tp": 4500,
-      "sl": 4600
+      "signal": "Buy",
+      "entry": 4660,
+      "tp": 4727,
+      "sl": 4620
     },
     {
       "pair": "EURUSD",
       "emoji": "💶",
-      "signal": "Sell",
-      "entry": 1.1506,
-      "tp": 1.1447,
-      "sl": 1.1548
+      "signal": "Buy",
+      "entry": 1.1556,
+      "tp": 1.1577,
+      "sl": 1.15308
     },
     {
       "pair": "USDJPY",
       "emoji": "🇯🇵",
-      "signal": "Buy",
-      "entry": 160.50,
-      "tp": 161.10,
-      "sl": 159.00
+      "signal": "Sell",
+      "entry": 158.70,
+      "tp": 158.30,
+      "sl": 159.20
     },
     {
       "pair": "GBPUSD",
       "emoji": "💷",
       "signal": "Sell",
-      "entry": 1.32513,
-      "tp": 1.32030,
-      "sl": 1.33790
+      "entry": 1.32213,
+      "tp": 1.32930,
+      "sl": 1.31790
     },
     {
       "pair": "OIL",
       "emoji": "🛢",
-      "signal": "Buy",
-      "entry": 101.00,
-      "tp": 105.80,
-      "sl": 98.20
+      "signal": "Sell",
+      "entry": 101.50,
+      "tp": 99.00,
+      "sl": 102.20
     },
     {
       "pair": "Silver",
       "emoji": "🥈",
       "signal": "Buy",
-      "entry": 69.90,
-      "tp": 71.20,
-      "sl": 67.00
+      "entry": 75.00,
+      "tp": 75.50,
+      "sl": 74.00
     }
   ],
   "disclaimer": "Sinyal yang di berikan hanya bersifat rekomendasi bukan jaminan profit , semua di buat berdasarkan analisa dan pergerakan market saat itu"

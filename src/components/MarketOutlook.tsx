@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 interface Signal {
   symbol: string;
   name: string;
+  emoji?: string;
   signal: "buy" | "sell";
   entry: number;
   tp: number;
@@ -90,6 +91,7 @@ export default function MarketOutlook() {
             <div className="flex justify-between items-start mb-2">
               <div>
                 <h3 className="font-semibold text-lg flex items-center gap-2">
+                  {pair.emoji && <span>{pair.emoji}</span>}
                   {pair.name}
                   {pair.currentPrice !== undefined && (
                     <span className="text-base font-mono">
@@ -141,7 +143,8 @@ export default function MarketOutlook() {
       </div>
 
       <div className="mt-4 text-xs text-gray-500 text-center">
-        <p className="italic">Disclaimer: Signals are recommendations, not profit guarantees. Based on current market analysis.</p>
+        <p className="italic">🗓 Today Economic Calendar</p>
+        <p className="italic mt-1">Disclaimer: Sinyal yang di berikan hanya bersifat rekomendasi bukan jaminan profit , semua di buat berdasarkan analisa dan pergerakan market saat itu</p>
       </div>
     </div>
   );
