@@ -66,6 +66,8 @@ export default function Dashboard() {
   const [markets, setMarkets] = useState<Record<string, { price: number }>>({});
   const [user, setUser] = useState<User | null>(null);
   const [timeframe, setTimeframe] = useState("1h");
+  const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   // Map DB trade -> UI trade, plus compute unrealized
   const mapTrade = useCallback((dbTrade: DbTrade, currentPrice?: number): Trade => {
@@ -137,6 +139,7 @@ export default function Dashboard() {
         if (r) marketsMap[r.symbol] = { price: r.price };
       });
       setMarkets(marketsMap);
+      setLastUpdate(new Date());
     } catch (err) {
       console.error("Failed to fetch market data:", err);
     }
@@ -226,10 +229,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     const loadData = async () => {
-      const dbTrades = await fetchTrades();
-      await fetchMarketData();
-      const mapped: Trade[] = dbTrades.map(db => mapTrade(db, markets[db.symbol]?.price));
-      setTrades(mapped);
+      setIsLoading(true);
+      try {
+        const dbTrades = await fetchTrades();
+        await fetchMarketData();
+        const mapped: Trade[] = dbTrades.map(db => mapTrade(db, markets[db.symbol]?.price));
+        setTrades(mapped);
+      } catch (err) {
+        console.error("Failed to load data:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
     loadData();
     const interval = setInterval(loadData, 30000);
@@ -288,6 +298,9 @@ export default function Dashboard() {
           )}
         </div>
         <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
+          </div>
           <select value={timeframe} onChange={e => setTimeframe(e.target.value)} className="select select-bordered text-sm">
             <option value="1m">1m</option>
             <option value="5m">5m</option>
@@ -296,41 +309,53 @@ export default function Dashboard() {
             <option value="4h">4h</option>
             <option value="1d">1d</option>
           </select>
-          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-            <Activity className="h-4 w-4 text-green-500" />
-            <span>Market Open</span>
+          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+            <Activity className="h-4 w-4" />
+            <span>Live</span>
           </div>
         </div>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all hover:shadow-md">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Open Positions
               </p>
               <p className="text-2xl font-bold">{openTradesCount}</p>
-              <p className="text-xs text-gray-500 mt-1">Real-time</p>
+              <p className="text-xs text-gray-500 mt-1">Real-time updates</p>
+            </div>
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+              <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all hover:shadow-md">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
             Today's P&L
           </p>
           <p className={`text-2xl font-bold ${realizedToday >= 0 ? "text-green-500" : "text-red-500"}`}>
-            {realizedToday.toFixed(2)}
+            {realizedToday >= 0 ? "+" : ""}{realizedToday.toFixed(2)}
           </p>
           <p className="text-xs text-gray-500 mt-1">Net profit (closed today)</p>
         </div>
 
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all hover:shadow-md">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
             System Status
           </p>
-          <p className="text-2xl font-bold text-green-500">Online</p>
+          <p className="text-2xl font-bold text-green-500 flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+            Online
+          </p>
           <p className="text-xs text-gray-500 mt-1">All connections active</p>
         </div>
       </div>
@@ -338,13 +363,16 @@ export default function Dashboard() {
       {/* Multiple Pair Charts - Separate Categories */}
       {/* Crypto Charts */}
       <div>
-        <h2 className="text-xl font-bold mb-4">Cryptocurrency</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Cryptocurrency</h2>
+          <span className="text-sm text-gray-500">{CRYPTO_PAIRS.length} pairs</span>
+        </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {CRYPTO_PAIRS.map((pair) => (
-            <div key={pair.symbol} className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+            <div key={pair.symbol} className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all hover:shadow-lg">
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-lg font-semibold">{pair.name}</h2>
-                <span className="text-xs text-gray-500">TF: {timeframe}</span>
+                <span className="text-xs text-gray-500 dark:bg-gray-800 px-2 py-1 rounded">TF: {timeframe}</span>
               </div>
               {user?.role === "pro" ? (
                 <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
@@ -358,13 +386,16 @@ export default function Dashboard() {
 
       {/* US Stocks Charts */}
       <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">US Stocks</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">US Stocks</h2>
+          <span className="text-sm text-gray-500">{US_STOCKS.length} stocks</span>
+        </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {US_STOCKS.map((pair) => (
-            <div key={pair.symbol} className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+            <div key={pair.symbol} className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 transition-all hover:shadow-lg">
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-lg font-semibold">{pair.name}</h2>
-                <span className="text-xs text-gray-500">TF: {timeframe}</span>
+                <span className="text-xs text-gray-500 dark:bg-gray-800 px-2 py-1 rounded">TF: {timeframe}</span>
               </div>
               {user?.role === "pro" ? (
                 <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
