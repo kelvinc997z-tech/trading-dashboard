@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Activity, BarChart2, TrendingUp, PieChart } from "lucide-react";
+import { Activity, BarChart2, TrendingUp, PieChart, Newspaper } from "lucide-react";
 import MarketOutlook from "@/components/MarketOutlook";
+import MarketOutlookEnhanced from "@/components/MarketOutlookEnhanced";
 import RealTimeChart from "@/components/RealTimeChart";
 import AdvancedChart from "@/components/AdvancedChart";
 import MarketSentiment from "@/components/MarketSentiment";
@@ -72,7 +73,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"charts" | "sentiment" | "correlation" | "performance">("charts");
+  const [activeTab, setActiveTab] = useState<"charts" | "sentiment" | "correlation" | "performance" | "outlook">("charts");
 
   // Get symbol from query params on mount
   useEffect(() => {
@@ -395,6 +396,7 @@ export default function Dashboard() {
               { id: "sentiment", label: "Market Sentiment", icon: TrendingUp },
               { id: "correlation", label: "Correlations", icon: BarChart2 },
               { id: "performance", label: "Performance", icon: PieChart },
+              { id: "outlook", label: "Market Outlook", icon: Newspaper },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -490,6 +492,12 @@ export default function Dashboard() {
       {activeTab === "performance" && (
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
           <PerformanceClient />
+        </div>
+      )}
+
+      {activeTab === "outlook" && (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+          <MarketOutlookEnhanced />
         </div>
       )}
 
