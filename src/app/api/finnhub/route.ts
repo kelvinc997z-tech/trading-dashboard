@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       await saveIndicators(
         symbol,
         timeframe,
-        new Date(ind.timestamp),
+        ind.timestamp || new Date(), // fallback to now if timestamp missing
         {
           rsi: ind.rsi,
           macd: ind.macd,

@@ -333,6 +333,7 @@ export function calculateOBV(closes: number[], volumes: number[]): number[] {
 
 // Result type for calculateAllIndicators
 export interface IndicatorResult {
+  timestamp?: Date;
   rsi: number;
   macd: number;
   macdSignal: number;
@@ -357,7 +358,7 @@ export interface IndicatorResult {
 
 // Calculate all indicators for a series of OHLC data
 export function calculateAllIndicators(
-  ohlc: { high: number; low: number; close: number; volume: number }[]
+  ohlc: Array<{ high: number; low: number; close: number; volume: number; timestamp?: Date }>
 ): IndicatorResult[] {
   if (ohlc.length < 200) return [];
 
@@ -384,6 +385,7 @@ export function calculateAllIndicators(
 
   // Build indicator objects
   return closes.map((_, i) => ({
+    timestamp: ohlc[i].timestamp,
     rsi: rsi[i] || 0,
     macd: macd[i] || 0,
     macdSignal: macdSignal[i] || 0,
