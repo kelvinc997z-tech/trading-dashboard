@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getOHLCHistory, getIndicators } from "@/lib/quant-ai/data-collector";
+import { getOHLCHistory, getIndicators, OHLCData } from "@/lib/quant-ai/data-collector";
 import { predict } from "@/lib/quant-ai/models";
 
 // POST /api/quant-ai/predict
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       latestIndicators.mfi,
       latestIndicators.obv,
       // Last N closes (lookback)
-      ...ohlc.slice(-60).map(d => d.close),
+      ...ohlc.slice(-60).map((d: OHLCData) => d.close),
     ];
 
     // Get prediction
