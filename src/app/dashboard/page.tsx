@@ -2,10 +2,13 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Activity } from "lucide-react";
+import { Activity, BarChart2, TrendingUp, PieChart } from "lucide-react";
 import MarketOutlook from "@/components/MarketOutlook";
 import RealTimeChart from "@/components/RealTimeChart";
 import AdvancedChart from "@/components/AdvancedChart";
+import MarketSentiment from "@/components/MarketSentiment";
+import CorrelationMatrix from "@/components/CorrelationMatrix";
+import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 
 interface DbTrade {
   id: string;
@@ -69,6 +72,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"charts" | "sentiment" | "correlation" | "performance">("charts");
 
   // Get symbol from query params on mount
   useEffect(() => {
@@ -382,10 +386,39 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Dashboard Tabs */}
+      <div className="px-4">
+        <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+          <nav className="flex gap-8">
+            {[
+              { id: "charts", label: "Charts", icon: Activity },
+              { id: "sentiment", label: "Market Sentiment", icon: TrendingUp },
+              { id: "correlation", label: "Correlations", icon: BarChart2 },
+              { id: "performance", label: "Performance", icon: PieChart },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition ${
+                  activeTab === tab.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
       {/* Multiple Pair Charts - Separate Categories */}
       {/* Crypto Charts */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
+      {activeTab === "charts" && (
+        <>
+          <div>
+            <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Cryptocurrency</h2>
           <span className="text-sm text-gray-500">{CRYPTO_PAIRS.length} pairs</span>
         </div>
@@ -438,6 +471,27 @@ export default function Dashboard() {
       </div>
 
       <MarketOutlook />
+        </>
+      )}
+
+      {/* Tab Content for other tabs */}
+      {activeTab === "sentiment" && (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+          <MarketSentiment />
+        </div>
+      )}
+
+      {activeTab === "correlation" && (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+          <CorrelationMatrix />
+        </div>
+      )}
+
+      {activeTab === "performance" && (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+          <PerformanceClient />
+        </div>
+      )}
 
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
         <h2 className="text-lg font-semibold mb-4">Recent Trades</h2>
