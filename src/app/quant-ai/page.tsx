@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Activity, TrendingUp, TrendingDown, Minus, Brain, Zap } from "lucide-react";
+import Link from "next/link";
+import { Activity, TrendingUp, TrendingDown, Minus, Brain, Zap, ArrowLeft } from "lucide-react";
 
 interface Prediction {
   id: string;
@@ -105,6 +106,17 @@ export default function QuantAIPage() {
 
   return (
     <div className="space-y-8">
+      {/* Back Button */}
+      <div>
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </Link>
+      </div>
+
       {/* Hero Header */}
       <div className="text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full text-sm font-medium text-blue-800 dark:text-blue-200 mb-4">

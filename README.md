@@ -74,6 +74,8 @@ Fiturnya:
 - 🌍 **Market Sentiment Analysis** – Aggregate news sentiment across symbols with bullish/bearish/neutral trends
 - 🧠 **ML Model Infrastructure** – Training scripts (Python) for LSTM & XGBoost, feature engineering pipeline, and model serving API
 - 💾 **Prediction Caching** – Stored predictions with expiry, user attribution, and queryable history
+- 📥 **Finnhub Data Integration** – Automated OHLC & indicator fetching via `/api/finnhub/fetch` (requires Pro)
+- 🔙 **Navigation** – Back to Dashboard button on Quant AI page
 
 **Signup & Auth:**
 - Enhanced signup form with name & phone number
@@ -103,7 +105,10 @@ Fiturnya:
 - ✅ Prediction training scripts (Python: TensorFlow, XGBoost) in `scripts/`
 - ✅ Feature data pipeline (OHLC, indicators) and model trainer infrastructure
 - ✅ User attribution for predictions (userId stored with each prediction)
+- ✅ Finnhub API integration: `/api/finnhub/fetch` for automated OHLC & indicator data collection
+- ✅ Navigation: Added "Back to Dashboard" button on Quant AI page
 - ✅ Prisma schema fix: added `Prediction` model (resolved missing type error)
+- ✅ TypeScript fixes: nullable indicators, Prisma naming, interfaces, route structure
 
 **v2.0 – UX Revolution**
 - ✅ Notification Center with real-time updates via polling
@@ -161,6 +166,30 @@ Fiturnya:
 | `/economic-calendar` | Economic events calendar (Finnhub) |
 | `/trading-journal` | Personal trade journal & analytics |
 
+## 🔌 API Endpoints (Quant AI)
+
+### ML & Predictions
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/quant-ai/predict` | POST | Generate AI prediction for a symbol (requires auth) |
+| `/api/quant-ai/predictions` | GET | Fetch recent predictions (optionally filter by symbol) |
+| `/api/quant-ai/train` | POST | Trigger model training (Pro users only) |
+| `/api/quant-ai/backtest` | POST | Run backtest on historical data (Pro users only) |
+
+### Data Collection
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/finnhub/fetch` | POST | Fetch OHLC & indicators from Finnhub, store in DB (Pro users) |
+| `/api/finnhub/status` | GET | Check Finnhub configuration and data status |
+
+### Market & Signals
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/market-signals` | GET | Daily trading signals (Pro gated) |
+| `/api/market-outlook` | GET | Market outlook and analysis |
+| `/api/market-sentiment` | GET | Aggregate news sentiment for symbols |
+| `/api/economic-calendar` | GET | Economic events (Finnhub) |
+
 ---
 
 ## 🔧 Local Development
@@ -188,6 +217,7 @@ cp .env.example .env.local
 | `RESEND_VERIFY_URL` | Frontend verify URL (e.g. `http://localhost:3000/api/auth/verify`) |
 | `DATABASE_URL` | `file:./dev.db` for SQLite dev; Postgres URL for production |
 | `COINMARKETCAP_API_KEY` | CoinMarketCap Pro API key for real-time crypto prices (required for live data) |
+| `FINNHUB_API_KEY` | Finnhub API key for fetching OHLC data and indicators (optional but recommended for Quant AI) |
 
 ### 3. Initialize Database
 
