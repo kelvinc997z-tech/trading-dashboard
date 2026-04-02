@@ -28,7 +28,7 @@ export default function XAUTMiniCard() {
         const res = await fetch("/api/market-outlook");
         if (!res.ok) throw new Error("Failed to fetch market outlook");
         const outlook = await res.json();
-        const xaut = outlook.pairs?.find((p: any) => p.symbol === "XAUT/USD" || p.name === "Gold");
+        const xaut = outlook.pairs?.find((p: any) => p.symbol === "XAU/USD" || p.name === "Gold");
         if (xaut) {
           setData({
             price: xaut.entry,
@@ -75,7 +75,7 @@ export default function XAUTMiniCard() {
         <div className="flex items-center gap-2">
           <span className="text-base">🪙</span>
           <div>
-            <h3 className="font-bold text-xs">Gold (XAUT/USD)</h3>
+            <h3 className="font-bold text-xs">Gold (XAU)</h3>
             <p className="text-[10px] text-gray-500 dark:text-gray-400">Live Price & AI Signal</p>
           </div>
         </div>

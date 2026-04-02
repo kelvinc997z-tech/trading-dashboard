@@ -160,7 +160,7 @@ function getCoinglassSymbol(symbol: string): string {
  */
 export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
   const pairs = [
-    { symbol: "XAUT/USD", name: "Gold", emoji: "🪙" },
+    { symbol: "XAU/USD", name: "Gold", emoji: "🪙" },
     { symbol: "EUR/USD", name: "EURUSD", emoji: "💶" },
     { symbol: "USD/JPY", name: "USDJPY", emoji: "🇯🇵" },
     { symbol: "GBP/USD", name: "GBPUSD", emoji: "💷" },
