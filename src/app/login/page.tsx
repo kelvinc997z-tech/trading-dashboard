@@ -11,8 +11,12 @@ function LoginForm() {
 
   useEffect(() => {
     const mode = searchParams.get("mode");
+    const verified = searchParams.get("verified");
     if (mode === "signup") {
       setIsLogin(false);
+    }
+    if (verified === "true") {
+      setMessage("Email verified successfully! You can now log in.");
     }
   }, [searchParams]);
   const [email, setEmail] = useState("");

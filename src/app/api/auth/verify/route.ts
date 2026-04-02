@@ -9,7 +9,8 @@ export async function GET(request: NextRequest) {
   }
   const result = await verifyEmail(token);
   if (result.success) {
-    return NextResponse.redirect(new URL("/", request.url));
+    // Redirect to login page with success flag
+    return NextResponse.redirect(new URL("/login?verified=true", request.url));
   }
   return NextResponse.json({ error: result.error }, { status: 400 });
 }
