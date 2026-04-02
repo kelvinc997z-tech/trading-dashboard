@@ -184,14 +184,14 @@ function transformCoinglassData(symbol: string, data: any): {
 } {
   const candles = data.data.slice(-200); // limit to last 200 candles
   
-  const history = candles.map((candle: number[]) => ({
+  const history = candles.map((candle: any[]) => ({
     time: new Date(candle[0]).toISOString(),
-    open: parseFloat(candle[1]),
-    high: parseFloat(candle[2]),
-    low: parseFloat(candle[3]),
-    close: parseFloat(candle[4]),
-    price: parseFloat(candle[4]),
-    volume: parseFloat(candle[5]),
+    open: Number(candle[1]),
+    high: Number(candle[2]),
+    low: Number(candle[3]),
+    close: Number(candle[4]),
+    price: Number(candle[4]),
+    volume: Number(candle[5]),
   }));
 
   const current = history[history.length - 1];

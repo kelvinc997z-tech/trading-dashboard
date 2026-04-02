@@ -85,11 +85,11 @@ export async function fetchCoinglassOHLC(
       // timestamp is in milliseconds
       return [
         candle[0], // time
-        parseFloat(candle[1]), // open
-        parseFloat(candle[2]), // high
-        parseFloat(candle[3]), // low
-        parseFloat(candle[4]), // close
-        parseFloat(candle[5]), // volume
+        Number(candle[1]), // open
+        Number(candle[2]), // high
+        Number(candle[3]), // low
+        Number(candle[4]), // close
+        Number(candle[5]), // volume
       ];
     });
 
@@ -157,11 +157,11 @@ export async function fetchCoinglassSpotOHLC(
     const ohlcData: [number, number, number, number, number, number][] = data.data.map((candle: any[]) => {
       return [
         candle[0],
-        parseFloat(candle[1]),
-        parseFloat(candle[2]),
-        parseFloat(candle[3]),
-        parseFloat(candle[4]),
-        parseFloat(candle[5]),
+        Number(candle[1]),
+        Number(candle[2]),
+        Number(candle[3]),
+        Number(candle[4]),
+        Number(candle[5]),
       ];
     });
 
