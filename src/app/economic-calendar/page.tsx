@@ -115,7 +115,7 @@ export default function EconomicCalendarPage() {
       }
       acc[event.date].push(event);
       return acc;
-    }, {});
+    }, {} as GroupedEvents);
   }, [filteredEvents]);
 
   const impactBadge = (impact: string) => {
