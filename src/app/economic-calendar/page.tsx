@@ -74,7 +74,7 @@ export default function EconomicCalendarPage() {
             };
           })
           // Sort by timestamp ascending (nearest first)
-          .sort((a, b) => a.timestamp - b.timestamp);
+          .sort((a: EventItem, b: EventItem) => a.timestamp - b.timestamp);
 
         setEvents(mapped);
         setLastUpdated(new Date());
