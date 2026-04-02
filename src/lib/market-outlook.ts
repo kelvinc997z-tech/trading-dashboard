@@ -176,7 +176,17 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
       const ohlcData = await fetchCoinglassOHLC(coinglassSymbol, "1h", 100);
 
       if (ohlcData) {
-        const signalData = generateSignal(pair.symbol, pair.name, pair.emoji, ohlcData.data);
+        // Transform Coinglass data format: [time, open, high, low, close, volume][]
+        // to our expected format: {time, open, high, low, close, volume}[]
+        const transformedData = ohlcData.data.map(candle => ({
+          time: new Date(candle[0]).toISOString(),
+          open: Number(candle[1]),
+          high: Number(candle[2]),
+          low: Number(candle[3]),
+          close: Number(candle[4]),
+          volume: Number(candle[5]),
+        }));
+        const signalData = generateSignal(pair.symbol, pair.name, pair.emoji, transformedData);
         results.push(signalData);
       } else {
         // Fallback neutral if no data
