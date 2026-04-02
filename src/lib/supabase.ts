@@ -17,7 +17,7 @@ export const STORAGE_BUCKET = 'supabase-bronze-coin';
 export interface StorageFile {
   name: string;
   id: string | null; // Supabase returns null for id in some cases
-  bucket_id: string;
+  bucket_id: string | undefined; // Supabase returns undefined in some versions
   created_at: string;
   last_modified?: string; // optional - may not exist in all versions
   metadata?: {
