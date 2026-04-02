@@ -472,7 +472,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <MarketOutlook />
+      {/* Market Signals & Outlook - Side by Side */}
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <MarketOutlook />
+        <MarketOutlookEnhanced />
+      </div>
         </>
       )}
 
