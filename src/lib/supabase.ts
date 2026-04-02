@@ -18,13 +18,9 @@ export interface StorageFile {
   name: string;
   id?: string | null;
   bucket_id?: string;
-  created_at?: string | null; // can be null
+  created_at?: string | null;
   last_modified?: string;
-  metadata?: {
-    size?: number;
-    mimetype?: string;
-    [key: string]: any;
-  };
+  metadata?: any; // Supabase FileMetadata | null | undefined - use any for maximum compatibility
   [key: string]: any;
 }
 
