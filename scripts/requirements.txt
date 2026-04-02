@@ -1,9 +1,27 @@
-# Quant AI Python Dependencies
-numpy>=1.24.0
-pandas>=2.0.0
-scikit-learn>=1.3.0
-joblib>=1.3.0
+# Python dependencies for Quant AI models
+# Install with: pip install -r requirements.txt
 
-# ML frameworks (choose one or both)
-tensorflow>=2.13.0  # For LSTM models
-xgboost>=2.0.0     # For XGBoost models
+# Core ML
+tensorflow>=2.13.0
+torch>=2.0.0
+xgboost>=2.0.0
+scikit-learn>=1.3.0
+
+# Data handling
+pandas>=2.0.0
+numpy>=1.24.0
+ta>=0.10.2  # Technical indicators
+
+# Utilities
+joblib>=1.3.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# API (if needed)
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# Visualization (optional)
+matplotlib>=3.7.0
+plotly>=5.15.0
+seaborn>=0.12.0

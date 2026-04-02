@@ -251,6 +251,7 @@ async function runPythonInference(symbol: string, timeframe: string, features: n
       // Check if inference script exists
       const scriptPath = path.join(process.cwd(), 'scripts', 'inference.py');
       if (!fs.existsSync(scriptPath)) {
+        console.log('Inference script not found, using heuristic fallback');
         resolve(null);
         return;
       }
@@ -258,11 +259,13 @@ async function runPythonInference(symbol: string, timeframe: string, features: n
       // Check if models directory exists for this symbol/timeframe
       const modelDir = path.join(process.cwd(), 'models', `${symbol.toUpperCase()}-${timeframe}`);
       if (!fs.existsSync(modelDir)) {
+        console.log(`Model for ${symbol}-${timeframe} not trained yet, using heuristic fallback`);
         resolve(null);
         return;
       }
 
-      const pythonPath = process.env.PYTHON_PATH || 'python3';
+      // Prefer python3, fallback to python
+      const pythonPath = process.env.PYTHON_PATH || (fs.existsSync('/usr/bin/python3') ? 'python3' : 'python');
       
       const input = JSON.stringify({
         symbol: symbol.toUpperCase(),
@@ -295,7 +298,12 @@ async function runPythonInference(symbol: string, timeframe: string, features: n
 
         try {
           const result = JSON.parse(stdout);
-          resolve(result);
+          if (result.error) {
+            console.warn('Inference error:', result.error);
+            resolve(null);
+          } else {
+            resolve(result);
+          }
         } catch (e) {
           console.warn('Failed to parse inference output:', e);
           resolve(null);
