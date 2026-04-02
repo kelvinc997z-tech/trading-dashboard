@@ -55,7 +55,9 @@ export async function POST(request: NextRequest) {
     pro: 1800000,
   };
   
-  const isMonthly = monthlyPrices[payment.plan] === payment.amount;
+  // Convert Decimal to number for comparison
+  const amountNum = Number(payment.amount);
+  const isMonthly = monthlyPrices[payment.plan] === amountNum;
   
   if (isMonthly) {
     endsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // approx 30 days
