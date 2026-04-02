@@ -40,14 +40,28 @@ export async function POST(request: NextRequest) {
   // Calculate subscription expiry
   const now = new Date();
   let endsAt: Date;
-  if (payment.plan === "monthly") {
+  
+  // Determine duration based on billing period stored in payment record
+  // The payment.plan field now contains "lite" or "pro", and period info could be derived from amount
+  // For simplicity: if amount matches monthly price → 30 days, else → 365 days (yearly)
+  
+  const monthlyPrices: Record<string, number> = {
+    lite: 175000,
+    pro: 250000,
+  };
+  
+  const yearlyPrices: Record<string, number> = {
+    lite: 1470000,
+    pro: 1800000,
+  };
+  
+  const isMonthly = monthlyPrices[payment.plan] === payment.amount;
+  
+  if (isMonthly) {
     endsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // approx 30 days
-  } else if (payment.plan === "yearly" || payment.plan === "lifetime") {
-    // "lifetime" is legacy; treat same as yearly (1 year subscription)
-    // Note: original lifetime gave 100 years, but now we use yearly
-    endsAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
   } else {
-    endsAt = now;
+    // Yearly (or any non-monthly)
+    endsAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
   }
 
   // Transaction: confirm payment, upgrade user

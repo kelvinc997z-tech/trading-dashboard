@@ -1,34 +1,121 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { Check, Zap, Crown, Star } from "lucide-react";
 
-export default function PlanPage() {
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
+type PlanType = "free" | "lite" | "pro";
+
+interface Plan {
+  id: PlanType;
+  name: string;
+  description: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  yearlyOriginalPrice: number; // before discount
+  features: string[];
+  highlighted?: boolean;
+  icon: React.ReactNode;
+}
+
+export default function PricingPage() {
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>("lite");
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
 
-  const prices = {
-    monthly: "Rp 150.000/bulan",
-    yearly: "Rp 1.500.000/tahun",
+  const plans: Plan[] = [
+    {
+      id: "free",
+      name: "Free",
+      description: "Basic features for getting started",
+      monthlyPrice: 0,
+      yearlyPrice: 0,
+      yearlyOriginalPrice: 0,
+      icon: <Star className="w-8 h-8" />,
+      features: [
+        "1 Active Trade Signal per day",
+        "Basic Market Outlook (3 pairs)",
+        "Economic Calendar Access",
+        "Community Discord Access",
+        "Manual Trade Journaling",
+      ],
+    },
+    {
+      id: "lite",
+      name: "LITE",
+      description: "Perfect for casual traders",
+      monthlyPrice: 175000,
+      yearlyPrice: 1470000, // 30% off (2.1M → 1.47M)
+      yearlyOriginalPrice: 2100000,
+      icon: <Zap className="w-8 h-8" />,
+      features: [
+        "Unlimited Trade Signals",
+        "Full Market Outlook (6 pairs)",
+        "Real-time XAU/USD Gold Signals",
+        "Economic Calendar with Alerts",
+        "Advanced Charting (1 timeframe)",
+        "Email Support",
+        "Export Trade History (CSV)",
+      ],
+      highlighted: true,
+    },
+    {
+      id: "pro",
+      name: "PRO",
+      description: "For serious traders who want it all",
+      monthlyPrice: 250000,
+      yearlyPrice: 1800000, // 40% off (3M → 1.8M)
+      yearlyOriginalPrice: 3000000,
+      icon: <Crown className="w-8 h-8" />,
+      features: [
+        "Everything in LITE",
+        "Advanced Charting (All timeframes)",
+        "AI-Powered Market Predictions",
+        "Custom Alert Strategies",
+        "Priority Support (WhatsApp)",
+        "Performance Analytics Dashboard",
+        "API Access for Bots",
+        "White-label Reports (PDF)",
+        "Early Access to New Features",
+      ],
+    },
+  ];
+
+  const getPrice = (plan: Plan) => {
+    if (plan.id === "free") return "Free";
+    if (billingPeriod === "monthly") {
+      return `Rp ${plan.monthlyPrice.toLocaleString("id-ID")}/bulan`;
+    }
+    return `Rp ${plan.yearlyPrice.toLocaleString("id-ID")}/tahun`;
   };
 
+  const getPeriodLabel = (plan: Plan) => {
+    if (plan.id === "free") return "/ forever";
+    return ` / ${billingPeriod === "monthly" ? "month" : "year"}`;
+  };
+
+  const getSelectedPlan = () => plans.find((p) => p.id === selectedPlan)!;
+  const currentPlan = getSelectedPlan();
+
   const sendWhatsAppUpgrade = async () => {
+    if (currentPlan.id === "free") {
+      alert("Free plan is already active. No upgrade needed!");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Create payment request record
       const res = await fetch("/api/payment/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: selectedPlan }),
+        body: JSON.stringify({ plan: selectedPlan, billingPeriod }),
       });
       if (!res.ok) throw new Error("Failed to create request");
       const { requestId, whatsappMessage } = await res.json();
 
-      // Open WhatsApp with pre-filled message
       const waUrl = `https://wa.me/6281367351643?text=${encodeURIComponent(whatsappMessage)}`;
       window.open(waUrl, "_blank");
 
-      alert("Payment request recorded! Complete payment via WhatsApp.");
+      alert(`Payment request for ${currentPlan.name} (${billingPeriod}) recorded! Complete payment via WhatsApp.`);
     } catch (e) {
       alert("Failed to process request");
     } finally {
@@ -36,107 +123,169 @@ export default function PlanPage() {
     }
   };
 
-  const features = [
-    "All Free features",
-    "Multi-timeframe charts (1m-1d)",
-    "Advanced indicators (RSI, MACD, Bollinger)",
-    "Custom alerts (price, indicator, patterns)",
-    "Email & Telegram notifications",
-    "Correlation matrix",
-    "Sentiment analysis",
-    "Performance analytics",
-    "AI predictions",
-    "Export data (CSV)",
-    "Extended history (up to 30 days)",
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-16 px-4">
-      <div className="max-w-4xl mx-auto text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Plan</h1>
-        <p className="text-gray-600 dark:text-gray-300">Simple, transparent pricing. No hidden fees.</p>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        {/* Free */}
-        <div className="border rounded-2xl p-8 bg-white dark:bg-gray-800 shadow-sm">
-          <h3 className="text-2xl font-bold mb-2">Free</h3>
-          <div className="text-3xl font-bold mb-6">Rp 0 <span className="text-base font-normal">/ month</span></div>
-          <ul className="space-y-3 mb-8">
-            {features.slice(0, 3).map((f, i) => (
-              <li key={i} className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                {f}
-              </li>
-            ))}
-            {features.slice(3).map((f, i) => (
-              <li key={i+3} className="flex items-center gap-2 text-gray-400">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
-                {f}
-              </li>
-            ))}
-          </ul>
-          <Link href="/login" className="block w-full py-3 border border-gray-300 rounded-lg text-center font-semibold hover:border-gray-400 transition">
-            Continue Free
-          </Link>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black py-12 px-4">
+      <div className="container mx-auto max-w-6xl">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+            Simple, Transparent Pricing
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            Choose the plan that fits your trading style. All plans include 24/7 platform access and regular updates.
+          </p>
         </div>
 
-        {/* Pro */}
-        <div className="border-2 border-emerald-500 rounded-2xl p-8 bg-white dark:bg-gray-800 shadow-lg relative">
-          <div className="absolute top-0 right-0 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-2xl">
-            RECOMMENDED
-          </div>
-          <h3 className="text-2xl font-bold mb-2">Pro</h3>
-          <div className="text-3xl font-bold mb-2">
-            {selectedPlan === "monthly" ? "Rp 150.000" : "Rp 1.500.000"}
-            <span className="text-base font-normal"> / {selectedPlan === "monthly" ? "month" : "year"}</span>
-          </div>
-          <p className="text-gray-500 mb-6">Full access to all features</p>
+        {/* Billing Toggle */}
+        <div className="flex justify-center items-center gap-4 mb-12">
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly</span>
+          <button
+            onClick={() => setBillingPeriod(billingPeriod === "monthly" ? "yearly" : "monthly")}
+            className="relative w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <span
+              className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+                billingPeriod === "yearly" ? "left-9" : "left-1"
+              }`}
+            />
+          </button>
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            Yearly <span className="text-green-600 dark:text-green-400 font-bold">(Save up to 40%)</span>
+          </span>
+        </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Select Plan</label>
-            <div className="grid grid-cols-2 gap-4">
+        {/* Pricing Cards */}
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
+          {plans.map((plan) => (
+            <div
+              key={plan.id}
+              className={`relative rounded-2xl p-8 shadow-lg transition-all ${
+                plan.highlighted
+                  ? "bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-2 border-emerald-500 scale-105"
+                  : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+              }`}
+            >
+              {plan.highlighted && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs font-bold px-4 py-1 rounded-full">
+                  MOST POPULAR
+                </div>
+              )}
+
+              <div className="text-center mb-8">
+                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
+                  plan.highlighted 
+                    ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" 
+                    : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                }`}>
+                  {plan.icon}
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  {plan.name}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  {plan.description}
+                </p>
+                <div>
+                  <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                    {getPrice(plan)}
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {getPeriodLabel(plan)}
+                  </span>
+                  {billingPeriod === "yearly" && plan.yearlyOriginalPrice > 0 && (
+                    <p className="text-sm text-gray-400 line-through mt-1">
+                      Original: Rp {plan.yearlyOriginalPrice.toLocaleString("id-ID")}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4 mb-8">
+                {plan.features.map((feature, idx) => (
+                  <div key={idx} className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 dark:text-gray-300 text-sm">{feature}</span>
+                  </div>
+                ))}
+              </div>
+
               <button
-                className={`py-2 border rounded-lg ${selectedPlan === "monthly" ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30" : "border-gray-300"}`}
-                onClick={() => setSelectedPlan("monthly")}
+                onClick={() => setSelectedPlan(plan.id)}
+                disabled={plan.id === "free"}
+                className={`w-full py-3 px-6 rounded-xl font-semibold transition ${
+                  plan.id === "free"
+                    ? "bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-gray-800"
+                    : selectedPlan === plan.id
+                    ? "bg-primary text-white hover:bg-primary/90"
+                    : "bg-gray-200 text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+                }`}
               >
-                Monthly
+                {plan.id === "free" ? "Current Free Plan" : "Select Plan"}
               </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Selected Plan Summary */}
+        {selectedPlan !== "free" && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              You selected: <span className="text-primary">{currentPlan.name}</span>
+            </h3>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {billingPeriod === "monthly" 
+                    ? `Rp ${currentPlan.monthlyPrice.toLocaleString("id-ID")} per month`
+                    : `Rp ${currentPlan.yearlyPrice.toLocaleString("id-ID")} per year ( Rp ${Math.round(currentPlan.yearlyPrice/12).toLocaleString("id-ID")}/month )`
+                  }
+                </p>
+              </div>
               <button
-                className={`py-2 border rounded-lg ${selectedPlan === "yearly" ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30" : "border-gray-300"}`}
-                onClick={() => setSelectedPlan("yearly")}
+                onClick={sendWhatsAppUpgrade}
+                disabled={loading}
+                className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-semibold transition shadow-lg disabled:opacity-50"
               >
-                Yearly
+                {loading ? "Processing..." : "Upgrade Now via WhatsApp"}
               </button>
             </div>
           </div>
+        )}
 
-          <ul className="space-y-3 mb-8">
-            {features.map((f, i) => (
-              <li key={i} className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                {f}
-              </li>
-            ))}
-          </ul>
-
-          <button
-            onClick={sendWhatsAppUpgrade}
-            disabled={loading}
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition flex items-center justify-center gap-2"
-          >
-            {loading ? "Processing..." : "Upgrade via WhatsApp"}
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.454-.003 6.568-5.333 11.893-11.893 11.893-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.596 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.532-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-1.609 5.8zm5.973-14.04c-.247-.074-.502-.151-.77-.235-2.486-1.008-4.356-2.652-5.209-4.617-.352-.824-.56-1.722-.56-2.635 0-3.767 3.035-6.835 6.835-6.835 2.375 0 4.534 1.035 6.035 2.714.852.853 1.757 1.716 2.714 2.129-.165.942-.607 2.142-1.175 3.181-.203.37-.408.739-.613 1.105z"/></svg>
-          </button>
-          <p className="text-xs text-gray-500 mt-2 text-center">You will be redirected to WhatsApp to complete payment.</p>
+        {/* FAQs or Additional Info */}
+        <div className="mt-12 max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+            Frequently Asked Questions
+          </h2>
+          <div className="space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                What's the difference between LITE and PRO?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                LITE gives you unlimited signals, real-time XAU/USD, and basic charting. PRO adds AI predictions, 
+                custom alerts, API access, priority support, and advanced analytics.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Can I upgrade or downgrade anytime?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Yes! Changes take effect immediately. Upgrading gives instant access to new features. 
+                Downgrading will apply at the next billing cycle.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Is there a refund policy?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                7-day money-back guarantee. If you're not satisfied, contact support within 7 days of purchase for a full refund.
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto mt-16 p-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm">
-        <strong className="text-yellow-800 dark:text-yellow-200">Note:</strong>
-        <p className="mt-2 text-yellow-700 dark:text-yellow-300">
-          After payment, admin will manually verify and upgrade your account. You will receive a confirmation email shortly.
-        </p>
       </div>
     </div>
   );
