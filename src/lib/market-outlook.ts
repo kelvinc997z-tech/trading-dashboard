@@ -249,11 +249,9 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
     try {
       // Check if COINGLASS_API_KEY is set
       if (!process.env.COINGLASS_API_KEY) {
-        console.warn(`COINGLASS_API_KEY not set, using fallback for ${pair.symbol}`);
-        const fallback = FALLBACK_DATA[pair.symbol];
-        if (fallback) {
-          results.push({ ...fallback, reasoning: `${fallback.reasoning} (API key not configured)` });
-        } else {
+        // For XAU/USD specifically: do NOT use fallback dummy
+        if (pair.symbol === "XAU/USD") {
+          console.warn(`COINGLASS_API_KEY not set, XAU/USD will be unavailable`);
           results.push({
             symbol: pair.symbol,
             name: pair.name,
@@ -263,8 +261,27 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
             tp: 0,
             sl: 0,
             confidence: 0,
-            reasoning: "No data available (fallback missing)"
+            reasoning: "Data unavailable - please configure COINGLASS_API_KEY"
           });
+        } else {
+          // For other pairs, use fallback static data
+          console.warn(`COINGLASS_API_KEY not set, using fallback for ${pair.symbol}`);
+          const fallback = FALLBACK_DATA[pair.symbol];
+          if (fallback) {
+            results.push({ ...fallback, reasoning: `${fallback.reasoning} (API key not configured)` });
+          } else {
+            results.push({
+              symbol: pair.symbol,
+              name: pair.name,
+              emoji: pair.emoji,
+              signal: "neutral",
+              entry: 0,
+              tp: 0,
+              sl: 0,
+              confidence: 0,
+              reasoning: "No data available (fallback missing)"
+            });
+          }
         }
         continue;
       }
@@ -286,12 +303,10 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
         const signalData = generateSignal(pair.symbol, pair.name, pair.emoji, transformedData);
         results.push(signalData);
       } else {
-        // Fallback to static data if Coinglass returns no data
-        console.warn(`No data from Coinglass for ${pair.symbol}, using fallback`);
-        const fallback = FALLBACK_DATA[pair.symbol];
-        if (fallback) {
-          results.push({ ...fallback, reasoning: `${fallback.reasoning} (Coinglass no data)` });
-        } else {
+        // For XAU/USD specifically: do NOT use fallback dummy data
+        // Instead return neutral with 0 values (will show "no data" on frontend)
+        if (pair.symbol === "XAU/USD") {
+          console.warn(`No data for XAU/USD from Coinglass, returning neutral (no fallback)`);
           results.push({
             symbol: pair.symbol,
             name: pair.name,
@@ -301,8 +316,27 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
             tp: 0,
             sl: 0,
             confidence: 0,
-            reasoning: "Data unavailable"
+            reasoning: "Data unavailable - please configure COINGLASS_API_KEY"
           });
+        } else {
+          // For other pairs, use fallback static data
+          console.warn(`No data from Coinglass for ${pair.symbol}, using fallback`);
+          const fallback = FALLBACK_DATA[pair.symbol];
+          if (fallback) {
+            results.push({ ...fallback, reasoning: `${fallback.reasoning} (Coinglass no data)` });
+          } else {
+            results.push({
+              symbol: pair.symbol,
+              name: pair.name,
+              emoji: pair.emoji,
+              signal: "neutral",
+              entry: 0,
+              tp: 0,
+              sl: 0,
+              confidence: 0,
+              reasoning: "Data unavailable"
+            });
+          }
         }
       }
     } catch (error) {

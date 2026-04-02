@@ -60,7 +60,15 @@ export default function XAUTMiniCard() {
     );
   }
 
-  if (!data) return null;
+  if (!data || data.entry <= 0) {
+    return (
+      <div className="p-3 rounded-lg bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border border-yellow-500/20">
+        <div className="text-center text-gray-500 dark:text-gray-400 text-xs">
+          Gold price data unavailable
+        </div>
+      </div>
+    );
+  }
 
   const isBullish = data.signal === "buy";
   const isBearish = data.signal === "sell";
