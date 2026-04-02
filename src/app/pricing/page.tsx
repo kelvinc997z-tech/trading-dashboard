@@ -260,11 +260,12 @@ export default function PricingPage() {
           <div className="space-y-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                What's the difference between LITE and PRO?
+                What's the difference between Free, LITE, and PRO?
               </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                LITE gives you unlimited signals, real-time XAU/USD, and basic charting. PRO adds AI predictions, 
-                custom alerts, API access, priority support, and advanced analytics.
+                <strong>Free</strong>: Basic access (1 signal/day, 3-pair outlook). 
+                <strong>LITE</strong>: Unlimited signals, full 6-pair outlook, real-time XAU, advanced charts, CSV export. 
+                <strong>PRO</strong>: AI predictions, custom alerts, API access, priority WhatsApp support, performance analytics, white-label reports.
               </p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
@@ -272,8 +273,15 @@ export default function PricingPage() {
                 Can I upgrade or downgrade anytime?
               </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Yes! Changes take effect immediately. Upgrading gives instant access to new features. 
-                Downgrading will apply at the next billing cycle.
+                Yes! Upgrades are instant. Downgrades apply at next billing cycle. Prorated refunds available for annual upgrades.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Do you offer team accounts?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                PRO plan includes up to 5 team members. For larger teams, contact us for enterprise pricing.
               </p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
