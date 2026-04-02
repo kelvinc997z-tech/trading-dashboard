@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchStockOHLC, convertStockToDatabaseFormat } from "@/lib/massive";
+import { fetchCoinglassOHLC, fetchCoinglassSpotOHLC } from "@/lib/coinglass";
 
 const CRYPTO_SYMBOLS = ["XAUT", "BTC", "ETH", "SOL", "XRP"];
 const US_STOCKS = ["AAPL", "AMD", "NVDA", "MSFT", "GOOGL"];
@@ -20,9 +21,8 @@ function generateOHLC(symbol: string, timeframe: string = "1h") {
   };
   const base = basePrices[symbol] || 100;
   
-  // Determine data points and interval based on timeframe
   let count = 24;
-  let intervalMs = 60 * 60 * 1000; // 1h default
+  let intervalMs = 60 * 60 * 1000;
   switch (timeframe) {
     case "4h": count = 30; intervalMs = 4 * 60 * 60 * 1000; break;
     case "1d": count = 30; intervalMs = 24 * 60 * 60 * 1000; break;
@@ -38,8 +38,7 @@ function generateOHLC(symbol: string, timeframe: string = "1h") {
   for (let i = 0; i < count; i++) {
     const time = new Date(now.getTime() - (count - 1 - i) * intervalMs);
     const open = lastClose;
-    // Adjust volatility based on timeframe (larger timeframe = bigger moves)
-    const volatilityFactor = intervalMs / (60 * 60 * 1000); // normalize to hourly
+    const volatilityFactor = intervalMs / (60 * 60 * 1000);
     let close = open + (Math.random() - 0.5) * base * 0.02 * Math.sqrt(volatilityFactor);
     close = Math.max(close, 0.1);
     const high = Math.max(open, close) + Math.random() * base * 0.01 * volatilityFactor;
@@ -75,7 +74,7 @@ function generateOHLC(symbol: string, timeframe: string = "1h") {
 }
 
 async function fetchCoinMarketCap(symbol: string, apiKey: string, timeframe: string = "1h") {
-  const cmcSymbol = symbol; // symbol is already simple like "BTC", "ETH"
+  const cmcSymbol = symbol;
   const url = `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`;
   const res = await fetch(url, {
     headers: { 'X-CMC_PRO_API_KEY': apiKey },
@@ -87,7 +86,6 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string, timeframe: str
   if (!coin) throw new Error("Coin not found in CMC response");
   const price = coin.quote.USD.price;
 
-  // Determine data points and interval
   let count = 24;
   let intervalMs = 60 * 60 * 1000;
   switch (timeframe) {
@@ -140,14 +138,11 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string, timeframe: str
 
 async function fetchMassiveOHLC(symbol: string, timeframe: string = "1h") {
   try {
-    // Fetch from Massive API (use our lib)
     const rawData = await fetchStockOHLC(symbol, timeframe, 200);
     if (!rawData.c || rawData.c.length === 0) {
       throw new Error("No data from Massive");
     }
-    // Convert to our format
     const ohlcRecords = convertStockToDatabaseFormat(rawData, symbol, timeframe);
-    // Map to history array shape
     const history = ohlcRecords.map(rec => ({
       time: rec.timestamp.toISOString(),
       open: rec.open,
@@ -175,9 +170,47 @@ async function fetchMassiveOHLC(symbol: string, timeframe: string = "1h") {
     };
   } catch (error) {
     console.error(`Massive fetch failed for ${symbol}:`, error);
-    // Fallback to dummy data so charts still render
     return generateOHLC(symbol, timeframe);
   }
+}
+
+/**
+ * Transform Coinglass data to our response format
+ */
+function transformCoinglassData(symbol: string, data: any): {
+  symbol: string;
+  current: { price: number; close: number; change: number; changePercent: number; high: number; low: number };
+  history: Array<{ time: string; open: number; high: number; low: number; close: number; price: number; volume: number }>;
+} {
+  const candles = data.data.slice(-200); // limit to last 200 candles
+  
+  const history = candles.map((candle: number[]) => ({
+    time: new Date(candle[0]).toISOString(),
+    open: parseFloat(candle[1]),
+    high: parseFloat(candle[2]),
+    low: parseFloat(candle[3]),
+    close: parseFloat(candle[4]),
+    price: parseFloat(candle[4]),
+    volume: parseFloat(candle[5]),
+  }));
+
+  const current = history[history.length - 1];
+  const previous = history.length > 1 ? history[history.length - 2] : current;
+  const change = current.close - previous.close;
+  const changePercent = (change / previous.close) * 100;
+
+  return {
+    symbol,
+    current: {
+      price: current.close,
+      close: current.close,
+      change: Number(change.toFixed(2)),
+      changePercent: Number(changePercent.toFixed(2)),
+      high: current.high,
+      low: current.low,
+    },
+    history,
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -193,16 +226,33 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    if (US_STOCKS.includes(symbol)) {
-      // Fetch US stock from Massive API
-      return NextResponse.json(await fetchMassiveOHLC(symbol, timeframe));
-    } else {
-      // Crypto: use CoinMarketCap if available, else dummy
+    // Crypto: Try Coinglass first (if API key set)
+    if (CRYPTO_SYMBOLS.includes(symbol)) {
+      const coinglassKey = process.env.COINGLASS_API_KEY;
+      if (coinglassKey) {
+        // Try futures endpoint first
+        const coinglassData = await fetchCoinglassOHLC(symbol, timeframe, 200);
+        if (coinglassData) {
+          return NextResponse.json(transformCoinglassData(symbol, coinglassData));
+        }
+        // Fallback to spot endpoint
+        const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
+        if (spotData) {
+          return NextResponse.json(transformCoinglassData(symbol, spotData));
+        }
+      }
+      
+      // Fallback to CoinMarketCap if Coinglass fails or no key
       const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
       if (cmcApiKey) {
         return NextResponse.json(await fetchCoinMarketCap(symbol, cmcApiKey, timeframe));
       }
+      
+      // Last resort: dummy data
       return NextResponse.json(generateOHLC(symbol, timeframe));
+    } else {
+      // US Stocks: fetch from Massive API
+      return NextResponse.json(await fetchMassiveOHLC(symbol, timeframe));
     }
   } catch (error: any) {
     console.error(`Market data fetch error for ${symbol}:`, error);

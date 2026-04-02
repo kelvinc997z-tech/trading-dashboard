@@ -46,7 +46,14 @@ ETH: Entry $2,139  | TP $2,257  (5.5%) | SL $2,088  (2.4%)
 - **Mobile responsive**: Toggle button (bottom-left) untuk show/hide
 - **Auto-refresh**: Update setiap 30 detik
 
-#### 3. **Enhanced API: `/api/market-signals`**
+#### 3. **Coinglass API Integration**
+- **Upgraded data source** from CoinMarketCap to **Coinglass**
+- **More comprehensive OHLC data**: multiple timeframes (1m, 5m, 15m, 30m, 1h, 4h, 1d)
+- **Higher rate limits** and better free tier
+- **Fallback support**: Still supports Massive (stocks) and CoinMarketCap (if configured)
+- **API Key**: `COINGLASS_API_KEY` environment variable
+
+#### 4. **Enhanced API: `/api/market-signals`**
 Response sekarang include volatility metrics:
 
 ```json
@@ -116,7 +123,7 @@ Response sekarang include volatility metrics:
 | **Language** | TypeScript 5 |
 | **Styling** | Tailwind CSS |
 | **Charts** | Lightweight Charts (TradingView) |
-| **Data Sources** | Massive.com (US Stocks), CoinMarketCap (Crypto) |
+| **Data Sources** | Massive.com (US Stocks), **Coinglass API** (Crypto) |
 | **Deployment** | Vercel |
 | **Auth** | NextAuth.js (JWT) |
 | **Database** | PostgreSQL (Supabase) |
