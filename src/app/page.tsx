@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 import { Sun, Moon, LogIn, UserPlus } from "lucide-react";
-import XAUTMiniCard from "@/components/XAUTMiniCard";
+import XAUTLivePrice from "@/components/XAUTLivePrice";
 
 export default function LandingPage() {
   const { theme, toggleTheme } = useTheme();
@@ -52,15 +52,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* XAUT Mini Card - placed above Quant AI */}
-      <section className="container mx-auto px-4 py-8">
-        <XAUTMiniCard />
-      </section>
-
       {/* Quant AI Highlight Section */}
       <section className="container mx-auto px-4 py-20 bg-gradient-to-br from-emerald-900/20 to-blue-900/20 rounded-2xl my-12">
         <div className="text-center mb-12">
-          <span className="inline-block px-4 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm font-medium mb-4">NEW IN V.2.0</span>
+          <span className="inline-block px-4 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm font-medium mb-4">NEW IN V2</span>
           <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-blue-400">
             Quant AI: AI-Powered Trading Intelligence
           </h2>
@@ -132,7 +127,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features */
+      {/* XAUT Live Price & Signal */}
+      <section className="container mx-auto px-4 py-8">
+        <XAUTLivePrice />
+      </section>
+
+      {/* Features */}
       <section className="container mx-auto px-4 py-20">
         <h2 className="text-3xl font-bold mb-4 text-center">Powerful Features</h2>
         <p className="text-center text-gray-600 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
