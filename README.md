@@ -53,7 +53,50 @@ ETH: Entry $2,139  | TP $2,257  (5.5%) | SL $2,088  (2.4%)
 - **Fallback support**: Still supports Massive (stocks) and CoinMarketCap (if configured)
 - **API Key**: `COINGLASS_API_KEY` environment variable
 
-#### 4. **Enhanced API: `/api/market-signals`**
+---
+
+## 📈 Recent Updates (Changelog)
+
+### **2026-04-02** — Real-Time Market Outlook & Economic Calendar Upgrade
+
+#### 🥉 Market Outlook: Real-Time Data from Coinglass
+- **Upgraded** `/api/market-outlook` from static DB cache to **real-time** data
+- Fetches live OHLC from **Coinglass API** for 6 pairs: XAU/USD, EUR/USD, USD/JPY, GBP/USD, OIL/USD, XAG/USD
+- **ATR-based signal generation** on-demand (no cron job needed)
+- **Fallback system**: Uses cached static values if Coinglass unavailable
+- XAUT Mini Card on landing page now shows **live price updates** (every 30s)
+- Symbol standardized to **XAU/USD** (Gold Futures) from XAUT/USD
+
+#### 🗓️ Economic Calendar: Timezone & UX Improvements
+- **Timezone conversion** to Asia/Jakarta (GMT+7)
+- **Grouped by date** with clear date headers
+- **Stats dashboard**: Total events, high impact count, currencies, today's events
+- **Loading skeleton** and **error state** with retry button
+- **Impact badges** now include icons (high=alert, medium=trending)
+- **30-minute caching** on API route (reduces Finnhub API calls)
+- Auto-refresh every 30 minutes
+
+#### 🎨 Landing Page & UI Tweaks
+- **XAUT Mini Card** redesigned: compact unified display (price + signal + TP/SL)
+- Placed **above Quant AI** section for better visibility
+- Updated version badge: **"NEW IN V.2.0"** (from "NEW IN V2")
+- Improved responsive layout and visual hierarchy
+
+#### 🏗️ Infrastructure & Bug Fixes
+- **Supabase Storage integration complete** (bucket: `supabase-bronze-coin`)
+  - API routes: `/api/upload` (POST/GET/DELETE)
+  - Components: `UploadScreenshot`, `TradeForm` with screenshot support
+  - Auto-cleanup: Screenshots deleted when trade deleted
+- **Fixed TypeScript build errors** for production on Vercel
+  - Supabase `FileObject` type compatibility
+  - Coinglass data format transformations
+  - Excluded test scripts from build
+- **Environment variables**: Added `COINGLASS_API_KEY` support
+- **Auth system**: Resend email integration ready (test accounts available)
+
+---
+
+#### 3. **Coinglass API Integration**
 Response sekarang include volatility metrics:
 
 ```json
