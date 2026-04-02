@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 
 export default function PlanPage() {
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "lifetime">("monthly");
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
 
   const prices = {
     monthly: "Rp 150.000/bulan",
-    lifetime: "Rp 1.500.000 (selamanya)",
+    yearly: "Rp 1.500.000/tahun",
   };
 
   const sendWhatsAppUpgrade = async () => {
@@ -89,7 +89,7 @@ export default function PlanPage() {
           <h3 className="text-2xl font-bold mb-2">Pro</h3>
           <div className="text-3xl font-bold mb-2">
             {selectedPlan === "monthly" ? "Rp 150.000" : "Rp 1.500.000"}
-            <span className="text-base font-normal"> / {selectedPlan === "monthly" ? "month" : "lifetime"}</span>
+            <span className="text-base font-normal"> / {selectedPlan === "monthly" ? "month" : "year"}</span>
           </div>
           <p className="text-gray-500 mb-6">Full access to all features</p>
 
@@ -103,10 +103,10 @@ export default function PlanPage() {
                 Monthly
               </button>
               <button
-                className={`py-2 border rounded-lg ${selectedPlan === "lifetime" ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30" : "border-gray-300"}`}
-                onClick={() => setSelectedPlan("lifetime")}
+                className={`py-2 border rounded-lg ${selectedPlan === "yearly" ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30" : "border-gray-300"}`}
+                onClick={() => setSelectedPlan("yearly")}
               >
-                Lifetime
+                Yearly
               </button>
             </div>
           </div>
