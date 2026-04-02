@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient, type StorageFile, type UploadResult } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -9,6 +9,30 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * Update sesuai bucket yang dibuat di Supabase
  */
 export const STORAGE_BUCKET = 'supabase-bronze-coin';
+
+/**
+ * Custom type definitions untuk Supabase Storage responses
+ * (Supabase JS client doesn't export these types directly)
+ */
+export interface StorageFile {
+  name: string;
+  id: string;
+  bucket_id: string;
+  created_at: string;
+  last_modified?: string; // optional - may not exist in all versions
+  metadata?: {
+    size?: number;
+    mimetype?: string;
+    [key: string]: any;
+  };
+  [key: string]: any; // allow other properties
+}
+
+export interface UploadResult {
+  path: string;
+  fullPath: string;
+  name: string;
+}
 
 /**
  * Client untuk akses client-side (gunakan di komponen React)
