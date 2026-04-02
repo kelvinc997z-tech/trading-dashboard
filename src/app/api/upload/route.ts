@@ -95,7 +95,8 @@ export async function GET(request: NextRequest) {
         path: f.id,
         size: f.metadata?.size || 0,
         created_at: f.created_at,
-        last_modified: f.last_modified
+        // last_modified may not exist in all Supabase versions - use fallback
+        last_modified: (f as any).last_modified || f.created_at
       })),
       count: files?.length || 0
     });
