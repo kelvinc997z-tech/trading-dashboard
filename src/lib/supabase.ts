@@ -16,16 +16,16 @@ export const STORAGE_BUCKET = 'supabase-bronze-coin';
  */
 export interface StorageFile {
   name: string;
-  id?: string | null; // optional
-  bucket_id?: string; // optional - Supabase may omit this
-  created_at: string;
-  last_modified?: string; // optional - may not exist in all versions
+  id?: string | null;
+  bucket_id?: string;
+  created_at?: string | null; // can be null
+  last_modified?: string;
   metadata?: {
     size?: number;
     mimetype?: string;
     [key: string]: any;
   };
-  [key: string]: any; // allow other properties
+  [key: string]: any;
 }
 
 export interface UploadResult {
