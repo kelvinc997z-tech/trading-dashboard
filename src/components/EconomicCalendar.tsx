@@ -80,7 +80,7 @@ export default function EconomicCalendar({ maxItems }: EconomicCalendarProps) {
               previous: e.previous,
             };
           })
-          .sort((a, b) => a.timestamp - b.timestamp);
+          .sort((a: EventItem, b: EventItem) => a.timestamp - b.timestamp);
 
         // Apply maxItems limit if provided
         const limited = maxItems ? mapped.slice(0, maxItems) : mapped;
