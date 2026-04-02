@@ -226,7 +226,6 @@ async function sendVerificationEmail(to: string, token: string) {
     </html>
   `;
 
-  const fromEmail = process.env.RESEND_EMAIL_FROM || "noreply@yourdomain.com";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
