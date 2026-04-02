@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { fetchOHLC, convertOHLCtoDatabaseFormat } from "@/lib/finnhub";
-import { fetchStockOHLC, convertStockToDatabaseFormat } from "@/lib/massive";
+import { fetchCoinglassOHLC, fetchCoinglassSpotOHLC } from "@/lib/coinglass";
 import { calculateAllIndicators } from "@/lib/quant-ai/indicators";
 import { saveOHLCData, saveIndicators } from "@/lib/quant-ai/data-collector";
 
@@ -28,53 +27,41 @@ export async function POST(request: NextRequest) {
     console.warn("Fetch-ohlc called without CRON_SECRET and without admin auth");
   }
 
-  // List of symbols to fetch (provider-specific)
+  // List of symbols to fetch using Coinglass
   const symbols = [
-    // Crypto & Forex (Finnhub)
-    { symbol: "BTC", timeframe: "1h", provider: "finnhub" },
-    { symbol: "ETH", timeframe: "1h", provider: "finnhub" },
-    { symbol: "SOL", timeframe: "1h", provider: "finnhub" },
-    { symbol: "XRP", timeframe: "1h", provider: "finnhub" },
-    { symbol: "XAUT", timeframe: "1h", provider: "finnhub" },
-    { symbol: "EURUSD", timeframe: "1h", provider: "finnhub" },
-    { symbol: "USDJPY", timeframe: "1h", provider: "finnhub" },
-    { symbol: "GBPUSD", timeframe: "1h", provider: "finnhub" },
-    { symbol: "OIL", timeframe: "1h", provider: "finnhub" },
-    { symbol: "SILVER", timeframe: "1h", provider: "finnhub" },
-    // US Stocks (Massive)
-    { symbol: "AAPL", timeframe: "1h", provider: "massive" },
-    { symbol: "AMD", timeframe: "1h", provider: "massive" },
-    { symbol: "NVDA", timeframe: "1h", provider: "massive" },
-    { symbol: "MSFT", timeframe: "1h", provider: "massive" },
-    { symbol: "GOOGL", timeframe: "1h", provider: "massive" },
+    { symbol: "BTC", timeframe: "1h" },
+    { symbol: "XAUT", timeframe: "1h" },
+    { symbol: "SOL", timeframe: "1h" },
+    // Add more as needed: ETH, XRP, etc.
   ];
 
   const results = [];
   const errors = [];
-  const rateLimitDelay = 650; // ms between API calls (Finnhub free tier: 60/min)
+  const rateLimitDelay = 500; // ms between API calls (Coinglass rate limit ~200 req/min)
 
-  for (const { symbol, timeframe, provider } of symbols) {
+  for (const { symbol, timeframe } of symbols) {
     try {
-      let rawData: any;
-      let ohlcRecords: any[];
-
-      if (provider === "massive") {
-        // Fetch US stock from Massive
-        rawData = await fetchStockOHLC(symbol, timeframe, 200);
-        if (!rawData.c || rawData.c.length === 0) {
-          results.push({ symbol, timeframe, provider, status: "no_data" });
-          continue;
-        }
-        ohlcRecords = convertStockToDatabaseFormat(rawData, symbol, timeframe);
-      } else {
-        // Fetch from Finnhub (crypto/forex)
-        rawData = await fetchOHLC(symbol, timeframe, 200);
-        if (!rawData.c || rawData.c.length === 0) {
-          results.push({ symbol, timeframe, provider, status: "no_data" });
-          continue;
-        }
-        ohlcRecords = convertOHLCtoDatabaseFormat(rawData, symbol, timeframe);
+      // Fetch from Coinglass (try futures first, then spot)
+      let coinglassData = await fetchCoinglassOHLC(symbol, timeframe, 1000);
+      if (!coinglassData) {
+        coinglassData = await fetchCoinglassSpotOHLC(symbol, timeframe, 1000);
       }
+      if (!coinglassData || !coinglassData.data || coinglassData.data.length === 0) {
+        results.push({ symbol, timeframe, provider: "coinglass", status: "no_data" });
+        continue;
+      }
+
+      // Convert to database format
+      const ohlcRecords = coinglassData.data.map((candle: any[]) => ({
+        symbol: coinglassData.symbol,
+        timeframe: coinglassData.timeframe,
+        timestamp: new Date(candle[0]),
+        open: Number(candle[1]),
+        high: Number(candle[2]),
+        low: Number(candle[3]),
+        close: Number(candle[4]),
+        volume: Number(candle[5]),
+      }));
 
       // Save OHLC data
       await saveOHLCData(ohlcRecords);
@@ -121,7 +108,7 @@ export async function POST(request: NextRequest) {
       results.push({ 
         symbol, 
         timeframe, 
-        provider,
+        provider: "coinglass",
         status: "success", 
         ohlcCount: ohlcRecords.length,
         indicatorCount: recentOHLC.length >= 50 ? indicatorsList.length : 0
@@ -131,9 +118,9 @@ export async function POST(request: NextRequest) {
       await new Promise(resolve => setTimeout(resolve, rateLimitDelay));
       
     } catch (error: any) {
-      console.error(`Cron fetch failed for ${symbol} (${provider}):`, error);
-      errors.push({ symbol, timeframe, provider, error: error.message });
-      results.push({ symbol, timeframe, provider, status: "error", error: error.message });
+      console.error(`Cron fetch failed for ${symbol} (coinglass):`, error);
+      errors.push({ symbol, timeframe, provider: "coinglass", error: error.message });
+      results.push({ symbol, timeframe, provider: "coinglass", status: "error", error: error.message });
     }
   }
 
