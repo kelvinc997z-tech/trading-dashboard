@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { plan } = body;
 
-  if (!["monthly", "lifetime"].includes(plan)) {
+  if (!["monthly", "yearly"].includes(plan)) {
     return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
   }
 

@@ -42,8 +42,10 @@ export async function POST(request: NextRequest) {
   let endsAt: Date;
   if (payment.plan === "monthly") {
     endsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // approx 30 days
-  } else if (payment.plan === "lifetime") {
-    endsAt = new Date(now.getTime() + 100 * 365 * 24 * 60 * 60 * 1000); // 100 years
+  } else if (payment.plan === "yearly" || payment.plan === "lifetime") {
+    // "lifetime" is legacy; treat same as yearly (1 year subscription)
+    // Note: original lifetime gave 100 years, but now we use yearly
+    endsAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
   } else {
     endsAt = now;
   }

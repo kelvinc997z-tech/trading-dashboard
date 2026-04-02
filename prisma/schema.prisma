@@ -169,7 +169,7 @@ model Payment {
   id              String   @id @default(cuid())
   userId          String
   user            User     @relation(fields: [userId], references: [id])
-  plan            String   // "monthly" | "lifetime"
+  plan            String   // "monthly" | "yearly" (legacy: "lifetime")
   amount          Decimal
   status          String   @default("pending") // "pending" | "confirmed" | "cancelled"
   method          String   @default("whatsapp") // "whatsapp" | "stripe" | "xendit"
