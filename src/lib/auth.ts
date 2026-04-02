@@ -75,6 +75,158 @@ export async function register(formData: FormData) {
 async function sendVerificationEmail(to: string, token: string) {
   const verifyLink = `${RESEND_VERIFY_URL}?token=${token}`;
   const fromEmail = process.env.RESEND_EMAIL_FROM || "noreply@yourdomain.com";
+  
+  // Beautiful HTML email template
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verify Your Email</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px 12px 0 0;
+          }
+          .logo {
+            font-size: 28px;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.5px;
+          }
+          .logo span {
+            color: #fbbf24;
+          }
+          .content {
+            background: white;
+            padding: 40px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+          }
+          .greeting {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 16px;
+          }
+          .message {
+            font-size: 16px;
+            color: #475569;
+            margin-bottom: 30px;
+          }
+          .button-container {
+            text-align: center;
+            margin: 40px 0;
+          }
+          .button {
+            display: inline-block;
+            padding: 16px 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+          }
+          .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(102, 126, 234, 0.5);
+          }
+          .fallback-link {
+            background: #f1f5f9;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-size: 14px;
+            color: #64748b;
+          }
+          .fallback-label {
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+            display: block;
+          }
+          .note {
+            font-size: 14px;
+            color: #64748b;
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+          }
+          .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #94a3b8;
+            font-size: 14px;
+          }
+          .footer a {
+            color: #667eea;
+            text-decoration: none;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">Trading<span>Dashboard</span></div>
+          </div>
+          
+          <div class="content">
+            <div class="greeting">Welcome aboard! 👋</div>
+            <p class="message">
+              You're one step away from accessing your Trading Dashboard. 
+              Please verify your email address to activate your account.
+            </p>
+            
+            <div class="button-container">
+              <a href="${verifyLink}" class="button">Verify Email Address</a>
+            </div>
+            
+            <div class="fallback-link">
+              <span class="fallback-label">Or copy and paste this link into your browser:</span>
+              ${verifyLink}
+            </div>
+            
+            <p class="note">
+              This verification link will expire in 24 hours for security reasons.<br>
+              If you didn't create this account, you can safely ignore this email.
+            </p>
+          </div>
+          
+          <div class="footer">
+            <p>Need help? Contact our support team</p>
+            <p>&copy; ${new Date().getFullYear()} Trading Dashboard. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const fromEmail = process.env.RESEND_EMAIL_FROM || "noreply@yourdomain.com";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -84,12 +236,15 @@ async function sendVerificationEmail(to: string, token: string) {
     body: JSON.stringify({
       from: `Trading Dashboard <${fromEmail}>`,
       to,
-      subject: "Verify your email",
-      html: `<p>Click <a href="${verifyLink}">here</a> to verify your email.</p>`,
+      subject: "Verify Your Email - Trading Dashboard",
+      html,
     }),
   });
+  
   if (!res.ok) {
-    console.error("Resend error:", await res.text());
+    const errorText = await res.text();
+    console.error("Resend error:", errorText);
+    throw new Error(`Failed to send verification email: ${errorText}`);
   }
 }
 
