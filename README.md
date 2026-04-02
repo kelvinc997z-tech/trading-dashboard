@@ -61,11 +61,11 @@ ETH: Entry $2,139  | TP $2,257  (5.5%) | SL $2,088  (2.4%)
 
 #### 🥉 Market Outlook: Real-Time Data from Coinglass
 - **Upgraded** `/api/market-outlook` from static DB cache to **real-time** data
-- Fetches live OHLC from **Coinglass API** for 6 pairs: XAU/USD, EUR/USD, USD/JPY, GBP/USD, OIL/USD, XAG/USD
+- Fetches live OHLC from **Coinglass API** for 6 pairs: XAUT/USD, EUR/USD, USD/JPY, GBP/USD, OIL/USD, XAG/USD
 - **ATR-based signal generation** on-demand (no cron job needed)
 - **Fallback system**: Uses cached static values if Coinglass unavailable
 - XAUT Mini Card on landing page now shows **live price updates** (every 30s)
-- Symbol standardized to **XAU/USD** (Gold Futures) from XAUT/USD
+- Symbol standardized to **XAUT/USD** (GOLD XAUT Crypto)
 
 #### 🗓️ Economic Calendar: Timezone & UX Improvements
 - **Timezone conversion** to Asia/Jakarta (GMT+7)

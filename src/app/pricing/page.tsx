@@ -50,7 +50,7 @@ export default function PricingPage() {
       features: [
         "Unlimited Trade Signals",
         "Full Market Outlook (6 pairs)",
-        "Real-time XAU/USD Gold Signals",
+        "Real-time GOLD XAUT Crypto Signals",
         "Economic Calendar with Alerts",
         "Advanced Charting (1 timeframe)",
         "Email Support",

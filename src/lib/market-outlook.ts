@@ -28,12 +28,12 @@ export interface MarketOutlook {
 /**
  * Fallback static data (if Coinglass API fails)
  * These values are from your earlier market outlook (March 1 data)
- * Updated XAU/USD to realistic current levels (example)
+ * Updated GOLD XAUT Crypto to realistic current levels (example)
  */
 const FALLBACK_DATA: Record<string, MarketPair> = {
-  "XAU/USD": {
-    symbol: "XAU/USD",
-    name: "Gold",
+  "XAUT/USD": {
+    symbol: "XAUT/USD",
+    name: "GOLD XAUT Crypto",
     emoji: "🪙",
     signal: "buy",
     entry: 2350,
@@ -220,7 +220,7 @@ function generateSignal(
  */
 function getCoinglassSymbol(symbol: string): string {
   const map: Record<string, string> = {
-    "XAU/USD": "XAU", // Gold
+    "XAUT/USD": "XAUT", // GOLD XAUT Crypto
     "EUR/USD": "EUR",
     "USD/JPY": "JPY",
     "GBP/USD": "GBP",
@@ -235,7 +235,7 @@ function getCoinglassSymbol(symbol: string): string {
  */
 export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
   const pairsConfig = [
-    { symbol: "XAU/USD", name: "Gold", emoji: "🪙" },
+    { symbol: "XAUT/USD", name: "GOLD XAUT Crypto", emoji: "🪙" },
     { symbol: "EUR/USD", name: "EURUSD", emoji: "💶" },
     { symbol: "USD/JPY", name: "USDJPY", emoji: "🇯🇵" },
     { symbol: "GBP/USD", name: "GBPUSD", emoji: "💷" },
@@ -249,9 +249,9 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
     try {
       // Check if COINGLASS_API_KEY is set
       if (!process.env.COINGLASS_API_KEY) {
-        // For XAU/USD specifically: do NOT use fallback dummy
-        if (pair.symbol === "XAU/USD") {
-          console.warn(`COINGLASS_API_KEY not set, XAU/USD will be unavailable`);
+        // For XAUT/USD specifically: do NOT use fallback dummy
+        if (pair.symbol === "XAUT/USD") {
+          console.warn(`COINGLASS_API_KEY not set, XAUT/USD will be unavailable`);
           results.push({
             symbol: pair.symbol,
             name: pair.name,
@@ -303,10 +303,10 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
         const signalData = generateSignal(pair.symbol, pair.name, pair.emoji, transformedData);
         results.push(signalData);
       } else {
-        // For XAU/USD specifically: do NOT use fallback dummy data
+        // For XAUT/USD specifically: do NOT use fallback dummy data
         // Instead return neutral with 0 values (will show "no data" on frontend)
-        if (pair.symbol === "XAU/USD") {
-          console.warn(`No data for XAU/USD from Coinglass, returning neutral (no fallback)`);
+        if (pair.symbol === "XAUT/USD") {
+          console.warn(`No data for XAUT/USD from Coinglass, returning neutral (no fallback)`);
           results.push({
             symbol: pair.symbol,
             name: pair.name,
