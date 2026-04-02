@@ -119,7 +119,60 @@ Response sekarang include volatility metrics:
 | **Data Sources** | Massive.com (US Stocks), CoinMarketCap (Crypto) |
 | **Deployment** | Vercel |
 | **Auth** | NextAuth.js (JWT) |
-| **Database** | PostgreSQL (optional for trade history) |
+| **Database** | PostgreSQL (Supabase) |
+| **Storage** | Supabase Storage (`supabase-bronze-coin`) |
+
+---
+
+## ☁️ Supabase Storage Integration
+
+### Overview
+
+Trading Dashboard integrates **Supabase Storage** for file management (screenshots, chart exports, avatars).
+
+- **Bucket**: `supabase-bronze-coin`
+- **Project**: `xxiflnuhuhxbdoxtcpgc`
+- **URL**: `https://xxiflnuhuhxbdoxtcpgc.supabase.co`
+
+### Features
+
+- ✅ Upload screenshots untuk trades
+- ✅ Public read access (direct URLs)
+- ✅ Server-side upload via API routes (secure)
+- ✅ Client-side upload widget (optional)
+- ✅ Auto-delete screenshots when trade deleted
+- ✅ File validation (type, size)
+- ✅ Organized file structure: `{type}/{refId}/{timestamp}-{filename}`
+
+### Quick Setup
+
+1. **Set environment variables**:
+
+```env
+SUPABASE_URL=https://xxiflnuhuhxbdoxtcpgc.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NEXT_PUBLIC_SUPABASE_URL=https://xxiflnuhuhxbdoxtcpgc.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+2. **Configure RLS policies** (see `STORAGE_SETUP.md`)
+3. **Deploy** and test upload
+
+### Components & APIs
+
+| Component / Route | Deskripsi |
+|-------------------|-----------|
+| `src/lib/supabase.ts` | Core Supabase clients |
+| `src/components/UploadScreenshot.tsx` | Upload widget |
+| `src/components/TradeForm.tsx` | Form dengan screenshot support |
+| `POST /api/upload` | Upload file |
+| `GET /api/upload` | List files (`?prefix=`) |
+| `DELETE /api/upload?path=` | Delete file |
+
+### Documentation
+
+See **[STORAGE_SETUP.md](./STORAGE_SETUP.md)** for complete setup guide, security policies, and troubleshooting.
+
 
 ---
 

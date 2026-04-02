@@ -21,7 +21,7 @@ async function testConnection(config) {
     port: config.port,
     database: 'postgres',
     user: 'postgres',
-    password: 'musholicZ97!',
+    password: 'museholicZ997!', // Updated password
     ssl: { rejectUnauthorized: false },
     connectTimeoutMillis: 10000,
   });
@@ -41,13 +41,13 @@ async function testConnection(config) {
 }
 
 async function main() {
-  console.log('🔍 Testing Supabase connection...\n');
+  console.log('🔍 Testing Supabase connection (with updated password)...\n');
   for (const config of configs) {
     console.log(`Testing ${config.name}...`);
     const success = await testConnection(config);
     if (success) {
       console.log(`\n✅ Use this configuration for DATABASE_URL:`);
-      console.log(`postgresql://postgres:musholicZ97!@${config.host}:${config.port}/postgres${config.extra || ''}?sslmode=require`);
+      console.log(`postgresql://postgres:museholicZ997!@${config.host}:${config.port}/postgres${config.extra || ''}?sslmode=require`);
       process.exit(0);
     }
   }
