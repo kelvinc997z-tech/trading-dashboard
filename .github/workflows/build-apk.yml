@@ -74,20 +74,25 @@ jobs:
           .twa/app/build/outputs/apk/debug/
         retention-days: 14
 
-    - name: Build Release APK (if keystore provided)
-      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+    - name: Build Release APK
+      if: ${{ always() && secrets.KEYSTORE_BASE64 != '' }}
       working-directory: .twa
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+        echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
         echo "android.signingConfigs.release.storeFile=release.keystore" >> gradle.properties
-        echo "android.signingConfigs.release.storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> gradle.properties
-        echo "android.signingConfigs.release.keyAlias=${{ secrets.KEY_ALIAS }}" >> gradle.properties
-        echo "android.signingConfigs.release.keyPassword=${{ secrets.KEY_PASSWORD }}" >> gradle.properties
+        echo "android.signingConfigs.release.storePassword=$KEYSTORE_PASSWORD" >> gradle.properties
+        echo "android.signingConfigs.release.keyAlias=$KEY_ALIAS" >> gradle.properties
+        echo "android.signingConfigs.release.keyPassword=$KEY_PASSWORD" >> gradle.properties
         chmod +x ./gradlew
         ./gradlew assembleRelease
 
     - name: Upload Release APK
-      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      if: ${{ always() && secrets.KEYSTORE_BASE64 != '' }}
       uses: actions/upload-artifact@v4
       with:
         name: trading-dashboard-release-apk
