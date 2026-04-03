@@ -403,7 +403,7 @@ export default function Dashboard() {
           },
           {
             label: "Total Equity",
-            value: "$12,450.00",
+            value: "$0",
             sublabel: "Portfolio value",
             icon: (
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

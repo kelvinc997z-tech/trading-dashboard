@@ -140,6 +140,54 @@ async function fetchCoinDeskOHLC(symbol: string, timeframe: string = "1d") {
   }
 }
 
+async function fetchBinanceOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
+  // Map symbol to Binance USDT pair
+  const binanceSymbol = symbol === "XAUT" ? "XAUTUSDT" : `${symbol}USDT`;
+  const interval = timeframe; // Binance uses same interval names
+  
+  const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`;
+  
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    
+    // Binance klines: [ [time, open, high, low, close, volume, ...], ... ]
+    const history = data.map((candle: any[]) => ({
+      time: new Date(parseInt(candle[0])).toISOString(),
+      open: parseFloat(candle[1]),
+      high: parseFloat(candle[2]),
+      low: parseFloat(candle[3]),
+      close: parseFloat(candle[4]),
+      price: parseFloat(candle[4]),
+      volume: parseFloat(candle[5]),
+    }));
+    
+    if (history.length === 0) return null;
+    
+    const current = history[history.length - 1];
+    const previous = history.length > 1 ? history[history.length - 2] : current;
+    const change = current.close - previous.close;
+    const changePercent = (change / previous.close) * 100;
+    
+    return {
+      symbol,
+      current: {
+        price: current.close,
+        close: current.close,
+        change: Number(change.toFixed(2)),
+        changePercent: Number(changePercent.toFixed(2)),
+        high: current.high,
+        low: current.low,
+      },
+      history,
+    };
+  } catch (e) {
+    console.error(`Binance fetch error for ${symbol}:`, e);
+    return null;
+  }
+}
+
 async function fetchCoinMarketCap(symbol: string, apiKey: string, timeframe: string = "1h") {
   const cmcSymbol = symbol;
   const url = `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`;
@@ -293,31 +341,33 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Crypto: Coinglass ONLY (no fallback)
+    // Crypto: Primary Coinglass, fallback Binance (no key needed)
     if (CRYPTO_SYMBOLS.includes(symbol)) {
       const coinglassKey = process.env.COINGLASS_API_KEY;
-      if (!coinglassKey) {
-        return NextResponse.json({ error: "COINGLASS_API_KEY not set" }, { status: 500 });
+      // Try Coinglass if key exists
+      if (coinglassKey) {
+        const coinglassData = await fetchCoinglassOHLC(symbol, timeframe, 200);
+        if (coinglassData) {
+          return NextResponse.json(transformCoinglassData(symbol, coinglassData));
+        }
+        const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
+        if (spotData) {
+          return NextResponse.json(transformCoinglassData(symbol, spotData));
+        }
       }
-      // Try futures first
-      const coinglassData = await fetchCoinglassOHLC(symbol, timeframe, 200);
-      if (coinglassData) {
-        return NextResponse.json(transformCoinglassData(symbol, coinglassData));
+      // Fallback to Binance (free, no auth)
+      const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
+      if (binanceData) {
+        return NextResponse.json(binanceData);
       }
-      // Fallback to spot endpoint (still Coinglass)
-      const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
-      if (spotData) {
-        return NextResponse.json(transformCoinglassData(symbol, spotData));
-      }
-      // Both endpoints failed → error
-      return NextResponse.json({ error: "Coinglass fetch failed" }, { status: 500 });
+      // All sources failed
+      return NextResponse.json({ error: "Crypto data unavailable (Coinglass & Binance failed)" }, { status: 500 });
     } else {
       // US Stocks: fetch from Massive API (with dummy fallback)
       return NextResponse.json(await fetchMassiveOHLC(symbol, timeframe));
     }
   } catch (error: any) {
     console.error(`Market data fetch error for ${symbol}:`, error);
-    // No dummy fallback — return actual error
     return NextResponse.json({ error: error.message || "Unknown error" }, { status: 500 });
   }
 }
