@@ -293,42 +293,31 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Crypto: Try Coinglass first (if API key set)
+    // Crypto: Coinglass ONLY (no fallback)
     if (CRYPTO_SYMBOLS.includes(symbol)) {
       const coinglassKey = process.env.COINGLASS_API_KEY;
-      if (coinglassKey) {
-        // Try futures endpoint first
-        const coinglassData = await fetchCoinglassOHLC(symbol, timeframe, 200);
-        if (coinglassData) {
-          return NextResponse.json(transformCoinglassData(symbol, coinglassData));
-        }
-        // Fallback to spot endpoint
-        const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
-        if (spotData) {
-          return NextResponse.json(transformCoinglassData(symbol, spotData));
-        }
+      if (!coinglassKey) {
+        return NextResponse.json({ error: "COINGLASS_API_KEY not set" }, { status: 500 });
       }
-      
-      // Fallback to CoinMarketCap if Coinglass fails or no key
-      const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
-      if (cmcApiKey) {
-        return NextResponse.json(await fetchCoinMarketCap(symbol, cmcApiKey, timeframe));
+      // Try futures first
+      const coinglassData = await fetchCoinglassOHLC(symbol, timeframe, 200);
+      if (coinglassData) {
+        return NextResponse.json(transformCoinglassData(symbol, coinglassData));
       }
-      
-      // Try CoinDesk (free, no API key needed, supports daily only)
-      const coindeskData = await fetchCoinDeskOHLC(symbol, timeframe);
-      if (coindeskData) {
-        return NextResponse.json(coindeskData);
+      // Fallback to spot endpoint (still Coinglass)
+      const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
+      if (spotData) {
+        return NextResponse.json(transformCoinglassData(symbol, spotData));
       }
-      
-      // Last resort: dummy data
-      return NextResponse.json(generateOHLC(symbol, timeframe));
+      // Both endpoints failed → error
+      return NextResponse.json({ error: "Coinglass fetch failed" }, { status: 500 });
     } else {
-      // US Stocks: fetch from Massive API
+      // US Stocks: fetch from Massive API (with dummy fallback)
       return NextResponse.json(await fetchMassiveOHLC(symbol, timeframe));
     }
   } catch (error: any) {
     console.error(`Market data fetch error for ${symbol}:`, error);
-    return NextResponse.json(generateOHLC(symbol, timeframe));
+    // No dummy fallback — return actual error
+    return NextResponse.json({ error: error.message || "Unknown error" }, { status: 500 });
   }
 }
