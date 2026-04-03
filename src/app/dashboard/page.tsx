@@ -374,7 +374,7 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-8">
 
       {/* Stats Cards - Enhanced */}
