@@ -300,14 +300,8 @@ export default function Dashboard() {
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800">
         <div className="container mx-auto px-4 md:px-6 py-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            {/* Left: Title + Back */}
+            {/* Left: Title */}
             <div className="flex items-center gap-4 w-full md:w-auto">
-              <Link href="/" className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back
-              </Link>
               <div className="flex-1 md:flex-none">
                 <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-cyan-600">
                   Trading Dashboard
