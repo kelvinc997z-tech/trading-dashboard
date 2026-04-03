@@ -74,8 +74,8 @@ jobs:
           .twa/app/build/outputs/apk/debug/
         retention-days: 14
 
-    - name: Build Release APK
-      if: ${{ always() && secrets.KEYSTORE_BASE64 != '' }}
+    - name: Build Release APK (if keystore provided)
+      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
       working-directory: .twa
       env:
         KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -92,7 +92,7 @@ jobs:
         ./gradlew assembleRelease
 
     - name: Upload Release APK
-      if: ${{ always() && secrets.KEYSTORE_BASE64 != '' }}
+      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
       uses: actions/upload-artifact@v4
       with:
         name: trading-dashboard-release-apk
