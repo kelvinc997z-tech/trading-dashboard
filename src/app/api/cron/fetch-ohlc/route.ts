@@ -28,12 +28,12 @@ export async function POST(request: NextRequest) {
     console.warn("Fetch-ohlc called without CRON_SECRET and without admin auth");
   }
 
-  // List of symbols to fetch using Coinglass
+  // List of symbols to fetch using Coinglass (futures)
   const symbols = [
-    { symbol: "BTCUSDT", timeframe: "1h" },
-    { symbol: "ETHUSDT", timeframe: "1h" },
-    { symbol: "SOLUSDT", timeframe: "1h" },
-    // Add more as needed: XRPUSDT, XAUUSD (gold futures), etc.
+    { symbol: "BTC", timeframe: "1h" },
+    { symbol: "ETH", timeframe: "1h" },
+    { symbol: "SOL", timeframe: "1h" },
+    // Add more: XRP, XAUT (gold futures), etc.
   ];
 
   const results = [];
