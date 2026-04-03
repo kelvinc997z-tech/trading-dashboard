@@ -1,4 +1,4 @@
-      name: Build TWA APK
+name: Build TWA APK
 
 on:
   push:
