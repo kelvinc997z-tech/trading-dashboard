@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Activity, BarChart2, TrendingUp, PieChart, Newspaper } from "lucide-react";
 import MarketOutlook from "@/components/MarketOutlook";
 import MarketOutlookEnhanced from "@/components/MarketOutlookEnhanced";
