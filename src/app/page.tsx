@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
-import { Sun, Moon, LogIn, UserPlus } from "lucide-react";
+import { Sun, Moon, LogIn, UserPlus, Zap } from "lucide-react";
+import { motion } from "framer-motion";
 import XAUTLivePrice from "@/components/XAUTLivePrice";
 
 export default function LandingPage() {
@@ -34,22 +35,66 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="container mx-auto px-4 py-20 text-center">
-        <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-          Advanced Trading Dashboard
-        </h1>
-        <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-          Professional-grade platform for crypto, forex, and commodities traders. 
-          Access real-time data, AI-powered signals, and comprehensive analytics to make informed trading decisions.
-        </p>
-        <div className="flex justify-center gap-4">
-          <Link href="/login?mode=signup" className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-semibold text-white transition">
-            Start Free Trial
-          </Link>
-          <Link href="/pricing" className="px-8 py-3 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 rounded-lg font-semibold transition">
-            View Plan
-          </Link>
+      <section className="relative container mx-auto px-4 py-32 text-center overflow-hidden">
+        {/* Animated background glow */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative z-10"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-sm font-medium mb-8">
+            <Zap className="w-4 h-4" />
+            Powered by AI & ML
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
+          
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-cyan-500 to-blue-500 animate-gradient">
+            Trading Dashboard
+          </h1>
+          <h2 className="text-2xl md:text-3xl font-medium mb-6 text-gray-700 dark:text-gray-300">
+            Precision. Intelligence. <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-cyan-500">Simplicity.</span>
+          </h2>
+          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed">
+            Professional-grade platform for crypto, forex, and commodities traders. 
+            Harness <strong className="text-emerald-600 dark:text-emerald-400">AI-powered signals</strong>, 
+            real-time data, and comprehensive analytics to make informed trading decisions.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Link 
+                href="/login?mode=signup" 
+                className="btn-gradient px-10 py-4 rounded-xl font-bold text-white shadow-lg shadow-emerald-500/30 flex items-center gap-2"
+              >
+                <Zap className="w-5 h-5" />
+                Start Free Trial
+              </Link>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Link 
+                href="/pricing" 
+                className="px-10 py-4 rounded-xl font-semibold border-2 border-gray-300 dark:border-gray-600 hover:border-emerald-500 dark:hover:border-emerald-500 text-gray-700 dark:text-gray-300 transition-all flex items-center gap-2"
+              >
+                Compare Plans
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </motion.div>
+          </div>
+        </motion.div>
       </section>
 
       {/* Quant AI Highlight Section */}
@@ -133,24 +178,91 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="container mx-auto px-4 py-20">
-        <h2 className="text-3xl font-bold mb-4 text-center">Powerful Features</h2>
-        <p className="text-center text-gray-600 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
-          Everything you need to analyze markets, manage trades, and optimize your trading performance.
-        </p>
+      <section className="container mx-auto px-4 py-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-medium mb-4 border border-emerald-500/20">
+            <Zap className="w-4 h-4" />
+            Features
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+            Everything You Need to
+            <span className="block bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-cyan-500">
+              Trade Smarter
+            </span>
+          </h2>
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            Comprehensive tools to analyze markets, manage trades, and optimize your trading performance.
+          </p>
+        </motion.div>
+
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
-            ["Live Multi-Timeframe Charts", "Interactive charts with 1-minute to 1-day timeframes. Includes professional indicators: RSI, MACD, Bollinger Bands, and more."],
-            ["Smart Alerts", "Set custom alerts for price movements, indicator signals, and candlestick patterns. Receive notifications via email or Telegram."],
-            ["Correlation Matrix", "Visualize relationships between crypto and forex pairs to identify hedging opportunities and portfolio risks."],
-            ["News Sentiment", "AI-powered sentiment analysis from financial news feeds integrated directly into your dashboard."],
-            ["Performance Analytics", "Track key metrics: Sharpe ratio, maximum drawdown, equity curves, win rates, and detailed trade statistics."],
-            ["AI Price Predictions", "Machine learning models (LSTM, XGBoost) generate price forecasts with confidence intervals to inform your strategy."],
-          ].map(([title, desc], i) => (
-            <div key={i} className="p-6 rounded-lg bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-              <h3 className="text-xl font-semibold mb-2">{title}</h3>
-              <p className="text-gray-600 dark:text-gray-400">{desc}</p>
-            </div>
+            {
+              title: "Live Multi-Timeframe Charts",
+              desc: "Interactive charts with 1-minute to 1-day timeframes. Professional indicators: RSI, MACD, Bollinger Bands, and more.",
+              icon: "📈",
+              gradient: "from-blue-500 to-cyan-500"
+            },
+            {
+              title: "Smart Alerts",
+              desc: "Custom alerts for price movements, indicator signals, and candlestick patterns. Get notified via email or Telegram.",
+              icon: "🔔",
+              gradient: "from-amber-500 to-orange-500"
+            },
+            {
+              title: "Correlation Matrix",
+              desc: "Visualize relationships between crypto and forex pairs to identify hedging opportunities and portfolio risks.",
+              icon: "🔗",
+              gradient: "from-purple-500 to-pink-500"
+            },
+            {
+              title: "News Sentiment",
+              desc: "AI-powered sentiment analysis from financial news feeds integrated directly into your dashboard.",
+              icon: "📰",
+              gradient: "from-emerald-500 to-teal-500"
+            },
+            {
+              title: "Performance Analytics",
+              desc: "Track key metrics: Sharpe ratio, maximum drawdown, equity curves, win rates, and detailed trade statistics.",
+              icon: "📊",
+              gradient: "from-indigo-500 to-blue-500"
+            },
+            {
+              title: "AI Price Predictions",
+              desc: "Machine learning models (LSTM, XGBoost) generate price forecasts with confidence intervals to inform your strategy.",
+              icon: "🤖",
+              gradient: "from-cyan-500 to-blue-500"
+            },
+          ].map((feature, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1, duration: 0.4 }}
+              className="group glass-card rounded-2xl p-6 hover:shadow-soft-lg transition-all duration-300 relative overflow-hidden cursor-pointer"
+            >
+              {/* Decorative glow */}
+              <div className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${feature.gradient} rounded-full opacity-20 blur-2xl group-hover:opacity-30 group-hover:scale-150 transition-all duration-500`} />
+              
+              <div className="relative z-10">
+                <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${feature.gradient} text-white text-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {feature.desc}
+                </p>
+              </div>
+            </motion.div>
           ))}
         </div>
       </section>
