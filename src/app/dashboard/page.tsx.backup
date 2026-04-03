@@ -747,7 +747,7 @@ export default function Dashboard() {
         transition={{ delay: 0.3 }}
         className="glass-card rounded-2xl p-6 slide-up"
       >
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Trades</h2>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm">
