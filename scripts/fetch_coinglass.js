@@ -9,13 +9,13 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
-// Symbol mapping for Coinglass
+// Symbol mapping for Coinglass (spot pairs)
 const COINGLASS_SYMBOLS = {
-  'BTC': 'BTC',
-  'XAUT': 'XAUT',
-  'SOL': 'SOL',
-  'ETH': 'ETH',
-  'XRP': 'XRP'
+  'BTC': 'BTCUSDT',
+  'XAUT': 'XAUTUSDT',
+  'SOL': 'SOLUSDT',
+  'ETH': 'ETHUSDT',
+  'XRP': 'XRPUSDT'
 };
 
 // Timeframe mapping (in minutes)

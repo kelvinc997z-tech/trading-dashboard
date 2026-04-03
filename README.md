@@ -53,6 +53,18 @@ ETH: Entry $2,139  | TP $2,257  (5.5%) | SL $2,088  (2.4%)
 - **Fallback support**: Still supports Massive (stocks) and CoinMarketCap (if configured)
 - **API Key**: `COINGLASS_API_KEY` environment variable
 
+#### 4. **CoinGecko API Integration (Fallback for Restricted Regions)**
+- **Problem**: Binance blocks API access from certain countries (Indonesia included)
+- **Solution**: CoinGecko as primary or fallback data source for crypto OHLC
+- **Supported symbols**: BTC, ETH, SOL, XRP, DOGE, ADA, AVAX, MATIC, DOT, LTC, LINK, UNI, SHIB, XAUT, USDT, USDC, BNB
+- **Timeframes**: 1h, 4h, 1d (note: 1h limited to last 30 days due to API granularity)
+- **No API key required** (free tier: 10-30 calls/min, with caching)
+- **Configuration**: Set `FETCH_PROVIDER=auto` (default) to try Binance first, fallback to CoinGecko on error
+  - Or `FETCH_PROVIDER=coingecko` to use CoinGecko directly (recommended for Indonesia)
+  - Or `FETCH_PROVIDER=binance` to force Binance (may fail from restricted regions)
+- **Rate limiting**: Built-in 15-minute cache on API routes to respect CoinGecko limits
+- **Cron job**: `/api/cron/fetch-ohlc` now supports automatic fallback
+
 ---
 
 ## 📈 Recent Updates (Changelog)
