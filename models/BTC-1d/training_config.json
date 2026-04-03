@@ -1,6 +1,6 @@
 {
-  "threshold": 0.44999999999999996,
-  "val_accuracy": 0.5359877488514548,
+  "threshold": 0.7,
+  "val_accuracy": 0.5497702909647779,
   "samples_used": 3262,
   "class_balance": {
     "1": 1725,

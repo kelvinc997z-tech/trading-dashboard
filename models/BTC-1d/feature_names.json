@@ -80,5 +80,14 @@
   "close_lag_57",
   "close_lag_58",
   "close_lag_59",
-  "close_lag_60"
+  "close_lag_60",
+  "syn_exchange_inflows",
+  "syn_exchange_outflows",
+  "syn_whale_activity",
+  "syn_miner_outflows",
+  "syn_network_activity",
+  "syn_funding_rates",
+  "syn_open_interest",
+  "syn_exchange_supply_ratio",
+  "syn_active_addresses"
 ]

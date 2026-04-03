@@ -141,15 +141,17 @@ export async function fetchCryptoQuantMetrics(
 }
 
 /**
- * Merge on-chain features into OHLC DataFrame
- * Returns feature matrix with additional on-chain columns
+ * NOTE: mergeOnChainFeatures is a placeholder for Python training scripts.
+ * In the ML training pipeline (Python), this function merges on-chain features
+ * into OHLC data for model training. It is not needed in the Next.js frontend.
+ *
+ * If you need this in TypeScript, reimplement using arrays/objects or a
+ * DataFrame library like danfo-js.
  */
-export function mergeOnChainFeatures(
-  ohlcDf: pd.DataFrame,
-  onchainData: Record<string, OnChainMetrics[]>
-): pd.DataFrame {
-  // Convert onchain to time-series aligned with OHLC
-  // This is a Python bridge function; will be implemented in Python training script
-  // Placeholder for now
-  return ohlcDf;
-}
+// export function mergeOnChainFeatures(
+//   ohlcDf: any,
+//   onchainData: Record<string, OnChainMetrics[]>
+// ): any {
+//   // Placeholder for Python training
+//   return ohlcDf;
+// }
