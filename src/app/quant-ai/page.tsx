@@ -117,6 +117,7 @@ export default function QuantAIPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<Record<string, boolean>>({});
   const [selectedTimeframe, setSelectedTimeframe] = useState("1h");
+  const [conservativeMode, setConservativeMode] = useState(false); // Only show confidence >= 70%
   const [stats, setStats] = useState({ total: 0, avgConfidence: 0, buy: 0, sell: 0, neutral: 0 });
 
   const fetchPredictions = useCallback(async () => {
@@ -125,8 +126,9 @@ export default function QuantAIPage() {
       const res = await fetch("/api/quant-ai/predictions?limit=20");
       if (res.ok) {
         const data = await res.json();
-        setPredictions(data.predictions || []);
-        calculateStats(data.predictions || []);
+        const preds = data.predictions || [];
+        setPredictions(preds);
+        calculateStats(preds);
       }
     } catch (err) {
       console.error("Failed to fetch predictions:", err);
@@ -134,6 +136,16 @@ export default function QuantAIPage() {
       setLoading(false);
     }
   }, []);
+
+  // Filter predictions when conservative mode is on
+  const displayedPredictions = conservativeMode
+    ? predictions.filter(p => p.confidence >= 70)
+    : predictions;
+
+  // Recalculate stats when displayed predictions change
+  useEffect(() => {
+    calculateStats(displayedPredictions);
+  }, [displayedPredictions]);
 
   const generatePrediction = async (symbol: string) => {
     setGenerating(prev => ({ ...prev, [symbol]: true }));
@@ -220,6 +232,20 @@ export default function QuantAIPage() {
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : "group-hover:rotate-180 transition-transform"}`} />
                 {loading ? "Loading..." : "Refresh"}
+              </button>
+              
+              {/* Conservative Mode Toggle */}
+              <button
+                onClick={() => setConservativeMode(!conservativeMode)}
+                className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all ${
+                  conservativeMode
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25"
+                    : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                }`}
+                title={conservativeMode ? "Showing only high-confidence predictions (≥70%)" : "Show all predictions"}
+              >
+                <Shield className="w-4 h-4" />
+                {conservativeMode ? "Conservative ON" : "Conservative OFF"}
               </button>
             </div>
           </div>
@@ -342,7 +368,7 @@ export default function QuantAIPage() {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {predictions.map((pred) => {
+              {displayedPredictions.map((pred) => {
                 const config = getDirectionConfig(pred.direction);
                 const Icon = config.icon;
                 const confidenceColor = pred.confidence > 70 ? "bg-emerald-500" : pred.confidence > 50 ? "bg-amber-500" : "bg-rose-500";
