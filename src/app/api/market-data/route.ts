@@ -341,10 +341,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Crypto: Primary Coinglass, fallback Binance (no key needed)
+    // Crypto: Primary Binance (free, no key), fallback Coinglass (if key exists)
     if (CRYPTO_SYMBOLS.includes(symbol)) {
+      // Try Binance first (public API)
+      const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
+      if (binanceData) {
+        return NextResponse.json(binanceData);
+      }
+      // Fallback to Coinglass if key exists
       const coinglassKey = process.env.COINGLASS_API_KEY;
-      // Try Coinglass if key exists
       if (coinglassKey) {
         const coinglassData = await fetchCoinglassOHLC(symbol, timeframe, 200);
         if (coinglassData) {
@@ -355,13 +360,8 @@ export async function GET(request: NextRequest) {
           return NextResponse.json(transformCoinglassData(symbol, spotData));
         }
       }
-      // Fallback to Binance (free, no auth)
-      const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
-      if (binanceData) {
-        return NextResponse.json(binanceData);
-      }
       // All sources failed
-      return NextResponse.json({ error: "Crypto data unavailable (Coinglass & Binance failed)" }, { status: 500 });
+      return NextResponse.json({ error: "Crypto data unavailable (Binance & Coinglass failed)" }, { status: 500 });
     } else {
       // US Stocks: fetch from Massive API (with dummy fallback)
       return NextResponse.json(await fetchMassiveOHLC(symbol, timeframe));
