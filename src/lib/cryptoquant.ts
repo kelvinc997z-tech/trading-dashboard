@@ -9,7 +9,7 @@
 const CRYPTOQUANT_BASE = "https://api.cryptoquant.com/live/v3";
 
 // CryptoQuant symbol mapping (adjust as needed)
-export const CRYPTOQUANT_SYMBOLS = {
+export const CRYPTOQUANT_SYMBOLS: Record<string, string> = {
   BTC: "btc",
   ETH: "eth",
   SOL: "sol",
@@ -62,7 +62,8 @@ export async function fetchCryptoQuantMetric(
     throw new Error("CRYPTOQUANT_API_KEY not set");
   }
 
-  const cryptoQuantSymbol = CRYPTOQUANT_SYMBOLS[symbol.toUpperCase()];
+  const upperSymbol = symbol.toUpperCase() as keyof typeof CRYPTOQUANT_SYMBOLS;
+  const cryptoQuantSymbol = CRYPTOQUANT_SYMBOLS[upperSymbol];
   if (!cryptoQuantSymbol) {
     throw new Error(`Unsupported symbol for CryptoQuant: ${symbol}`);
   }
