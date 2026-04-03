@@ -87,7 +87,7 @@ jobs:
         ./gradlew assembleRelease
 
     - name: Upload Release APK
-      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+    if: ${{ secrets.KEYSTORE_BASE64 != '' }}
       uses: actions/upload-artifact@v4
       with:
         name: trading-dashboard-release-apk
