@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { fetchCoinglassOHLC, fetchCoinglassSpotOHLC } from "@/lib/coinglass";
 import { calculateAllIndicators } from "@/lib/quant-ai/indicators";
 import { saveOHLCData, saveIndicators } from "@/lib/quant-ai/data-collector";
 import { randomUUID } from "crypto";
