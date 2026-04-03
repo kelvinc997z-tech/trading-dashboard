@@ -10,32 +10,37 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    --primary: 217.2 91.2% 59.8%;  /* brighter blue for light mode */
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
+    --muted: 210 40% 96.1%;  /* softer gray */
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
+    --border: 214.3 31.8% 91.4%;  /* light border */
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --ring: 217.2 91.2% 59.8%;
+    --radius: 0.75rem;  /* slightly larger radius for modern look */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222.2 84% 4.9%;  /* true dark, not pitch black */
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 217.2 91.2% 59.8%;  /* keep blue consistent */
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217.2 32.6% 17.5%;  /* dark gray */
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
@@ -43,9 +48,14 @@
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
+    --border: 217.2 32.6% 17.5%;  /* dark border */
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+    --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+    --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+    --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.4);
   }
 }
 
@@ -55,7 +65,88 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better selection color */
+  ::selection {
+    @apply bg-blue-500/30 dark:bg-blue-500/40;
+  }
+}
+
+/* Custom shadows for light mode */
+.shadow-soft {
+  box-shadow: 0 4px 20px -2px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.06);
+}
+
+.shadow-soft-lg {
+  box-shadow: 0 10px 40px -4px rgb(0 0 0 / 0.1), 0 4px 12px -4px rgb(0 0 0 / 0.08);
+}
+
+/* Glassmorphism for cards */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.dark .glass {
+  background: rgba(17, 25, 40, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Gradient text */
+.gradient-text {
+  @apply bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-500 bg-clip-text text-transparent;
+}
+
+.dark .gradient-text {
+  @apply bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-300 bg-clip-text text-transparent;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100 dark:bg-slate-800 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-slate-600 rounded-full hover:bg-slate-400 dark:hover:bg-slate-500 transition-colors;
+}
+
+::-webkit-scrollbar-thumb:active {
+  @apply bg-slate-400 dark:bg-slate-500;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-900;
+}
+
+/* Smooth transitions for interactive elements */
+button, a, input, select, textarea {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Card hover lift effect */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -6px rgb(0 0 0 / 0.12), 0 6px 12px -6px rgb(0 0 0 / 0.08);
 }
 
 /* High Contrast Mode */
@@ -83,28 +174,48 @@ html.high-contrast {
 
 html.high-contrast .border-gray-200,
 html.high-contrast .border-gray-300,
-html.high-contrast .border-gray-400 {
+html.high-contrast .border-gray-400,
+html.high-contrast .border-slate-200,
+html.high-contrast .border-slate-300,
+html.high-contrast .border-slate-400 {
   border-color: #fff !important;
 }
 
 html.high-contrast .text-gray-600,
 html.high-contrast .text-gray-700,
-html.high-contrast .text-gray-800 {
+html.high-contrast .text-gray-800,
+html.high-contrast .text-slate-600,
+html.high-contrast .text-slate-700,
+html.high-contrast .text-slate-800 {
   color: #fff !important;
 }
 
 html.high-contrast .bg-gray-50,
 html.high-contrast .bg-gray-100,
-html.high-contrast .bg-gray-200 {
+html.high-contrast .bg-gray-200,
+html.high-contrast .bg-slate-50,
+html.high-contrast .bg-slate-100,
+html.high-contrast .bg-slate-200 {
   background-color: #000 !important;
 }
 
 html.high-contrast .dark .border-gray-700,
-html.high-contrast .dark .border-gray-600 {
+html.high-contrast .dark .border-gray-600,
+html.high-contrast .dark .border-slate-700,
+html.high-contrast .dark .border-slate-600 {
   border-color: #fff !important;
 }
 
 html.high-contrast .dark .text-gray-300,
-html.high-contrast .dark .text-gray-400 {
+html.high-contrast .dark .text-gray-400,
+html.high-contrast .dark .text-slate-300,
+html.high-contrast .dark .text-slate-400 {
   color: #fff !important;
+}
+
+html.high-contrast .dark .bg-gray-800,
+html.high-contrast .dark .bg-gray-900,
+html.high-contrast .dark .bg-slate-800,
+html.high-contrast .dark .bg-slate-900 {
+  background-color: #000 !important;
 }
