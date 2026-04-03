@@ -1,4 +1,4 @@
-name: Build TWA APK
+      name: Build TWA APK
 
 on:
   push:
@@ -75,7 +75,7 @@ jobs:
         retention-days: 14
 
     - name: Build Release APK (if keystore provided)
-      if: secrets.KEYSTORE_BASE64 != ''
+      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
       working-directory: .twa
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
@@ -87,7 +87,7 @@ jobs:
         ./gradlew assembleRelease
 
     - name: Upload Release APK
-      if: secrets.KEYSTORE_BASE64 != ''
+      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
       uses: actions/upload-artifact@v4
       with:
         name: trading-dashboard-release-apk
