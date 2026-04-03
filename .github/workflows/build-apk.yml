@@ -1,0 +1,108 @@
+name: Build TWA APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install Bubblewrap CLI
+      run: npm install -g @bubblewrap/cli
+
+    - name: Prepare TWA manifest
+      run: |
+        # Ensure twa-manifest.json exists
+        if [ -f "android-twa/twa-manifest.json" ]; then
+          cp android-twa/twa-manifest.json .
+        else
+          echo "❌ twa-manifest.json not found in android-twa/"
+          exit 1
+        fi
+
+    - name: Initialize TWA project
+      env:
+        # Use non-interactive mode
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        bubblewrap init \
+          --twa-manifest-path=./twa-manifest.json \
+          --packageId=$(jq -r '.packageId' twa-manifest.json) \
+          --name=$(jq -r '.name' twa-manifest.json) \
+          --versionCode=$(jq -r '.versionCode' twa-manifest.json) \
+          --versionName=$(jq -r '.version' twa-manifest.json) \
+          --host=$(jq -r '.host' twa-manifest.json) \
+          --startUrl=/ \
+          --display=$(jq -r '.display' twa-manifest.json) \
+          --themeColor=$(jq -r '.themeColor' twa-manifest.json) \
+          --backgroundColor=$(jq -r '.backgroundColor' twa-manifest.json) \
+          --orientation=$(jq -r '.orientation' twa-manifest.json)
+
+    - name: Build Debug APK
+      working-directory: .twa
+      run: |
+        chmod +x ./gradlew
+        ./gradlew assembleDebug
+
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: trading-dashboard-debug-apk
+        path: |
+          .twa/app/build/outputs/apk/debug/app-debug.apk
+          .twa/app/build/outputs/apk/debug/
+        retention-days: 14
+
+    - name: Build Release APK (if keystore provided)
+      if: secrets.KEYSTORE_BASE64 != ''
+      working-directory: .twa
+      run: |
+        # Decode keystore
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+        
+        # Configure signing in app/build.gradle (could also use gradle.properties)
+        echo "android.signingConfigs.release.storeFile=release.keystore" >> gradle.properties
+        echo "android.signingConfigs.release.storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> gradle.properties
+        echo "android.signingConfigs.release.keyAlias=${{ secrets.KEY_ALIAS }}" >> gradle.properties
+        echo "android.signingConfigs.release.keyPassword=${{ secrets.KEY_PASSWORD }}" >> gradle.properties
+        
+        chmod +x ./gradlew
+        ./gradlew assembleRelease
+
+    - name: Upload Release APK
+      if: secrets.KEYSTORE_BASE64 != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: trading-dashboard-release-apk
+        path: |
+          .twa/app/build/outputs/apk/release/app-release.apk
+          .twa/app/build/outputs/apk/release/
+        retention-days: 30
+
+    - name: Cleanup
+      if: always()
+      run: |
+        rm -rf .twa release.keystore

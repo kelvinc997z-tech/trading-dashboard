@@ -166,3 +166,56 @@ App akan terbuka ke https://www.klepon.cfd
 ## Support
 
 For issues with Bubblewrap: https://github.com/GoogleChromeLabs/bubblewrap/issues
+
+---
+
+## Alternative: GitHub Actions CI
+
+You can also build the APK automatically using GitHub Actions (no local tools required).
+
+### How it works
+
+- Push to `main` or manually trigger the workflow
+- GitHub Actions will:
+  - Setup JDK 17 & Android SDK
+  - Install Bubblewrap
+  - Generate the Android project from `twa-manifest.json`
+  - Build **debug APK** (always)
+  - Build **release APK** if keystore secrets are configured
+  - Upload APK as artifacts
+
+### Artifacts
+
+- Debug: `trading-dashboard-debug-apk`
+- Release: `trading-dashboard-release-apk` (if keystore provided)
+
+Download from the workflow run page → Artifacts section.
+
+### Setup for Release Builds (signing)
+
+1. Generate a keystore (if you don't have one):
+```bash
+keytool -genkey -v \
+  -keystore my-release-key.keystore \
+  -alias my-key-alias \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000
+```
+
+2. Encode keystore to base64:
+```bash
+base64 -i my-release-key.keystore | tr -d '\n' > keystore.base64
+```
+
+3. Add these **repository secrets** in GitHub → Settings → Secrets and variables → Actions:
+- `KEYSTORE_BASE64`: the full base64 string of your keystore
+- `KEYSTORE_PASSWORD`: keystore password
+- `KEY_ALIAS`: key alias
+- `KEY_PASSWORD`: key password
+
+4. (Optional) Push to `main` or manually trigger the workflow in the Actions tab.
+
+---
+
+That's it! Happy trading 📈🚀
