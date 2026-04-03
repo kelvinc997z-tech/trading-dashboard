@@ -140,61 +140,100 @@ async function fetchCoinDeskOHLC(symbol: string, timeframe: string = "1d") {
   }
 }
 
-async function fetchKuCoinOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
-  // Map symbol to KuCoin format (USDT pairs)
-  const kucoinSymbol = `${symbol}-USDT`;
-  // Map timeframe to KuCoin granularity
-  const granularityMap: Record<string, string> = {
-    "1m": "1min",
-    "5m": "5min",
-    "15m": "15min",
-    "30m": "30min",
-    "1h": "1hour",
-    "2h": "2hour",
-    "4h": "4hour",
-    "6h": "6hour",
-    "12h": "12hour",
-    "1d": "1day",
-    "1w": "1week",
+async function fetchCoinGeckoOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
+  const idMap: Record<string, string> = {
+    BTC: "bitcoin",
+    ETH: "ethereum",
+    SOL: "solana",
+    XRP: "ripple",
+    XAUT: "tether-gold",
   };
-  const granularity = granularityMap[timeframe] || "1hour";
-  
-  const url = `https://api.kucoin.com/api/v1/market/candles?symbol=${kucoinSymbol}&granularity=${granularity}&limit=${limit}`;
-  
+  const coinId = idMap[symbol];
+  if (!coinId) return null;
+
+  // Determine days parameter and whether resampling is needed
+  let days: number;
+  let needsResample = false;
+  const tf = timeframe;
+  if (["1m", "5m", "15m", "30m"].includes(tf)) {
+    // CoinGecko doesn't support <1h, fallback to hourly (treated as 1h)
+    days = Math.ceil(limit / 24);
+    if (days > 30) days = 30;
+  } else if (tf === "1h") {
+    days = Math.ceil(limit / 24);
+    if (days > 30) days = 30;
+  } else if (["4h", "6h", "12h"].includes(tf)) {
+    const hours = parseInt(tf);
+    const hourlyNeeded = limit * hours;
+    days = Math.ceil(hourlyNeeded / 24);
+    if (days > 30) days = 30;
+    needsResample = true;
+  } else if (tf === "1d") {
+    // Request daily: need >30 days to force daily granularity
+    days = limit;
+    if (days < 31) days = 31;
+    if (days > 365) days = 365;
+  } else if (tf === "1w") {
+    days = limit * 7;
+    if (days > 365) days = 365;
+  } else {
+    days = Math.ceil(limit / 24);
+    if (days > 30) days = 30;
+  }
+
+  const url = `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`;
   try {
     const res = await fetch(url);
     if (!res.ok) {
-      console.error(`KuCoin fetch error for ${symbol}: ${res.status}`);
+      console.error(`CoinGecko fetch error for ${symbol}: ${res.status}`);
       return null;
     }
-    const json = await res.json();
-    if (json.code !== "200000") {
-      console.error(`KuCoin API error for ${symbol}:`, json.msg || json.code);
-      return null;
-    }
-    const data = json.data as any[];
+    const data: any[][] = await res.json();
     if (!Array.isArray(data) || data.length === 0) {
-      console.error(`KuCoin returned no data for ${symbol}`);
+      console.error(`CoinGecko returned no data for ${symbol}`);
       return null;
     }
-    // KuCoin klines: [ [timestamp, open, high, low, close, volume, quote_volume], ... ]
-    const history = data.map((candle: any[]) => ({
-      time: new Date(parseInt(candle[0])).toISOString(),
-      open: parseFloat(candle[1]),
-      high: parseFloat(candle[2]),
-      low: parseFloat(candle[3]),
-      close: parseFloat(candle[4]),
-      price: parseFloat(candle[4]),
-      volume: parseFloat(candle[5]),
+
+    // Convert to history: [timestamp, open, high, low, close]
+    let history = data.map(item => ({
+      time: new Date(item[0]).toISOString(),
+      open: Number(item[1]),
+      high: Number(item[2]),
+      low: Number(item[3]),
+      close: Number(item[4]),
+      price: Number(item[4]),
+      volume: 0,
     }));
-    
+
+    // Resample if needed (for multi-hour timeframes)
+    if (needsResample) {
+      const factor = parseInt(timeframe);
+      const resampled: any[] = [];
+      for (let i = 0; i < history.length; i += factor) {
+        const chunk = history.slice(i, i + factor);
+        if (chunk.length === 0) break;
+        const open = chunk[0].open;
+        const high = Math.max(...chunk.map(c => c.high));
+        const low = Math.min(...chunk.map(c => c.low));
+        const close = chunk[chunk.length - 1].close;
+        const time = chunk[0].time;
+        resampled.push({ time, open, high, low, close, price: close, volume: 0 });
+      }
+      history = resampled;
+    }
+
+    // Trim to limit most recent
+    if (history.length > limit) {
+      history = history.slice(history.length - limit);
+    }
+
     if (history.length === 0) return null;
-    
+
     const current = history[history.length - 1];
     const previous = history.length > 1 ? history[history.length - 2] : current;
     const change = current.close - previous.close;
     const changePercent = (change / previous.close) * 100;
-    
+
     return {
       symbol,
       current: {
@@ -208,7 +247,7 @@ async function fetchKuCoinOHLC(symbol: string, timeframe: string = "1h", limit: 
       history,
     };
   } catch (e) {
-    console.error(`KuCoin fetch error for ${symbol}:`, e);
+    console.error(`CoinGecko fetch error for ${symbol}:`, e);
     return null;
   }
 }
@@ -366,12 +405,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Crypto: KuCoin primary, Coinglass fallback (if key exists)
+    // Crypto: CoinGecko primary (free, no key), Coinglass fallback (if key exists)
     if (CRYPTO_SYMBOLS.includes(symbol)) {
-      // Try KuCoin first (public API, no key)
-      const kucoinData = await fetchKuCoinOHLC(symbol, timeframe, 200);
-      if (kucoinData) {
-        return NextResponse.json(kucoinData);
+      // Try CoinGecko first
+      const cgData = await fetchCoinGeckoOHLC(symbol, timeframe, 200);
+      if (cgData) {
+        return NextResponse.json(cgData);
       }
       // Fallback to Coinglass if key exists
       const coinglassKey = process.env.COINGLASS_API_KEY;
@@ -386,7 +425,7 @@ export async function GET(request: NextRequest) {
         }
       }
       // All sources failed
-      return NextResponse.json({ error: "Crypto data unavailable (KuCoin & Coinglass failed)" }, { status: 500 });
+      return NextResponse.json({ error: "Crypto data unavailable (CoinGecko & Coinglass failed)" }, { status: 500 });
     } else {
       // US Stocks: fetch from Massive API (with dummy fallback)
       return NextResponse.json(await fetchMassiveOHLC(symbol, timeframe));
