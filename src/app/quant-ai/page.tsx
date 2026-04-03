@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Activity, TrendingUp, TrendingDown, Minus, Brain, Zap,
   BarChart3, Target, Shield, Clock, RefreshCw, ChevronRight,
-  LineChart, PieChart, Candlestick, ArrowLeft, Sparkles
+  LineChart, PieChart, ArrowLeft, Sparkles
 } from "lucide-react";
 
 interface Prediction {
@@ -314,7 +314,7 @@ export default function QuantAIPage() {
         {/* Predictions Grid */}
         <section>
           <div className="flex items-center gap-2 mb-5">
-            <Candlestick className="w-6 h-6 text-indigo-500" />
+            <BarChart3 className="w-6 h-6 text-indigo-500" />
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Recent Predictions</h2>
             <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-sm font-medium rounded-full">
               Live

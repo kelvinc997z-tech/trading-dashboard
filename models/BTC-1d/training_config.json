@@ -1,0 +1,10 @@
+{
+  "threshold": 0.44999999999999996,
+  "val_accuracy": 0.5359877488514548,
+  "samples_used": 3262,
+  "class_balance": {
+    "1": 1725,
+    "0": 1537
+  },
+  "note": "Binary classification: up=1, down=0. Hold class excluded from training."
+}
