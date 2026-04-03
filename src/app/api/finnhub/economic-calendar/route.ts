@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 
 // Cache economic calendar data for 30 minutes (1800 seconds)
-// Finnhub free tier has rate limits; caching reduces calls
 const CACHE_TTL = 1800; // 30 minutes
 let cachedData: { data: any; timestamp: number } | null = null;
 
 export async function GET() {
-  const token = process.env.FINNHUB_API_KEY;
+  const token = process.env.TWELVE_DATA_API_KEY;
   if (!token) {
-    return NextResponse.json({ error: "FINNHUB_API_KEY not set" }, { status: 500 });
+    return NextResponse.json({ error: "TWELVE_DATA_API_KEY not set" }, { status: 500 });
   }
 
   // Return cached data if still valid
@@ -22,21 +21,40 @@ export async function GET() {
   }
 
   try {
-    const res = await fetch(`https://finnhub.io/api/v1/calendar/economic?token=${token}`, {
-      next: { revalidate: CACHE_TTL }, // ISR cache
-    });
+    const res = await fetch(`https://api.twelvedata.com/economic_calendar?apikey=${token}`);
     if (!res.ok) {
-      throw new Error(`Finnhub error: ${res.status}`);
+      throw new Error(`Twelve Data error: ${res.status}`);
     }
     const data = await res.json();
 
+    // Normalize to our format: { economicCalendar: [...] }
+    // Twelve Data returns { values: [...], page, per_page, total_pages, total_records }
+    const normalized = {
+      economicCalendar: (data.values || []).map((item: any) => {
+        const { date: dateStr, time: timeStr, country, event, importance, actual, forecast, previous } = item;
+        // Combine date and time to Unix timestamp (seconds) assuming UTC
+        const dateTime = new Date(`${dateStr}T${timeStr || "00:00"}:00Z`);
+        const timestamp = Math.floor(dateTime.getTime() / 1000);
+        return {
+          date: timestamp,
+          time: timeStr,
+          country,
+          event,
+          impact: importance,
+          actual,
+          forecast,
+          previous,
+        };
+      }),
+    };
+
     // Update cache
     cachedData = {
-      data,
+      data: normalized,
       timestamp: Date.now(),
     };
 
-    return NextResponse.json(data, {
+    return NextResponse.json(normalized, {
       headers: {
         "Cache-Control": `public, max-age=${CACHE_TTL}`,
         "X-Cache": "MISS",

@@ -64,6 +64,7 @@ const US_STOCKS = [
   { symbol: "NVDA", name: "NVIDIA Corporation" },
   { symbol: "MSFT", name: "Microsoft Corporation" },
   { symbol: "GOOGL", name: "Alphabet Inc." },
+  { symbol: "TSM", name: "Taiwan Semiconductor Manufacturing" },
 ];
 
 export default function Dashboard() {

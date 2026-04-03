@@ -3,7 +3,7 @@ import { fetchStockOHLC, convertStockToDatabaseFormat } from "@/lib/massive";
 import { fetchCoinglassOHLC, fetchCoinglassSpotOHLC } from "@/lib/coinglass";
 
 const CRYPTO_SYMBOLS = ["XAUT", "BTC", "ETH", "SOL", "XRP"];
-const US_STOCKS = ["AAPL", "AMD", "NVDA", "MSFT", "GOOGL"];
+const US_STOCKS = ["AAPL", "AMD", "NVDA", "MSFT", "GOOGL", "TSM"];
 const SUPPORTED_SYMBOLS = [...CRYPTO_SYMBOLS, ...US_STOCKS];
 
 function generateOHLC(symbol: string, timeframe: string = "1h") {

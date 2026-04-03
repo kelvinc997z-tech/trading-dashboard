@@ -1,129 +1,68 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import { fetchCompanyNews, fetchNews } from "@/lib/finnhub";
-import { aggregateSentiment } from "@/lib/sentiment-analyzer";
+import { NextResponse } from "next/server";
 
-// GET /api/market-sentiment
-// Returns aggregated sentiment for symbols
-export async function GET(request: NextRequest) {
-  const session = await getSession();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// Cache for 1 hour (Fear & Greed updates hourly)
+const CACHE_TTL = 3600;
+let cachedData: { data: any; timestamp: number } | null = null;
+
+export async function GET() {
+  // Return cache if valid
+  if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL * 1000) {
+    return NextResponse.json(cachedData.data, {
+      headers: {
+        "Cache-Control": `public, max-age=${CACHE_TTL}`,
+        "X-Cache": "HIT",
+      },
+    });
   }
 
-  const { searchParams } = new URL(request.url);
-  const symbol = searchParams.get("symbol");
-  const limit = parseInt(searchParams.get("limit") || "20");
+  try {
+    const res = await fetch("https://api.alternative.me/fng/?limit=1");
+    if (!res.ok) {
+      throw new Error(`Alternative.me error: ${res.status}`);
+    }
+    const data = await res.json();
 
-  // If specific symbol requested, return sentiment for that symbol only
-  if (symbol) {
-    const sentiment = await getSymbolSentiment(symbol);
-    return NextResponse.json(sentiment);
-  }
+    if (!data.data || data.data.length === 0) {
+      throw new Error("No sentiment data");
+    }
 
-  // Otherwise, return sentiment for default set of symbols
-  const defaultSymbols = ["BTC", "ETH", "XAUT", "SOL", "XRP", "EURUSD", "USDJPY", "OIL"];
-  const sentiments: any[] = [];
-  
-  // Fetch sentiment for each symbol (with some concurrency limit)
-  for (const sym of defaultSymbols.slice(0, 8)) {
-    try {
-      const sentiment = await getSymbolSentiment(sym);
-      sentiments.push(sentiment);
-    } catch (error) {
-      console.error(`Failed to fetch sentiment for ${sym}:`, error);
-      // Add placeholder with error flag
-      sentiments.push({
-        symbol: sym,
-        score: 0,
-        confidence: 0,
-        trend: "neutral",
-        newsCount: 0,
-        positiveNews: 0,
-        negativeNews: 0,
-        sources: [],
-        lastUpdated: new Date().toISOString(),
-        error: true,
+    const fng = data.data[0];
+    const value = Number(fng.value);
+    // Normalize to -1..1 scale
+    const normalizedScore = (value - 50) / 50;
+
+    let trend: "bullish" | "bearish" | "neutral" = "neutral";
+    const classification = fng.value_classification?.toLowerCase();
+    if (classification === "greed") trend = "bullish";
+    else if (classification === "fear") trend = "bearish";
+
+    const overall = {
+      score: Number(normalizedScore.toFixed(3)),
+      trend,
+      updatedAt: new Date(parseInt(fng.timestamp) * 1000).toISOString(),
+    };
+
+    // Empty per-symbol data for now (future extension with CryptoQuant if key available)
+    const symbols: any[] = [];
+
+    const response = { overall, symbols };
+    cachedData = { data: response, timestamp: Date.now() };
+
+    return NextResponse.json(response, {
+      headers: {
+        "Cache-Control": `public, max-age=${CACHE_TTL}`,
+        "X-Cache": "MISS",
+      },
+    });
+  } catch (err: any) {
+    if (cachedData) {
+      return NextResponse.json(cachedData.data, {
+        headers: {
+          "Cache-Control": `public, max-age=${CACHE_TTL}`,
+          "X-Cache": "STALE",
+        },
       });
     }
-  }
-
-  // Calculate overall market sentiment (average of non-error entries)
-  const validSentiments = sentiments.filter(s => !s.error);
-  const avgScore = validSentiments.reduce((sum, s) => sum + s.score, 0) / validSentiments.length;
-  const overall = {
-    score: avgScore,
-    trend: avgScore > 0.1 ? "bullish" : avgScore < -0.1 ? "bearish" : "neutral",
-    updatedAt: new Date().toISOString(),
-    symbolsCount: validSentiments.length,
-  };
-
-  return NextResponse.json({
-    overall,
-    symbols: sentiments,
-  });
-}
-
-// Helper: get sentiment for a single symbol
-async function getSymbolSentiment(symbol: string): Promise<any> {
-  try {
-    // Try to fetch company/crypto news from Finnhub
-    let articles: any[] = [];
-    
-    if (symbol.includes("USD") || symbol.includes("/")) {
-      // Forex pair - use general crypto/forex news
-      const category = symbol.includes("JPY") || symbol.includes("EUR") || symbol.includes("GBP") ? "forex" : "general";
-      const newsData = await fetchNews(category, 20);
-      articles = newsData.slice(0, 15) || [];
-    } else {
-      // Crypto - fetch company news
-      articles = await fetchCompanyNews(symbol, 15);
-    }
-
-    if (!articles || articles.length === 0) {
-      return {
-        symbol,
-        score: 0,
-        confidence: 0,
-        trend: "neutral",
-        newsCount: 0,
-        positiveNews: 0,
-        negativeNews: 0,
-        sources: [],
-        lastUpdated: new Date().toISOString(),
-        error: false,
-      };
-    }
-
-    // Analyze sentiment
-    const analysis = aggregateSentiment(articles, symbol);
-
-    return {
-      symbol,
-      score: analysis.score,
-      confidence: analysis.confidence,
-      trend: analysis.score > 0.1 ? "bullish" : analysis.score < -0.1 ? "bearish" : "neutral",
-      newsCount: analysis.totalCount,
-      positiveNews: analysis.positiveCount,
-      negativeNews: analysis.negativeCount,
-      sources: ["Finnhub"],
-      lastUpdated: new Date().toISOString(),
-      topArticles: analysis.articles.slice(0, 3).map(a => a.title),
-      error: false,
-    };
-  } catch (error) {
-    console.error(`Sentiment error for ${symbol}:`, error);
-    return {
-      symbol,
-      score: 0,
-      confidence: 0,
-      trend: "neutral",
-      newsCount: 0,
-      positiveNews: 0,
-      negativeNews: 0,
-      sources: [],
-      lastUpdated: new Date().toISOString(),
-      error: true,
-    };
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
