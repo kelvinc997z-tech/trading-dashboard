@@ -1,0 +1,46 @@
+{
+  "packageId": "com.trading.dashboard.pro",
+  "version": "1.0.0",
+  "name": "Trading Dashboard Pro",
+  "versionCode": 1,
+  "host": "www.klepon.cfd",
+  "launcherName": "Trading Dashboard",
+  "display": "standalone",
+  "themeColor": "#10b981",
+  "backgroundColor": "#0a0a0a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Dashboard",
+      "shortcutId": "open-dashboard",
+      "intent": {
+        "action": "VIEW",
+        "launchUrl": "/dashboard"
+      }
+    },
+    {
+      "name": "Market Outlook",
+      "shortcutId": "market-outlook",
+      "intent": {
+        "action": "VIEW",
+        "launchUrl": "/market-outlook"
+      }
+    }
+  ],
+  "splashScreen": {
+    "launchAutoHide": true,
+    "launchBackgroundColor": "#0a0a0a",
+    "launcherIcon": {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  }
+}
