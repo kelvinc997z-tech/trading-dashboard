@@ -465,7 +465,7 @@ export default function Dashboard() {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-200 dark:border-gray-700" />
           </div>
-          <nav className="relative flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <nav className="relative flex justify-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {[
               { 
                 id: "charts", 
