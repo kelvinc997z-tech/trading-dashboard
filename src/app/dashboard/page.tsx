@@ -3,7 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, BarChart2, TrendingUp, PieChart, Newspaper, Eye } from "lucide-react";
+import { Activity, BarChart2, TrendingUp, PieChart, Newspaper, Eye, Palette } from "lucide-react";
+import InstallPWAButton from "@/components/InstallPWAButton";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
 import MarketOutlook from "@/components/MarketOutlook";
 import MarketOutlookEnhanced from "@/components/MarketOutlookEnhanced";
 import RealTimeChart from "@/components/RealTimeChart";
@@ -337,6 +339,9 @@ export default function Dashboard() {
                 <p className="text-xs text-gray-500 dark:text-gray-400">Updated</p>
                 <p className="text-xs font-mono text-gray-700 dark:text-gray-300">{lastUpdate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
+
+              {/* Theme Switcher */}
+              <ThemeSwitcher />
 
               {/* Live Indicator */}
               <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
@@ -870,6 +875,9 @@ export default function Dashboard() {
           </table>
         </div>
       </motion.div>
+
+      {/* Install PWA Prompt */}
+      <InstallPWAButton />
 
     </div>
     </main>

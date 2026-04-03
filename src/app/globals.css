@@ -541,17 +541,141 @@ html.high-contrast .dark .bg-slate-900 {
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Reduce motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+/* ============================================
+   THEME VARIATIONS - PRO, BLOOMBERG, APPLE
+   ============================================ */
+
+/* Pro theme (default dark with neon accents) */
+html.theme-pro {
+  color-scheme: dark;
+  --background: 222.2 47.4% 11.2%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 47.4% 11.2%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 47.4% 11.2%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 158 100% 50%;  /* neon emerald */
+  --primary-foreground: 0 0% 0%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 174 100% 50%;  /* neon cyan */
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 174 100% 50%;
+  --gradient-primary: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  --gradient-accent: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
 }
+
+/* Bloomberg theme: terminal green on black, monospace */
+html.theme-bloomberg {
+  color-scheme: dark;
+  --background: 0 0% 5%;  /* almost black */
+  --foreground: 120 100% 70%;  /* bright terminal green */
+  --card: 0 0% 8%;
+  --card-foreground: 120 100% 70%;
+  --popover: 0 0% 8%;
+  --popover-foreground: 120 100% 70%;
+  --primary: 120 100% 70%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 15%;
+  --secondary-foreground: 120 100% 60%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 120 100% 50%;
+  --accent: 120 100% 60%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 100% 60%;
+  --destructive-foreground: 0 0% 0%;
+  --border: 0 0% 20%;
+  --input: 0 0% 15%;
+  --ring: 120 100% 60%;
+  --gradient-primary: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  --gradient-accent: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', monospace;
+}
+
+/* Apple theme: minimalist light, subtle shadows */
+html.theme-apple {
+  color-scheme: light;
+  --background: 0 0% 98%;  /* off-white */
+  --foreground: 222.2 47.4% 11.2%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 47.4% 11.2%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+  --primary: 210 100% 35%;  /* deep blue */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 200 100% 50%;  /* bright blue */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 210 100% 35%;
+  --gradient-primary: linear-gradient(135deg, #0070f3 0%, #00c6ff 100%);
+  --gradient-accent: linear-gradient(135deg, #00c6ff 0%, #0070f3 100%);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+  --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.08);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Apply theme-specific font & smooth transitions */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Override some components for Bloomberg monospace */
+html.theme-bloomberg .font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', monospace;
+}
+
+html.theme-bloomberg .text-xs,
+html.theme-bloomberg .text-sm,
+html.theme-bloomberg .text-base {
+  letter-spacing: -0.025em;
+}
+
+/* Apple theme: more whitespace, lighter borders */
+html.theme-apple .glass-card {
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+html.theme-apple .gradient-text {
+  background: none;
+  color: #0070f3;
+}
+
+/* Hide scrollbar for Bloomberg (clean terminal look) */
+html.theme-bloomberg .scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+html.theme-bloomberg .scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Neon glow for Pro theme */
+html.theme-pro .btn-gradient {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+}
+
+html.theme-pro .btn-gradient:hover {
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+}
+
 
 /* Focus-visible for keyboard navigation */
 :focus-visible {

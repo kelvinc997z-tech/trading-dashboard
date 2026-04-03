@@ -10,8 +10,14 @@ import OnboardingProvider from "@/components/onboarding/OnboardingProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Trading Dashboard",
-  description: "Trading dashboard with authentication",
+  title: "Trading Dashboard Pro",
+  description: "Real-time crypto & stock trading dashboard with signals",
+  manifest: "/manifest.json",
+  themeColor: ["#10b981"],
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  }
 };
 
 export default function RootLayout({
