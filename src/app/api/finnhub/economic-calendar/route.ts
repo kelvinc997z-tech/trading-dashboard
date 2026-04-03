@@ -21,7 +21,7 @@ export async function GET() {
   }
 
   try {
-    const res = await fetch(`https://api.twelvedata.com/economic_calendar?apikey=${token}`);
+    const res = await fetch(`https://api.twelvedata.com/api/v1/economic_calendar?apikey=${token}`);
     if (!res.ok) {
       throw new Error(`Twelve Data error: ${res.status}`);
     }
