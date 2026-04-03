@@ -73,6 +73,73 @@ function generateOHLC(symbol: string, timeframe: string = "1h") {
   };
 }
 
+async function fetchCoinDeskOHLC(symbol: string, timeframe: string = "1d") {
+  // CoinDesk only supports daily data, so only use for 1d timeframe
+  if (timeframe !== "1d") return null;
+
+  const symbolMap: Record<string, string> = {
+    "BTC": "BTC",
+    "ETH": "ETH",
+    "SOL": "SOL",
+    "XRP": "XRP",
+    "XAUT": "XAU", // CoinDesk uses XAU for gold
+  };
+  const coin = symbolMap[symbol];
+  if (!coin) return null;
+
+  // Get last 30 days
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - 30);
+  
+  const url = `https://api.coindesk.com/v1/bpi/historical/close.json?start=${startDate.toISOString().split('T')[0]}&end=${endDate.toISOString().split('T')[0]}`;
+  
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    
+    if (!data.bpi) return null;
+    
+    // Convert to OHLC format (CoinDesk only provides close prices)
+    const bpi = data.bpi as Record<string, number>;
+    const history = Object.entries(bpi)
+      .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+      .map(([date, close]) => ({
+        time: new Date(date).toISOString(),
+        open: close,
+        high: close,
+        low: close,
+        close: close,
+        price: close,
+        volume: 0, // CoinDesk doesn't provide volume
+      }));
+    
+    if (history.length === 0) return null;
+    
+    const current = history[history.length - 1];
+    const previous = history.length > 1 ? history[history.length - 2] : current;
+    const change = current.close - previous.close;
+    const changePercent = (change / previous.close) * 100;
+    
+    return {
+      symbol,
+      current: {
+        price: current.close,
+        close: current.close,
+        change: Number(change.toFixed(2)),
+        changePercent: Number(changePercent.toFixed(2)),
+        high: current.high,
+        low: current.low,
+      },
+      history,
+    };
+  } catch (e) {
+    console.error(`CoinDesk fetch error for ${symbol}:`, e);
+    return null;
+  }
+}
+
 async function fetchCoinMarketCap(symbol: string, apiKey: string, timeframe: string = "1h") {
   const cmcSymbol = symbol;
   const url = `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${cmcSymbol}&convert=USD`;
@@ -246,6 +313,12 @@ export async function GET(request: NextRequest) {
       const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
       if (cmcApiKey) {
         return NextResponse.json(await fetchCoinMarketCap(symbol, cmcApiKey, timeframe));
+      }
+      
+      // Try CoinDesk (free, no API key needed, supports daily only)
+      const coindeskData = await fetchCoinDeskOHLC(symbol, timeframe);
+      if (coindeskData) {
+        return NextResponse.json(coindeskData);
       }
       
       // Last resort: dummy data
