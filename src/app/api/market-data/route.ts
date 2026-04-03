@@ -149,8 +149,17 @@ async function fetchBinanceOHLC(symbol: string, timeframe: string = "1h", limit:
   
   try {
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`Binance fetch error for ${symbol}: ${res.status}`);
+      return null;
+    }
     const data = await res.json();
+    
+    // Validate response is array
+    if (!Array.isArray(data) || data.length === 0) {
+      console.error(`Binance returned no data for ${symbol}`);
+      return null;
+    }
     
     // Binance klines: [ [time, open, high, low, close, volume, ...], ... ]
     const history = data.map((candle: any[]) => ({
