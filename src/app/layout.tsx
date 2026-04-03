@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "Trading Dashboard Pro",
   description: "Real-time crypto & stock trading dashboard with signals",
   manifest: "/manifest.json",
-  themeColor: ["#10b981"],
+  themeColor: "#10b981",
   icons: {
     icon: "/icon.svg",
     apple: "/icon.svg",
