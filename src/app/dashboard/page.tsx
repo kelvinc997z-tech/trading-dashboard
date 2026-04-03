@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, BarChart2, TrendingUp, PieChart, Newspaper } from "lucide-react";
+import { Activity, BarChart2, TrendingUp, PieChart, Newspaper, Eye } from "lucide-react";
 import MarketOutlook from "@/components/MarketOutlook";
 import MarketOutlookEnhanced from "@/components/MarketOutlookEnhanced";
 import RealTimeChart from "@/components/RealTimeChart";
@@ -74,7 +74,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"charts" | "sentiment" | "correlation" | "performance" | "outlook">("charts");
+  const [activeTab, setActiveTab] = useState<"charts" | "overview" | "sentiment" | "correlation" | "performance" | "outlook">("charts");
 
   // Get symbol from query params on mount
   useEffect(() => {
@@ -374,7 +374,7 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-6">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-8">
 
       {/* Stats Cards - Enhanced */}
@@ -480,6 +480,12 @@ export default function Dashboard() {
                 desc: "Price charts & signals"
               },
               { 
+                id: "overview", 
+                label: "Overview", 
+                icon: Eye,
+                desc: "Market overview"
+              },
+              { 
                 id: "sentiment", 
                 label: "Sentiment", 
                 icon: TrendingUp,
@@ -499,9 +505,9 @@ export default function Dashboard() {
               },
               { 
                 id: "outlook", 
-                label: "Outlook", 
+                label: "Advanced", 
                 icon: Newspaper,
-                desc: "Market forecast"
+                desc: "Deep analysis"
               },
             ].map((tab) => (
               <button
@@ -704,19 +710,13 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-      {/* Market Signals & Outlook - Side by Side */}
-      <div className="mt-10 grid gap-6 lg:grid-cols-2">
-        <div className="glass-card rounded-xl p-6">
+      {/* Tab Content for other tabs */}
+      {activeTab === "overview" && (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
           <MarketOutlook />
         </div>
-        <div className="glass-card rounded-xl p-6">
-          <MarketOutlookEnhanced />
-        </div>
-      </div>
-        </>
       )}
 
-      {/* Tab Content for other tabs */}
       {activeTab === "sentiment" && (
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
           <MarketSentiment />
