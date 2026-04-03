@@ -140,28 +140,44 @@ async function fetchCoinDeskOHLC(symbol: string, timeframe: string = "1d") {
   }
 }
 
-async function fetchBinanceOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
-  // Map symbol to Binance USDT pair
-  const binanceSymbol = symbol === "XAUT" ? "XAUTUSDT" : `${symbol}USDT`;
-  const interval = timeframe; // Binance uses same interval names
+async function fetchKuCoinOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
+  // Map symbol to KuCoin format (USDT pairs)
+  const kucoinSymbol = `${symbol}-USDT`;
+  // Map timeframe to KuCoin granularity
+  const granularityMap: Record<string, string> = {
+    "1m": "1min",
+    "5m": "5min",
+    "15m": "15min",
+    "30m": "30min",
+    "1h": "1hour",
+    "2h": "2hour",
+    "4h": "4hour",
+    "6h": "6hour",
+    "12h": "12hour",
+    "1d": "1day",
+    "1w": "1week",
+  };
+  const granularity = granularityMap[timeframe] || "1hour";
   
-  const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`;
+  const url = `https://api.kucoin.com/api/v1/market/candles?symbol=${kucoinSymbol}&granularity=${granularity}&limit=${limit}`;
   
   try {
     const res = await fetch(url);
     if (!res.ok) {
-      console.error(`Binance fetch error for ${symbol}: ${res.status}`);
+      console.error(`KuCoin fetch error for ${symbol}: ${res.status}`);
       return null;
     }
-    const data = await res.json();
-    
-    // Validate response is array
+    const json = await res.json();
+    if (json.code !== "200000") {
+      console.error(`KuCoin API error for ${symbol}:`, json.msg || json.code);
+      return null;
+    }
+    const data = json.data as any[];
     if (!Array.isArray(data) || data.length === 0) {
-      console.error(`Binance returned no data for ${symbol}`);
+      console.error(`KuCoin returned no data for ${symbol}`);
       return null;
     }
-    
-    // Binance klines: [ [time, open, high, low, close, volume, ...], ... ]
+    // KuCoin klines: [ [timestamp, open, high, low, close, volume, quote_volume], ... ]
     const history = data.map((candle: any[]) => ({
       time: new Date(parseInt(candle[0])).toISOString(),
       open: parseFloat(candle[1]),
@@ -192,7 +208,7 @@ async function fetchBinanceOHLC(symbol: string, timeframe: string = "1h", limit:
       history,
     };
   } catch (e) {
-    console.error(`Binance fetch error for ${symbol}:`, e);
+    console.error(`KuCoin fetch error for ${symbol}:`, e);
     return null;
   }
 }
@@ -350,12 +366,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Crypto: Primary Binance (free, no key), fallback Coinglass (if key exists)
+    // Crypto: KuCoin primary, Coinglass fallback (if key exists)
     if (CRYPTO_SYMBOLS.includes(symbol)) {
-      // Try Binance first (public API)
-      const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
-      if (binanceData) {
-        return NextResponse.json(binanceData);
+      // Try KuCoin first (public API, no key)
+      const kucoinData = await fetchKuCoinOHLC(symbol, timeframe, 200);
+      if (kucoinData) {
+        return NextResponse.json(kucoinData);
       }
       // Fallback to Coinglass if key exists
       const coinglassKey = process.env.COINGLASS_API_KEY;
@@ -370,7 +386,7 @@ export async function GET(request: NextRequest) {
         }
       }
       // All sources failed
-      return NextResponse.json({ error: "Crypto data unavailable (Binance & Coinglass failed)" }, { status: 500 });
+      return NextResponse.json({ error: "Crypto data unavailable (KuCoin & Coinglass failed)" }, { status: 500 });
     } else {
       // US Stocks: fetch from Massive API (with dummy fallback)
       return NextResponse.json(await fetchMassiveOHLC(symbol, timeframe));
