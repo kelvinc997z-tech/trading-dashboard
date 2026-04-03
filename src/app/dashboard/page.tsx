@@ -703,6 +703,8 @@ export default function Dashboard() {
               ))}
             </div>
           </motion.div>
+        </>
+      )}
 
       {/* Tab Content for other tabs */}
       {activeTab === "overview" && (
