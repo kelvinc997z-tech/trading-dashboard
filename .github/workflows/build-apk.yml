@@ -53,19 +53,25 @@ jobs:
           echo "❌ twa-manifest.json not found in android-twa/"
           exit 1
         fi
+        echo "📄 Manifest content:"
+        cat twa-manifest.json
         # Validate JSON syntax
         jq empty twa-manifest.json
-        echo "✅ Manifest valid"
+        echo "✅ Manifest valid JSON"
 
     - name: Initialize TWA project
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        set -e  # Exit on any error
-        echo "JAVA_HOME: $JAVA_HOME"
-        ls -la "$JAVA_HOME" 2>/dev/null || echo "JAVA_HOME not found, relying on system Java"
+        set -e
+        echo "🔧 Bubblewrap version:"
+        bubblewrap --version || echo "bubblewrap command not found"
+        echo "📦 Java version:"
+        java -version || echo "java not found"
+        echo "📁 Current directory: $(pwd)"
+        ls -la
         
-        # Run bubblewrap init
+        echo "🚀 Running bubblewrap init..."
         bubblewrap init \
           --packageId="$(jq -r '.packageId' twa-manifest.json)" \
           --name="$(jq -r '.name' twa-manifest.json)" \
@@ -79,13 +85,18 @@ jobs:
           --orientation="$(jq -r '.orientation' twa-manifest.json)" \
           --no-auto-version-check
         
+        echo "✅ bubblewrap init completed"
+        ls -la
+        
         # Verify .twa directory was created
         if [ ! -d ".twa" ]; then
           echo "❌ .twa directory not created!"
-          ls -la
+          echo "📂 Listing all files:"
+          find . -maxdepth 2 -type d -name ".*" -o -type d | head -20
           exit 1
         fi
         echo "✅ .twa directory created successfully"
+        ls -la .twa
 
     - name: Build Debug APK
       working-directory: .twa
