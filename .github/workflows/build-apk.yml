@@ -140,7 +140,8 @@ jobs:
 
         echo "🚀 bubblewrap init..."
         set +e
-        bubblewrap init \
+        # Pipe 'n' to skip JDK install prompt, and specify JDK dir explicitly
+        echo "n" | bubblewrap init \
           --verbose \
           --packageId="$PACKAGE_ID" \
           --name="$NAME" \
@@ -153,7 +154,8 @@ jobs:
           --backgroundColor="$BACKGROUND_COLOR" \
           --orientation="$ORIENTATION" \
           --no-auto-version-check \
-          --no-jdk-install
+          --no-jdk-install \
+          --jdk-dir="$JAVA_HOME"
         EXIT_CODE=$?
         set -e
         echo "📊 bubblewrap init exit code: $EXIT_CODE"
