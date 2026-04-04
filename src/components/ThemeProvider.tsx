@@ -11,6 +11,8 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+export type { Theme };
+
 const THEME_STORAGE_KEY = "trading-dashboard-theme";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

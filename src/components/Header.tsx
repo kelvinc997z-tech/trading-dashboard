@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useTheme } from "./ThemeProvider";
+import { useTheme, type Theme } from "./ThemeProvider";
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
