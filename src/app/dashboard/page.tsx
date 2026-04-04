@@ -7,11 +7,9 @@ import { Activity, BarChart2, TrendingUp, PieChart, Newspaper, Eye, Crown, Brain
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import MarketOutlook from "@/components/MarketOutlook";
-import MarketOutlookEnhanced from "@/components/MarketOutlookEnhanced";
 import RealTimeChart from "@/components/RealTimeChart";
 import AdvancedChart from "@/components/AdvancedChart";
 import MarketSentiment from "@/components/MarketSentiment";
-import CorrelationMatrix from "@/components/CorrelationMatrix";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import StatCard from "@/components/ui/StatCard";
 import ConfidenceBar from "@/components/ConfidenceBar";
@@ -79,7 +77,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"charts" | "overview" | "sentiment" | "correlation" | "performance" | "outlook">("charts");
+  const [activeTab, setActiveTab] = useState<"charts" | "overview" | "sentiment" | "performance">("charts");
 
   // Get symbol from query params on mount
   useEffect(() => {
@@ -431,7 +429,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Dashboard Tabs - Enhanced */}
+      {/* Dashboard Tabs - Simplified */}
       <div className="px-4 mb-8">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
@@ -443,13 +441,13 @@ export default function Dashboard() {
                 id: "charts", 
                 label: "Charts", 
                 icon: Activity,
-                desc: "Price charts & signals"
+                desc: "Price & signals"
               },
               { 
                 id: "overview", 
                 label: "Overview", 
                 icon: Eye,
-                desc: "Market overview"
+                desc: "Market summary"
               },
               { 
                 id: "sentiment", 
@@ -458,22 +456,10 @@ export default function Dashboard() {
                 desc: "Market mood"
               },
               { 
-                id: "correlation", 
-                label: "Correlations", 
-                icon: BarChart2,
-                desc: "Asset relationships"
-              },
-              { 
                 id: "performance", 
                 label: "Performance", 
                 icon: PieChart,
                 desc: "Your stats"
-              },
-              { 
-                id: "outlook", 
-                label: "Advanced", 
-                icon: Newspaper,
-                desc: "Deep analysis"
               },
             ].map((tab) => (
               <button
@@ -669,21 +655,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      {activeTab === "correlation" && (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <CorrelationMatrix />
-        </div>
-      )}
-
       {activeTab === "performance" && (
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
           <PerformanceClient />
-        </div>
-      )}
-
-      {activeTab === "outlook" && (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <MarketOutlookEnhanced />
         </div>
       )}
 
