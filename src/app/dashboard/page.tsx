@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, BarChart2, TrendingUp, PieChart, Newspaper, Eye, Palette } from "lucide-react";
+import { Activity, BarChart2, TrendingUp, PieChart, Newspaper, Eye, Crown, Brain, Zap } from "lucide-react";
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import MarketOutlook from "@/components/MarketOutlook";
@@ -13,6 +13,8 @@ import AdvancedChart from "@/components/AdvancedChart";
 import MarketSentiment from "@/components/MarketSentiment";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
+import StatCard from "@/components/ui/StatCard";
+import ConfidenceBar from "@/components/ConfidenceBar";
 
 interface DbTrade {
   id: string;
