@@ -37,21 +37,34 @@ jobs:
         export ANDROID_HOME
         export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
 
-        # Verify we are using the correct sdkmanager
+        SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+
+        # Debug: which sdkmanager and version
         which sdkmanager || true
-        sdkmanager --version || true
-        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --version
+        command -v sdkmanager || true
+        "$SDKMANAGER" --version || true
 
-        # Accept all licenses untuk packages yang akan di-install (non-interactive)
-        yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+        # Accept all licenses for the packages we will install
+        yes | "$SDKMANAGER" --licenses >/dev/null || true
 
-        # Install ONLY stable packages yang diperlukan using explicit path
-        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+        # List available packages to verify android-34 is present
+        echo "📋 Listing available packages (filtering android-34, build-tools 34, platform-tools)..."
+        "$SDKMANAGER" --list | grep -iE "platforms;android-34|build-tools;34.0.0|platform-tools" || true
+
+        # Try to install stable packages. If android-34 not found, fallback to android-33.
+        if "$SDKMANAGER" --list | grep -q "platforms;android-34"; then
+          echo "✅ Found platforms;android-34, installing..."
+          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+        else
+          echo "⚠️ platforms;android-34 not found, falling back to android-33"
+          "$SDKMANAGER" "platforms;android-33" "build-tools;33.0.2" "platform-tools"
+        fi
 
         # Verify installed packages
-        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --list | grep -E "platforms;android-34|build-tools;34.0.0|platform-tools"
+        echo "✅ Installed packages:"
+        "$SDKMANAGER" --list | grep -iE "platforms;android-|build-tools;|platform-tools" | grep -v "^extras;"
 
-        # Set environment untuk steps berikutnya
+        # Set environment for subsequent steps
         echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
         echo "PATH=$PATH" >> $GITHUB_ENV
 
