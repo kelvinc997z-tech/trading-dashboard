@@ -66,12 +66,20 @@ jobs:
         set -e
         set -x
 
+        # Capture all output to init.log
+        exec > >(tee init.log) 2>&1
+
         echo "🔧 Environment:"
         which java || echo "java not found"
+        java -version || true
         which bubblewrap || echo "bubblewrap not found"
+        bubblewrap --version || true
         echo "ANDROID_HOME=${ANDROID_HOME:-not set}"
+        echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-not set}"
         echo "Current dir: $(pwd)"
         ls -la
+        echo "SDK platforms: " && ls -la "$ANDROID_HOME/platforms" 2>/dev/null || true
+        echo "SDK build-tools: " && ls -la "$ANDROID_HOME/build-tools" 2>/dev/null || true
 
         echo "📋 Manifest values:"
         PACKAGE_ID=$(jq -r '.packageId' twa-manifest.json)
@@ -108,6 +116,14 @@ jobs:
         fi
         echo "✅ .twa exists"
         ls -la .twa
+
+    - name: Upload init log if failed
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: bubblewrap-init-log
+        path: init.log
+        retention-days: 7
 
     - name: Build Debug APK
       if: always()
