@@ -26,20 +26,21 @@ jobs:
       uses: android-actions/setup-android@v3
       with:
         packages: |
-          platforms;android-35
-          build-tools;35.0.0
+          platforms;android-34
+          build-tools;34.0.0
           platform-tools
         accept-android-sdk-licenses: true
 
-    - name: Accept all Android SDK licenses (extra safety)
+    - name: Accept all Android SDK licenses
       run: |
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-      continue-on-error: true
+        set +e
+        yes | sdkmanager --licenses
+        set -e
 
-    - name: Install Node.js 24 (avoid deprecation warnings)
+    - name: Install Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '24'
+        node-version: '20'
 
     - name: Install Bubblewrap CLI
       run: npm install -g @bubblewrap/cli
@@ -52,13 +53,11 @@ jobs:
           echo "✅ Copied twa-manifest.json to project root"
         else
           echo "❌ twa-manifest.json not found in android-twa/"
-          echo "📂 Listing android-twa directory:"
-          ls -la android-twa/ || echo "android-twa directory not found"
           exit 1
         fi
         echo "📄 Manifest content:"
         cat twa-manifest.json
-        # Validate JSON syntax
+        # Validate JSON
         if ! jq empty twa-manifest.json 2>/dev/null; then
           echo "❌ Manifest is not valid JSON"
           exit 1
@@ -70,16 +69,16 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         set -e
-        set -x  # Echo all commands
+        set -x
         
-        echo "🔧 Environment check:"
-        echo "JAVA_HOME=${JAVA_HOME:-not set}"
-        which java || echo "java not in PATH"
-        which bubblewrap || echo "bubblewrap not in PATH"
+        echo "🔧 Environment:"
+        which java || echo "java not found"
+        which bubblewrap || echo "bubblewrap not found"
+        echo "ANDROID_HOME=${ANDROID_HOME:-not set}"
         echo "Current dir: $(pwd)"
         ls -la
         
-        echo "📦 Reading manifest values:"
+        echo "📋 Manifest values:"
         PACKAGE_ID=$(jq -r '.packageId' twa-manifest.json)
         NAME=$(jq -r '.name' twa-manifest.json)
         VERSION_CODE=$(jq -r '.versionCode' twa-manifest.json)
@@ -89,10 +88,9 @@ jobs:
         THEME_COLOR=$(jq -r '.themeColor' twa-manifest.json)
         BACKGROUND_COLOR=$(jq -r '.backgroundColor' twa-manifest.json)
         ORIENTATION=$(jq -r '.orientation' twa-manifest.json)
+        echo "packageId=$PACKAGE_ID name=$NAME versionCode=$VERSION_CODE versionName=$VERSION_NAME host=$HOST display=$DISPLAY orientation=$ORIENTATION"
         
-        echo "📋 Params: packageId=$PACKAGE_ID name=$NAME versionCode=$VERSION_CODE versionName=$VERSION_NAME host=$HOST display=$DISPLAY orientation=$ORIENTATION"
-        
-        echo "🚀 Running bubblewrap init..."
+        echo "🚀 bubblewrap init..."
         bubblewrap init \
           --packageId="$PACKAGE_ID" \
           --name="$NAME" \
@@ -106,18 +104,15 @@ jobs:
           --orientation="$ORIENTATION" \
           --no-auto-version-check
         
-        echo "✅ bubblewrap init completed"
-        echo "📂 After init:"
+        echo "✅ init completed"
         ls -la
-        if [ -d ".twa" ]; then
-          echo "✅ .twa directory exists"
-          ls -la .twa
-        else
-          echo "❌ .twa directory NOT created!"
-          echo "📂 Searching for .twa:"
-          find . -name ".twa" -type d 2>/dev/null
+        if [ ! -d ".twa" ]; then
+          echo "❌ .twa directory missing!"
+          find . -maxdepth 2 -type d -name ".twa" 2>/dev/null
           exit 1
         fi
+        echo "✅ .twa exists"
+        ls -la .twa
 
     - name: Build Debug APK
       if: always()
