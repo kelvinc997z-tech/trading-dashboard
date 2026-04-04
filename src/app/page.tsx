@@ -1,13 +1,26 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useTheme } from "@/components/ThemeProvider";
 import { Sun, Moon, LogIn, UserPlus, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import XAUTLivePrice from "@/components/XAUTLivePrice";
 
 export default function LandingPage() {
-  const { theme, toggleTheme } = useTheme();
+  const [isDark, setIsDark] = useState(false);
+
+  const toggleTheme = () => {
+    setIsDark(prev => !prev);
+  };
+
+  useEffect(() => {
+    const html = document.documentElement;
+    if (isDark) {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
+  }, [isDark]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black text-gray-900 dark:text-white">
@@ -22,7 +35,7 @@ export default function LandingPage() {
             className="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition"
             aria-label="Toggle theme"
           >
-            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
           <Link href="/login" className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 rounded-lg transition">
             <LogIn className="w-4 h-4" />
