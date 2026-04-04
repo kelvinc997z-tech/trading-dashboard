@@ -11,7 +11,7 @@ jobs:
   build-apk:
     name: Build Android APK
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -86,14 +86,14 @@ jobs:
       run: |
         set -e
         set -x
-        
+
         echo "🔧 Environment:"
         which java || echo "java not found"
         which bubblewrap || echo "bubblewrap not found"
         echo "ANDROID_HOME=${ANDROID_HOME:-not set}"
         echo "Current dir: $(pwd)"
         ls -la
-        
+
         echo "📋 Manifest values:"
         PACKAGE_ID=$(jq -r '.packageId' twa-manifest.json)
         NAME=$(jq -r '.name' twa-manifest.json)
@@ -105,7 +105,7 @@ jobs:
         BACKGROUND_COLOR=$(jq -r '.backgroundColor' twa-manifest.json)
         ORIENTATION=$(jq -r '.orientation' twa-manifest.json)
         echo "packageId=$PACKAGE_ID name=$NAME versionCode=$VERSION_CODE versionName=$VERSION_NAME host=$HOST display=$DISPLAY orientation=$ORIENTATION"
-        
+
         echo "🚀 bubblewrap init..."
         bubblewrap init \
           --packageId="$PACKAGE_ID" \
@@ -119,7 +119,7 @@ jobs:
           --backgroundColor="$BACKGROUND_COLOR" \
           --orientation="$ORIENTATION" \
           --no-auto-version-check
-        
+
         echo "✅ init completed"
         ls -la
         if [ ! -d ".twa" ]; then
