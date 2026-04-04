@@ -147,7 +147,8 @@ jobs:
           --themeColor="$THEME_COLOR" \
           --backgroundColor="$BACKGROUND_COLOR" \
           --orientation="$ORIENTATION" \
-          --no-auto-version-check
+          --no-auto-version-check \
+          --jdk-path="$JAVA_HOME"
         EXIT_CODE=$?
         set -e
         echo "📊 bubblewrap init exit code: $EXIT_CODE"
