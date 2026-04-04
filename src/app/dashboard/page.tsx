@@ -687,43 +687,26 @@ export default function Dashboard() {
         </div>
       )}
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="glass-card rounded-2xl p-6 slide-up"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Trades</h2>
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm">
-              {trades.length} total
-            </span>
-            <span className="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
-              {openTradesCount} open
-            </span>
-          </div>
-        </div>
-        
-        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+      <GlassCard gradient="cyan" className="p-0 overflow-hidden">
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-900/50">
+              <tr className="border-b border-gray-700/50 bg-gradient-to-r from-gray-800/80 to-gray-900/80">
                 {[
-                  "Time", "Pair", "Side", "Size", "Entry", "TP", "SL", "P&L"
+                  "Time", "Pair", "Side", "Size", "Entry", "TP", "SL", "P&L", "AI"
                 ].map((header) => (
-                  <th key={header} className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <th key={header} className="px-6 py-4 text-left text-xs font-semibold text-cyan-400 uppercase tracking-wider">
                     {header}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-gray-700/50">
               {trades.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
+                  <td colSpan={9} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center gap-3">
-                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
                       </svg>
                       <p className="text-gray-500 dark:text-gray-400">No trades yet</p>
@@ -737,35 +720,39 @@ export default function Dashboard() {
                   const displayPnl = isOpen
                     ? trade.unrealizedPnl ?? 0
                     : trade.pnl ?? 0;
-                  const pnlClass = displayPnl >= 0 ? "text-emerald-500" : "text-red-500";
+                  const pnlClass = displayPnl >= 0 ? "text-emerald-400" : "text-rose-400";
                   const pnlBg = displayPnl >= 0 
                     ? "bg-emerald-500/10 dark:bg-emerald-500/20" 
-                    : "bg-red-500/10 dark:bg-red-500/20";
-                  
+                    : "bg-rose-500/10 dark:bg-rose-500/20";
+
+                  // AI signal badge color
+                  const aiSignalColor = trade.side === "buy" ? "text-cyan-400" : "text-purple-400";
+                  const aiSignalBg = trade.side === "buy" ? "bg-cyan-500/10 border-cyan-500/20" : "bg-purple-500/10 border-purple-500/20";
+
                   return (
                     <motion.tr
                       key={trade.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.03 }}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
+                      className="hover:bg-gray-800/30 transition-colors group border-b border-gray-800/50 last:border-0"
                     >
-                      <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 font-medium text-white">
                         {trade.time}
                         {isOpen && (
-                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                             Open
                           </span>
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-semibold text-gray-900 dark:text-white">{trade.pair}</span>
+                        <span className="font-semibold text-white">{trade.pair}</span>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold ${
                           trade.side === "buy" 
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" 
-                            : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                            : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
                         }`}>
                           {trade.side === "buy" ? (
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -779,28 +766,28 @@ export default function Dashboard() {
                           {trade.side.toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-6 py-4 font-mono text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 font-mono text-white">
                         {trade.size.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 font-mono text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 font-mono text-white">
                         {trade.entry.toFixed(2)}
                       </td>
                       <td className="px-6 py-4">
                         {trade.takeProfit ? (
-                          <span className="font-mono text-cyan-600 dark:text-cyan-400 font-medium">
+                          <span className={`px-2 py-1 rounded text-xs font-mono font-medium border ${aiSignalBg}`}>
                             {trade.takeProfit.toFixed(2)}
                           </span>
                         ) : (
-                          <span className="text-gray-400 dark:text-gray-500">-</span>
+                          <span className="text-gray-500">-</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
                         {trade.stopLoss ? (
-                          <span className="font-mono text-orange-600 dark:text-orange-400 font-medium">
+                          <span className="px-2 py-1 rounded text-xs font-mono text-orange-400 border border-orange-500/30">
                             {trade.stopLoss.toFixed(2)}
                           </span>
                         ) : (
-                          <span className="text-gray-400 dark:text-gray-500">-</span>
+                          <span className="text-gray-500">-</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
@@ -811,6 +798,12 @@ export default function Dashboard() {
                           )}
                         </div>
                       </td>
+                      <td className="px-6 py-4">
+                        {/* AI Prediction badge */}
+                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${aiSignalBg} ${aiSignalColor}`}>
+                          {trade.side === "buy" ? "BULL" : "BEAR"}
+                        </div>
+                      </td>
                     </motion.tr>
                   );
                 })
@@ -818,7 +811,7 @@ export default function Dashboard() {
             </tbody>
           </table>
         </div>
-      </motion.div>
+      </GlassCard>
 
       {/* Install PWA Prompt */}
       <InstallPWAButton />
