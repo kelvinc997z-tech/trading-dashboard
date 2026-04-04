@@ -12,6 +12,7 @@ import AdvancedChart from "@/components/AdvancedChart";
 import MarketSentiment from "@/components/MarketSentiment";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import StatCard from "@/components/ui/StatCard";
+import GlassCard from "@/components/ui/GlassCard";
 import ConfidenceBar from "@/components/ConfidenceBar";
 
 interface DbTrade {
