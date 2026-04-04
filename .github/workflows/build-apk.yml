@@ -32,24 +32,29 @@ jobs:
         set -e
         set -x
 
-        # Use sdkmanager from the action's installed SDK
+        # Check sdkmanager
         which sdkmanager
+        ls -l "$(which sdkmanager)" || true
         sdkmanager --version
 
+        # Ensure repositories config is clean (optional)
+        rm -f ~/.android/repositories.cfg
+
         # Update index
+        echo "🔄 Updating SDK index..."
         sdkmanager --update || true
 
         # List available packages for debugging
         echo "📋 Listing Android packages (filtering 34, 33, build-tools, platform-tools)..."
         sdkmanager --list | grep -iE "platforms;android-34|platforms;android-33|build-tools;34.0.0|build-tools;33.0.2|platform-tools" || true
 
-        # Install the required packages (try 34 first, fallback to 33)
+        # Install the required packages (try 34 first, fallback to 33) with stable channel
         if sdkmanager --list | grep -q "platforms;android-34"; then
-          echo "✅ Installing Android 34 and build-tools 34.0.0..."
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+          echo "✅ Installing Android 34 and build-tools 34.0.0 (channel 0)..."
+          sdkmanager --channel=0 "platforms;android-34" "build-tools;34.0.0" "platform-tools"
         else
-          echo "⚠️ Android 34 not available, installing Android 33 and build-tools 33.0.2..."
-          sdkmanager "platforms;android-33" "build-tools;33.0.2" "platform-tools"
+          echo "⚠️ Android 34 not available, installing Android 33 and build-tools 33.0.2 (channel 0)..."
+          sdkmanager --channel=0 "platforms;android-33" "build-tools;33.0.2" "platform-tools"
         fi
 
         # Verify
