@@ -25,7 +25,7 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
-        components: |
+        packages: |
           platforms;android-35
           build-tools;35.0.0
           platform-tools
@@ -60,9 +60,12 @@ jobs:
     - name: Initialize TWA project
       env:
         DEBIAN_FRONTEND: noninteractive
-        JAVA_HOME: ${{ env.JAVA_HOME }}
       run: |
-        # Bubblewrap will auto-detect twa-manifest.json in current directory
+        set -e  # Exit on any error
+        echo "JAVA_HOME: $JAVA_HOME"
+        ls -la "$JAVA_HOME" 2>/dev/null || echo "JAVA_HOME not found, relying on system Java"
+        
+        # Run bubblewrap init
         bubblewrap init \
           --packageId="$(jq -r '.packageId' twa-manifest.json)" \
           --name="$(jq -r '.name' twa-manifest.json)" \
@@ -75,10 +78,19 @@ jobs:
           --backgroundColor="$(jq -r '.backgroundColor' twa-manifest.json)" \
           --orientation="$(jq -r '.orientation' twa-manifest.json)" \
           --no-auto-version-check
+        
+        # Verify .twa directory was created
+        if [ ! -d ".twa" ]; then
+          echo "❌ .twa directory not created!"
+          ls -la
+          exit 1
+        fi
+        echo "✅ .twa directory created successfully"
 
     - name: Build Debug APK
       working-directory: .twa
       run: |
+        set -e
         chmod +x ./gradlew
         ./gradlew assembleDebug
 
@@ -100,6 +112,7 @@ jobs:
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: |
+        set -e
         if [ -z "$KEYSTORE_BASE64" ]; then
           echo "⚠️ No keystore secret provided — skipping release build."
           exit 0
