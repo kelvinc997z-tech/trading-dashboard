@@ -22,15 +22,53 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v2
-      with:
-        packages: |
-          platforms;android-34
-          build-tools;34.0.0
-          platform-tools
-        accept-android-sdk-licenses: true
-        cmdline-tools-version: 12266719
+    - name: Install Android SDK (fully manual)
+      run: |
+        set -e
+        set -x
+
+        # Set variables
+        ANDROID_HOME=$HOME/android-sdk
+        ANDROID_SDK_ROOT=$ANDROID_HOME
+        mkdir -p "$ANDROID_HOME"
+
+        # Download commandline tools (version 12266719 - known stable)
+        curl -fsSL https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip -o cmdline-tools.zip
+        unzip -q cmdline-tools.zip -d "$ANDROID_HOME"
+        mv "$ANDROID_HOME/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+
+        export ANDROID_HOME
+        export ANDROID_SDK_ROOT
+        export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+
+        # Use explicit sdkmanager path
+        SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+
+        # Show sdkmanager version for debugging
+        "$SDKMANAGER" --version
+
+        # Accept all licenses non-interactively (for the packages we will install)
+        yes | "$SDKMANAGER" --licenses >/dev/null || true
+
+        # Update repository index
+        "$SDKMANAGER" --update || true
+
+        # Install required stable packages (try Android 34, fallback to 33)
+        if "$SDKMANAGER" --list | grep -q "platforms;android-34"; then
+          echo "Installing Android 34 and build-tools 34.0.0..."
+          "$SDKMANAGER" --channel=0 "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+        else
+          echo "Android 34 not available, installing Android 33 and build-tools 33.0.2..."
+          "$SDKMANAGER" --channel=0 "platforms;android-33" "build-tools;33.0.2" "platform-tools"
+        fi
+
+        # Verify installation
+        "$SDKMANAGER" --list | grep -iE "platforms;android-|build-tools;|platform-tools" | grep -v "^extras;" || true
+
+        # Persist environment for subsequent steps
+        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+        echo "PATH=$PATH" >> $GITHUB_ENV
 
     - name: Install Node.js
       uses: actions/setup-node@v4
@@ -45,19 +83,18 @@ jobs:
         set -e
         if [ -f "android-twa/twa-manifest.json" ]; then
           cp android-twa/twa-manifest.json .
-          echo "✅ Copied twa-manifest.json to project root"
+          echo "Copied twa-manifest.json to project root"
         else
-          echo "❌ twa-manifest.json not found in android-twa/"
+          echo "twa-manifest.json not found in android-twa/"
           exit 1
         fi
-        echo "📄 Manifest content:"
+        echo "Manifest content:"
         cat twa-manifest.json
         # Validate JSON
         if ! jq empty twa-manifest.json 2>/dev/null; then
-          echo "❌ Manifest is not valid JSON"
+          echo "Manifest is not valid JSON"
           exit 1
         fi
-        echo "✅ Manifest valid JSON"
 
     - name: Initialize TWA project
       env:
@@ -66,22 +103,18 @@ jobs:
         set -e
         set -x
 
-        # Capture all output to init.log
-        exec > >(tee init.log) 2>&1
-
-        echo "🔧 Environment:"
+        echo "Environment:"
         which java || echo "java not found"
         java -version || true
         which bubblewrap || echo "bubblewrap not found"
         bubblewrap --version || true
         echo "ANDROID_HOME=${ANDROID_HOME:-not set}"
-        echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-not set}"
         echo "Current dir: $(pwd)"
         ls -la
         echo "SDK platforms: " && ls -la "$ANDROID_HOME/platforms" 2>/dev/null || true
         echo "SDK build-tools: " && ls -la "$ANDROID_HOME/build-tools" 2>/dev/null || true
 
-        echo "📋 Manifest values:"
+        echo "Manifest values:"
         PACKAGE_ID=$(jq -r '.packageId' twa-manifest.json)
         NAME=$(jq -r '.name' twa-manifest.json)
         VERSION_CODE=$(jq -r '.versionCode' twa-manifest.json)
@@ -93,7 +126,7 @@ jobs:
         ORIENTATION=$(jq -r '.orientation' twa-manifest.json)
         echo "packageId=$PACKAGE_ID name=$NAME versionCode=$VERSION_CODE versionName=$VERSION_NAME host=$HOST display=$DISPLAY orientation=$ORIENTATION"
 
-        echo "🚀 bubblewrap init..."
+        echo "Running bubblewrap init..."
         bubblewrap init \
           --packageId="$PACKAGE_ID" \
           --name="$NAME" \
@@ -107,23 +140,15 @@ jobs:
           --orientation="$ORIENTATION" \
           --no-auto-version-check
 
-        echo "✅ init completed"
+        echo "Init completed"
         ls -la
         if [ ! -d ".twa" ]; then
-          echo "❌ .twa directory missing!"
+          echo ".twa directory missing!"
           find . -maxdepth 2 -type d -name ".twa" 2>/dev/null
           exit 1
         fi
-        echo "✅ .twa exists"
+        echo ".twa exists"
         ls -la .twa
-
-    - name: Upload init log if failed
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: bubblewrap-init-log
-        path: init.log
-        retention-days: 7
 
     - name: Build Debug APK
       if: always()
@@ -154,7 +179,7 @@ jobs:
       run: |
         set -e
         if [ -z "$KEYSTORE_BASE64" ]; then
-          echo "⚠️ No keystore secret provided — skipping release build."
+          echo "No keystore secret provided — skipping release build."
           exit 0
         fi
         echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
@@ -164,7 +189,7 @@ jobs:
         echo "android.signingConfigs.release.keyPassword=$KEY_PASSWORD" >> gradle.properties
         chmod +x ./gradlew
         ./gradlew assembleRelease
-        echo "✅ Release APK built."
+        echo "Release APK built."
 
     - name: Upload Release APK
       if: always()
