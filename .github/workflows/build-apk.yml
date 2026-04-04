@@ -37,17 +37,19 @@ jobs:
         export ANDROID_HOME
         export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
 
-        # Use the newly downloaded sdkmanager explicitly
-        SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+        # Verify we are using the correct sdkmanager
+        which sdkmanager || true
+        sdkmanager --version || true
+        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --version
 
         # Accept all licenses untuk packages yang akan di-install (non-interactive)
-        yes | "$SDKMANAGER" --licenses >/dev/null || true
+        yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
 
-        # Install ONLY stable packages yang diperlukan
-        "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+        # Install ONLY stable packages yang diperlukan using explicit path
+        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" "platform-tools"
 
         # Verify installed packages
-        "$SDKMANAGER" --list | grep -E "platforms;android-34|build-tools;34.0.0|platform-tools"
+        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --list | grep -E "platforms;android-34|build-tools;34.0.0|platform-tools"
 
         # Set environment untuk steps berikutnya
         echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
