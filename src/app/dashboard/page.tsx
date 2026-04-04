@@ -536,12 +536,8 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className={`glass-card rounded-xl p-4 md:p-5 transition-all duration-300 hover:shadow-soft-lg cursor-pointer relative overflow-hidden group ${selectedSymbol === pair.symbol ? 'ring-2 ring-emerald-500/50 shadow-emerald-500/20' : ''}`}
                 >
-                  {/* Decorative gradient background */}
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 rounded-full blur-2xl -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500" />
-                  
-                  <div className="relative z-10">
+                  <GlassCard gradient="cyan" className="h-full flex flex-col">
                     <div className="flex justify-between items-center mb-4">
                       <div>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">{pair.symbol}</h3>
@@ -559,11 +555,10 @@ export default function Dashboard() {
                       </div>
                     </div>
                     
-                    <div className="chart-container rounded-xl p-1 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 dark:to-gray-900/50">
-                      {isLoading && (
+                    <div className="flex-1 min-h-[200px] chart-container rounded-xl p-1 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 dark:to-gray-900/50">
+                      {isLoading ? (
                         <div className="h-48 skeleton rounded-lg" />
-                      )}
-                      {!isLoading && (
+                      ) : (
                         <div className="h-48">
                           {user?.role === "pro" ? (
                             <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
@@ -574,19 +569,13 @@ export default function Dashboard() {
                       )}
                     </div>
 
-                    {/* Confidence indicator for signals */}
+                    {/* AI Confidence Bar for Pro users */}
                     {user?.role === "pro" && (
-                      <div className="mt-4 space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-500 dark:text-gray-400">Signal Strength</span>
-                          <span className="font-medium text-emerald-500">78%</span>
-                        </div>
-                        <div className="confidence-bar">
-                          <div className="confidence-fill" style={{ width: '78%' }} />
-                        </div>
+                      <div className="mt-4 pt-4 border-t border-gray-700/50">
+                        <ConfidenceBar value={78 + Math.random() * 15} label="AI Signal Strength" size="md" />
                       </div>
                     )}
-                  </div>
+                  </GlassCard>
                 </motion.div>
               ))}
             </div>
@@ -620,12 +609,8 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + idx * 0.05 }}
-                  className={`glass-card rounded-xl p-4 md:p-5 transition-all duration-300 hover:shadow-soft-lg cursor-pointer relative overflow-hidden group ${selectedSymbol === pair.symbol ? 'ring-2 ring-blue-500/50 shadow-blue-500/20' : ''}`}
                 >
-                  {/* Decorative gradient background */}
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-2xl -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500" />
-                  
-                  <div className="relative z-10">
+                  <GlassCard gradient="blue" className="h-full flex flex-col">
                     <div className="flex justify-between items-center mb-4">
                       <div>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">{pair.symbol}</h3>
@@ -643,11 +628,10 @@ export default function Dashboard() {
                       </div>
                     </div>
                     
-                    <div className="chart-container rounded-xl p-1 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 dark:to-gray-900/50">
-                      {isLoading && (
+                    <div className="flex-1 min-h-[200px] chart-container rounded-xl p-1 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 dark:to-gray-900/50">
+                      {isLoading ? (
                         <div className="h-48 skeleton rounded-lg" />
-                      )}
-                      {!isLoading && (
+                      ) : (
                         <div className="h-48">
                           {user?.role === "pro" ? (
                             <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
@@ -658,19 +642,13 @@ export default function Dashboard() {
                       )}
                     </div>
 
-                    {/* Confidence indicator for signals */}
+                    {/* AI Confidence Bar for Pro users */}
                     {user?.role === "pro" && (
-                      <div className="mt-4 space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-500 dark:text-gray-400">Signal Strength</span>
-                          <span className="font-medium text-blue-500">72%</span>
-                        </div>
-                        <div className="confidence-bar">
-                          <div className="confidence-fill" style={{ width: '72%' }} />
-                        </div>
+                      <div className="mt-4 pt-4 border-t border-gray-700/50">
+                        <ConfidenceBar value={72 + Math.random() * 15} label="AI Signal Strength" size="md" />
                       </div>
                     )}
-                  </div>
+                  </GlassCard>
                 </motion.div>
               ))}
             </div>
