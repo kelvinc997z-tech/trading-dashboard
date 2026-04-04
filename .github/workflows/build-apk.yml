@@ -35,12 +35,12 @@ jobs:
         # Download commandline tools (version 12266719 - known stable)
         curl -fsSL https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip -o cmdline-tools.zip
 
-        # Extract to a temporary directory first
-        mkdir -p "$ANDROID_HOME/cmdline-tools"
-        unzip -q cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools"
-
-        # Move the extracted folder to 'latest'
-        mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+        # Extract to a temporary directory, then move to proper location
+        TEMP_DIR=$(mktemp -d)
+        unzip -q cmdline-tools.zip -d "$TEMP_DIR"
+        mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
+        mv "$TEMP_DIR/cmdline-tools/"* "$ANDROID_HOME/cmdline-tools/latest/"
+        rm -rf "$TEMP_DIR" cmdline-tools.zip
 
         export ANDROID_HOME
         export ANDROID_SDK_ROOT
