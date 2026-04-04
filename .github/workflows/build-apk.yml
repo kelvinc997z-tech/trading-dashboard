@@ -104,7 +104,7 @@ jobs:
         with:
           name: trading-dashboard-release-apk
           path: |
-		              .twa/app/build/outputs/apk/release/app-release.apk
+			.twa/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
       - name: Cleanup
