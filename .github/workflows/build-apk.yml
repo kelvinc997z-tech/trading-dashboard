@@ -27,10 +27,14 @@ jobs:
           packages: platform-tools
           accept-android-sdk-licenses: true
 
+      - name: Accept all Android SDK licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
@@ -103,12 +107,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: trading-dashboard-release-apk
-          path: |
-			.twa/app/build/outputs/apk/release/app-release.apk
+          path: | .twa/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
-
-      - name: Cleanup
+- name: Cleanup
         if: always()
-run: |
+        run: |
           rm -rf .twa release.keystore
-
+- name: Accept all Android SDK licenses
+  run: |
+    yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
