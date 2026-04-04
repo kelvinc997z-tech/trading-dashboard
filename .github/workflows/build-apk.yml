@@ -103,7 +103,10 @@ jobs:
         set -e
         set -x
 
-        echo "Environment:"
+        # Capture all output to init.log
+        exec > >(tee init.log) 2>&1
+
+        echo "🔧 Environment:"
         which java || echo "java not found"
         java -version || true
         which bubblewrap || echo "bubblewrap not found"
@@ -114,7 +117,7 @@ jobs:
         echo "SDK platforms: " && ls -la "$ANDROID_HOME/platforms" 2>/dev/null || true
         echo "SDK build-tools: " && ls -la "$ANDROID_HOME/build-tools" 2>/dev/null || true
 
-        echo "Manifest values:"
+        echo "📋 Manifest values:"
         PACKAGE_ID=$(jq -r '.packageId' twa-manifest.json)
         NAME=$(jq -r '.name' twa-manifest.json)
         VERSION_CODE=$(jq -r '.versionCode' twa-manifest.json)
@@ -126,7 +129,8 @@ jobs:
         ORIENTATION=$(jq -r '.orientation' twa-manifest.json)
         echo "packageId=$PACKAGE_ID name=$NAME versionCode=$VERSION_CODE versionName=$VERSION_NAME host=$HOST display=$DISPLAY orientation=$ORIENTATION"
 
-        echo "Running bubblewrap init..."
+        echo "🚀 bubblewrap init..."
+        set +e
         bubblewrap init \
           --packageId="$PACKAGE_ID" \
           --name="$NAME" \
@@ -139,16 +143,32 @@ jobs:
           --backgroundColor="$BACKGROUND_COLOR" \
           --orientation="$ORIENTATION" \
           --no-auto-version-check
+        EXIT_CODE=$?
+        set -e
+        echo "📊 bubblewrap init exit code: $EXIT_CODE"
 
-        echo "Init completed"
+        if [ $EXIT_CODE -ne 0 ]; then
+          echo "❌ bubblewrap init failed"
+          exit $EXIT_CODE
+        fi
+
+        echo "✅ init completed"
         ls -la
         if [ ! -d ".twa" ]; then
-          echo ".twa directory missing!"
+          echo "❌ .twa directory missing!"
           find . -maxdepth 2 -type d -name ".twa" 2>/dev/null
           exit 1
         fi
-        echo ".twa exists"
+        echo "✅ .twa exists"
         ls -la .twa
+
+    - name: Upload init log if failed
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: bubblewrap-init-log
+        path: init.log
+        retention-days: 7
 
     - name: Build Debug APK
       if: always()
@@ -179,7 +199,7 @@ jobs:
       run: |
         set -e
         if [ -z "$KEYSTORE_BASE64" ]; then
-          echo "No keystore secret provided — skipping release build."
+          echo "⚠️ No keystore secret provided — skipping release build."
           exit 0
         fi
         echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
@@ -189,7 +209,7 @@ jobs:
         echo "android.signingConfigs.release.keyPassword=$KEY_PASSWORD" >> gradle.properties
         chmod +x ./gradlew
         ./gradlew assembleRelease
-        echo "Release APK built."
+        echo "✅ Release APK built."
 
     - name: Upload Release APK
       if: always()
@@ -204,4 +224,4 @@ jobs:
     - name: Cleanup
       if: always()
       run: |
-        rm -rf .twa release.keystore twa-manifest.json
+        rm -rf .twa release.keystore twa-manifest.json init.log
