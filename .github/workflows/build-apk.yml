@@ -40,16 +40,22 @@ jobs:
         # Ensure repositories config is clean (optional)
         rm -f ~/.android/repositories.cfg
 
+        # Capture environment
+        echo "ANDROID_HOME=$ANDROID_HOME" > env.txt
+        echo "PATH=$PATH" >> env.txt
+
         # Update index
         echo "🔄 Updating SDK index..."
         sdkmanager --update || true
 
-        # List available packages for debugging
-        echo "📋 Listing Android packages (filtering 34, 33, build-tools, platform-tools)..."
-        sdkmanager --list | grep -iE "platforms;android-34|platforms;android-33|build-tools;34.0.0|build-tools;33.0.2|platform-tools" || true
+        # List available packages for debugging (save full and filtered)
+        echo "📋 Listing Android packages (full)..."
+        sdkmanager --list | tee sdk-list-full.txt
+        echo "📋 Filtered list:" > sdk-list-filtered.txt
+        sdkmanager --list | grep -iE "platforms;android-34|platforms;android-33|build-tools;34.0.0|build-tools;33.0.2|platform-tools" | tee -a sdk-list-filtered.txt || true
 
         # Install the required packages (try 34 first, fallback to 33) with stable channel
-        if sdkmanager --list | grep -q "platforms;android-34"; then
+        if grep -q "platforms;android-34" sdk-list-filtered.txt; then
           echo "✅ Installing Android 34 and build-tools 34.0.0 (channel 0)..."
           sdkmanager --channel=0 "platforms;android-34" "build-tools;34.0.0" "platform-tools"
         else
@@ -57,12 +63,23 @@ jobs:
           sdkmanager --channel=0 "platforms;android-33" "build-tools;33.0.2" "platform-tools"
         fi
 
-        # Verify
+        # Verify installed packages
         echo "✅ Installed packages:"
-        sdkmanager --list | grep -iE "platforms;android-|build-tools;|platform-tools" | grep -v "^extras;"
+        sdkmanager --list | grep -iE "platforms;android-|build-tools;|platform-tools" | grep -v "^extras;" | tee installed-packages.txt
 
-        # Show environment
-        echo "ANDROID_HOME=${ANDROID_HOME:-not set}"
+        echo "📦 Diagnostic files saved."
+
+    - name: Upload diagnostic artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-sdk-diagnostics
+        path: |
+          sdk-list-full.txt
+          sdk-list-filtered.txt
+          installed-packages.txt
+          env.txt
+        retention-days: 7
 
     - name: Install Node.js
       uses: actions/setup-node@v4
