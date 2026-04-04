@@ -22,20 +22,33 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-      with:
-        packages: |
-          platforms;android-34
-          build-tools;34.0.0
-          platform-tools
-        accept-android-sdk-licenses: true
-
-    - name: Accept all Android SDK licenses
+    - name: Install Android SDK (manual)
       run: |
-        set +e
-        yes | sdkmanager --licenses
         set -e
+        set -x
+
+        # Download dan install Android commandline tools
+        ANDROID_HOME=$HOME/android-sdk
+        mkdir -p "$ANDROID_HOME"
+        curl -fsSL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdline-tools.zip
+        unzip -q cmdline-tools.zip -d "$ANDROID_HOME"
+        mv "$ANDROID_HOME/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+
+        export ANDROID_HOME
+        export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+
+        # Accept all licenses secara non-interactive
+        yes | sdkmanager --licenses >/dev/null || true
+
+        # Install ONLY stable packages yang diperlukan
+        sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+
+        # Verify installed packages
+        sdkmanager --list | grep -E "platforms;android-34|build-tools;34.0.0|platform-tools"
+
+        # Set environment untuk steps berikutnya
+        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+        echo "PATH=$PATH" >> $GITHUB_ENV
 
     - name: Install Node.js
       uses: actions/setup-node@v4
