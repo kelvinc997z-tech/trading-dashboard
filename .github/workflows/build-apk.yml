@@ -134,6 +134,10 @@ jobs:
         ORIENTATION=$(jq -r '.orientation' twa-manifest.json)
         echo "packageId=$PACKAGE_ID name=$NAME versionCode=$VERSION_CODE versionName=$VERSION_NAME host=$HOST display=$DISPLAY orientation=$ORIENTATION"
 
+        # Tell bubblewrap to skip JDK install and use existing JAVA_HOME
+        export BUBBLEWRAP_JAVA_HOME="$JAVA_HOME"
+        export BUBBLEWRAP_SKIP_JDK_INSTALL=1
+
         echo "🚀 bubblewrap init..."
         set +e
         bubblewrap init \
@@ -148,7 +152,9 @@ jobs:
           --backgroundColor="$BACKGROUND_COLOR" \
           --orientation="$ORIENTATION" \
           --no-auto-version-check \
-          --jdk-dir="$JAVA_HOME"
+          --no-jdk-install
+        EXIT_CODE=$?
+        set -e
         EXIT_CODE=$?
         set -e
         echo "📊 bubblewrap init exit code: $EXIT_CODE"
