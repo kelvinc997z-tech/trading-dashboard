@@ -29,12 +29,14 @@ jobs:
 
         # Download dan install Android commandline tools
         ANDROID_HOME=$HOME/android-sdk
+        ANDROID_SDK_ROOT=$ANDROID_HOME
         mkdir -p "$ANDROID_HOME"
         curl -fsSL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdline-tools.zip
         unzip -q cmdline-tools.zip -d "$ANDROID_HOME"
         mv "$ANDROID_HOME/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
 
         export ANDROID_HOME
+        export ANDROID_SDK_ROOT
         export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
 
         SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -54,10 +56,10 @@ jobs:
         # Try to install stable packages. If android-34 not found, fallback to android-33.
         if "$SDKMANAGER" --list | grep -q "platforms;android-34"; then
           echo "✅ Found platforms;android-34, installing..."
-          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platforms;android-34" "build-tools;34.0.0" "platform-tools"
         else
           echo "⚠️ platforms;android-34 not found, falling back to android-33"
-          "$SDKMANAGER" "platforms;android-33" "build-tools;33.0.2" "platform-tools"
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platforms;android-33" "build-tools;33.0.2" "platform-tools"
         fi
 
         # Verify installed packages
@@ -66,6 +68,7 @@ jobs:
 
         # Set environment for subsequent steps
         echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
         echo "PATH=$PATH" >> $GITHUB_ENV
 
     - name: Install Node.js
