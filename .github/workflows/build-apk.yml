@@ -24,6 +24,11 @@ jobs:
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
+      with:
+        components: |
+          platforms;android-35
+          build-tools;35.0.0
+          platform-tools
 
     - name: Install Node.js
       uses: actions/setup-node@v4
@@ -35,7 +40,6 @@ jobs:
 
     - name: Prepare TWA manifest
       run: |
-        # Ensure twa-manifest.json exists
         if [ -f "android-twa/twa-manifest.json" ]; then
           cp android-twa/twa-manifest.json .
         else
@@ -45,21 +49,22 @@ jobs:
 
     - name: Initialize TWA project
       env:
-        # Use non-interactive mode
         DEBIAN_FRONTEND: noninteractive
       run: |
         bubblewrap init \
           --twa-manifest-path=./twa-manifest.json \
-          --packageId=$(jq -r '.packageId' twa-manifest.json) \
-          --name=$(jq -r '.name' twa-manifest.json) \
-          --versionCode=$(jq -r '.versionCode' twa-manifest.json) \
-          --versionName=$(jq -r '.version' twa-manifest.json) \
-          --host=$(jq -r '.host' twa-manifest.json) \
+          --packageId="$(jq -r '.packageId' twa-manifest.json)" \
+          --name="$(jq -r '.name' twa-manifest.json)" \
+          --versionCode="$(jq -r '.versionCode' twa-manifest.json)" \
+          --versionName="$(jq -r '.version' twa-manifest.json)" \
+          --host="$(jq -r '.host' twa-manifest.json)" \
           --startUrl=/ \
-          --display=$(jq -r '.display' twa-manifest.json) \
-          --themeColor=$(jq -r '.themeColor' twa-manifest.json) \
-          --backgroundColor=$(jq -r '.backgroundColor' twa-manifest.json) \
-          --orientation=$(jq -r '.orientation' twa-manifest.json)
+          --display="$(jq -r '.display' twa-manifest.json)" \
+          --themeColor="$(jq -r '.themeColor' twa-manifest.json)" \
+          --backgroundColor="$(jq -r '.backgroundColor' twa-manifest.json)" \
+          --orientation="$(jq -r '.orientation' twa-manifest.json)" \
+          --no-auto-version-check \
+          --skip-jdk-check
 
     - name: Build Debug APK
       working-directory: .twa
@@ -79,15 +84,20 @@ jobs:
     - name: Build Release APK (if keystore provided)
       if: secrets.KEYSTORE_BASE64 != ''
       working-directory: .twa
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: |
         # Decode keystore
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+        echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
         
-        # Configure signing in app/build.gradle (could also use gradle.properties)
+        # Configure signing
         echo "android.signingConfigs.release.storeFile=release.keystore" >> gradle.properties
-        echo "android.signingConfigs.release.storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> gradle.properties
-        echo "android.signingConfigs.release.keyAlias=${{ secrets.KEY_ALIAS }}" >> gradle.properties
-        echo "android.signingConfigs.release.keyPassword=${{ secrets.KEY_PASSWORD }}" >> gradle.properties
+        echo "android.signingConfigs.release.storePassword=$KEYSTORE_PASSWORD" >> gradle.properties
+        echo "android.signingConfigs.release.keyAlias=$KEY_ALIAS" >> gradle.properties
+        echo "android.signingConfigs.release.keyPassword=$KEY_PASSWORD" >> gradle.properties
         
         chmod +x ./gradlew
         ./gradlew assembleRelease
