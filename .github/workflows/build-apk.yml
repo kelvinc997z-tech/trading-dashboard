@@ -36,27 +36,33 @@ jobs:
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
       continue-on-error: true
 
-    - name: Install Node.js
+    - name: Install Node.js 24 (avoid deprecation warnings)
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
 
     - name: Install Bubblewrap CLI
       run: npm install -g @bubblewrap/cli
 
     - name: Prepare TWA manifest
       run: |
+        set -e
         if [ -f "android-twa/twa-manifest.json" ]; then
           cp android-twa/twa-manifest.json .
           echo "✅ Copied twa-manifest.json to project root"
         else
           echo "❌ twa-manifest.json not found in android-twa/"
+          echo "📂 Listing android-twa directory:"
+          ls -la android-twa/ || echo "android-twa directory not found"
           exit 1
         fi
         echo "📄 Manifest content:"
         cat twa-manifest.json
         # Validate JSON syntax
-        jq empty twa-manifest.json
+        if ! jq empty twa-manifest.json 2>/dev/null; then
+          echo "❌ Manifest is not valid JSON"
+          exit 1
+        fi
         echo "✅ Manifest valid JSON"
 
     - name: Initialize TWA project
@@ -64,41 +70,57 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         set -e
-        echo "🔧 Bubblewrap version:"
-        bubblewrap --version || echo "bubblewrap command not found"
-        echo "📦 Java version:"
-        java -version || echo "java not found"
-        echo "📁 Current directory: $(pwd)"
+        set -x  # Echo all commands
+        
+        echo "🔧 Environment check:"
+        echo "JAVA_HOME=${JAVA_HOME:-not set}"
+        which java || echo "java not in PATH"
+        which bubblewrap || echo "bubblewrap not in PATH"
+        echo "Current dir: $(pwd)"
         ls -la
+        
+        echo "📦 Reading manifest values:"
+        PACKAGE_ID=$(jq -r '.packageId' twa-manifest.json)
+        NAME=$(jq -r '.name' twa-manifest.json)
+        VERSION_CODE=$(jq -r '.versionCode' twa-manifest.json)
+        VERSION_NAME=$(jq -r '.version' twa-manifest.json)
+        HOST=$(jq -r '.host' twa-manifest.json)
+        DISPLAY=$(jq -r '.display' twa-manifest.json)
+        THEME_COLOR=$(jq -r '.themeColor' twa-manifest.json)
+        BACKGROUND_COLOR=$(jq -r '.backgroundColor' twa-manifest.json)
+        ORIENTATION=$(jq -r '.orientation' twa-manifest.json)
+        
+        echo "📋 Params: packageId=$PACKAGE_ID name=$NAME versionCode=$VERSION_CODE versionName=$VERSION_NAME host=$HOST display=$DISPLAY orientation=$ORIENTATION"
         
         echo "🚀 Running bubblewrap init..."
         bubblewrap init \
-          --packageId="$(jq -r '.packageId' twa-manifest.json)" \
-          --name="$(jq -r '.name' twa-manifest.json)" \
-          --versionCode="$(jq -r '.versionCode' twa-manifest.json)" \
-          --versionName="$(jq -r '.version' twa-manifest.json)" \
-          --host="$(jq -r '.host' twa-manifest.json)" \
+          --packageId="$PACKAGE_ID" \
+          --name="$NAME" \
+          --versionCode="$VERSION_CODE" \
+          --versionName="$VERSION_NAME" \
+          --host="$HOST" \
           --startUrl=/ \
-          --display="$(jq -r '.display' twa-manifest.json)" \
-          --themeColor="$(jq -r '.themeColor' twa-manifest.json)" \
-          --backgroundColor="$(jq -r '.backgroundColor' twa-manifest.json)" \
-          --orientation="$(jq -r '.orientation' twa-manifest.json)" \
+          --display="$DISPLAY" \
+          --themeColor="$THEME_COLOR" \
+          --backgroundColor="$BACKGROUND_COLOR" \
+          --orientation="$ORIENTATION" \
           --no-auto-version-check
         
         echo "✅ bubblewrap init completed"
+        echo "📂 After init:"
         ls -la
-        
-        # Verify .twa directory was created
-        if [ ! -d ".twa" ]; then
-          echo "❌ .twa directory not created!"
-          echo "📂 Listing all files:"
-          find . -maxdepth 2 -type d -name ".*" -o -type d | head -20
+        if [ -d ".twa" ]; then
+          echo "✅ .twa directory exists"
+          ls -la .twa
+        else
+          echo "❌ .twa directory NOT created!"
+          echo "📂 Searching for .twa:"
+          find . -name ".twa" -type d 2>/dev/null
           exit 1
         fi
-        echo "✅ .twa directory created successfully"
-        ls -la .twa
 
     - name: Build Debug APK
+      if: always()
       working-directory: .twa
       run: |
         set -e
@@ -106,6 +128,7 @@ jobs:
         ./gradlew assembleDebug
 
     - name: Upload Debug APK
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: trading-dashboard-debug-apk
