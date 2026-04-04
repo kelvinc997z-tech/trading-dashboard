@@ -25,8 +25,6 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
-        packages: |
-          platform-tools
         accept-android-sdk-licenses: true
 
     - name: Install Android packages
@@ -48,10 +46,10 @@ jobs:
         # Install the required packages (try 34 first, fallback to 33)
         if sdkmanager --list | grep -q "platforms;android-34"; then
           echo "✅ Installing Android 34 and build-tools 34.0.0..."
-          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
         else
           echo "⚠️ Android 34 not available, installing Android 33 and build-tools 33.0.2..."
-          sdkmanager "platforms;android-33" "build-tools;33.0.2"
+          sdkmanager "platforms;android-33" "build-tools;33.0.2" "platform-tools"
         fi
 
         # Verify
