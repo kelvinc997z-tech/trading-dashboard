@@ -44,14 +44,17 @@ jobs:
     - name: Install Bubblewrap CLI
       run: npm install -g @bubblewrap/cli
 
-    - name: Validate TWA manifest
+    - name: Prepare TWA manifest
       run: |
-        if [ ! -f "android-twa/twa-manifest.json" ]; then
+        if [ -f "android-twa/twa-manifest.json" ]; then
+          cp android-twa/twa-manifest.json .
+          echo "✅ Copied twa-manifest.json to project root"
+        else
           echo "❌ twa-manifest.json not found in android-twa/"
           exit 1
         fi
         # Validate JSON syntax
-        jq empty android-twa/twa-manifest.json
+        jq empty twa-manifest.json
         echo "✅ Manifest valid"
 
     - name: Initialize TWA project
@@ -59,18 +62,18 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
         JAVA_HOME: ${{ env.JAVA_HOME }}
       run: |
+        # Bubblewrap will auto-detect twa-manifest.json in current directory
         bubblewrap init \
-          --twa-manifest-path=./android-twa/twa-manifest.json \
-          --packageId="$(jq -r '.packageId' android-twa/twa-manifest.json)" \
-          --name="$(jq -r '.name' android-twa/twa-manifest.json)" \
-          --versionCode="$(jq -r '.versionCode' android-twa/twa-manifest.json)" \
-          --versionName="$(jq -r '.version' android-twa/twa-manifest.json)" \
-          --host="$(jq -r '.host' android-twa/twa-manifest.json)" \
+          --packageId="$(jq -r '.packageId' twa-manifest.json)" \
+          --name="$(jq -r '.name' twa-manifest.json)" \
+          --versionCode="$(jq -r '.versionCode' twa-manifest.json)" \
+          --versionName="$(jq -r '.version' twa-manifest.json)" \
+          --host="$(jq -r '.host' twa-manifest.json)" \
           --startUrl=/ \
-          --display="$(jq -r '.display' android-twa/twa-manifest.json)" \
-          --themeColor="$(jq -r '.themeColor' android-twa/twa-manifest.json)" \
-          --backgroundColor="$(jq -r '.backgroundColor' android-twa/twa-manifest.json)" \
-          --orientation="$(jq -r '.orientation' android-twa/twa-manifest.json)" \
+          --display="$(jq -r '.display' twa-manifest.json)" \
+          --themeColor="$(jq -r '.themeColor' twa-manifest.json)" \
+          --backgroundColor="$(jq -r '.backgroundColor' twa-manifest.json)" \
+          --orientation="$(jq -r '.orientation' twa-manifest.json)" \
           --no-auto-version-check
 
     - name: Build Debug APK
@@ -123,4 +126,4 @@ jobs:
     - name: Cleanup
       if: always()
       run: |
-        rm -rf .twa release.keystore
+        rm -rf .twa release.keystore twa-manifest.json
