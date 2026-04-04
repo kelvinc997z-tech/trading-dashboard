@@ -22,54 +22,44 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Install Android SDK (manual)
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        packages: |
+          platform-tools
+        accept-android-sdk-licenses: true
+
+    - name: Install Android packages
       run: |
         set -e
         set -x
 
-        # Download dan install Android commandline tools (version 12266719)
-        ANDROID_HOME=$HOME/android-sdk
-        ANDROID_SDK_ROOT=$ANDROID_HOME
-        mkdir -p "$ANDROID_HOME"
-        curl -fsSL https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip -o cmdline-tools.zip
-        unzip -q cmdline-tools.zip -d "$ANDROID_HOME"
-        mv "$ANDROID_HOME/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+        # Use sdkmanager from the action's installed SDK
+        which sdkmanager
+        sdkmanager --version
 
-        export ANDROID_HOME
-        export ANDROID_SDK_ROOT
-        export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+        # Update index
+        sdkmanager --update || true
 
-        SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+        # List available packages for debugging
+        echo "📋 Listing Android packages (filtering 34, 33, build-tools, platform-tools)..."
+        sdkmanager --list | grep -iE "platforms;android-34|platforms;android-33|build-tools;34.0.0|build-tools;33.0.2|platform-tools" || true
 
-        # Debug: which sdkmanager and version
-        which sdkmanager || true
-        command -v sdkmanager || true
-        "$SDKMANAGER" --version || true
-
-        # Accept all licenses
-        yes | "$SDKMANAGER" --licenses >/dev/null || true
-
-        # List available packages (debug)
-        echo "📋 Listing available packages (filtering android-34, build-tools 34, platform-tools)..."
-        "$SDKMANAGER" --list | grep -iE "platforms;android-34|build-tools;34.0.0|platform-tools" || true
-
-        # Install packages with fallback
-        if "$SDKMANAGER" --list | grep -q "platforms;android-34"; then
-          echo "✅ Installing Android 34..."
-          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+        # Install the required packages (try 34 first, fallback to 33)
+        if sdkmanager --list | grep -q "platforms;android-34"; then
+          echo "✅ Installing Android 34 and build-tools 34.0.0..."
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
         else
-          echo "⚠️ Android 34 not found, trying Android 33..."
-          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platforms;android-33" "build-tools;33.0.2" "platform-tools"
+          echo "⚠️ Android 34 not available, installing Android 33 and build-tools 33.0.2..."
+          sdkmanager "platforms;android-33" "build-tools;33.0.2"
         fi
 
-        # Verify installed packages
+        # Verify
         echo "✅ Installed packages:"
-        "$SDKMANAGER" --list | grep -iE "platforms;android-|build-tools;|platform-tools" | grep -v "^extras;"
+        sdkmanager --list | grep -iE "platforms;android-|build-tools;|platform-tools" | grep -v "^extras;"
 
-        # Set environment for subsequent steps
-        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-        echo "PATH=$PATH" >> $GITHUB_ENV
+        # Show environment
+        echo "ANDROID_HOME=${ANDROID_HOME:-not set}"
 
     - name: Install Node.js
       uses: actions/setup-node@v4
