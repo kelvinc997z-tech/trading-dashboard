@@ -141,6 +141,7 @@ jobs:
         echo "🚀 bubblewrap init..."
         set +e
         bubblewrap init \
+          --verbose \
           --packageId="$PACKAGE_ID" \
           --name="$NAME" \
           --versionCode="$VERSION_CODE" \
@@ -155,23 +156,26 @@ jobs:
           --no-jdk-install
         EXIT_CODE=$?
         set -e
-        EXIT_CODE=$?
-        set -e
         echo "📊 bubblewrap init exit code: $EXIT_CODE"
+        echo "📁 Listing after init:"
+        ls -la
+        echo "🔍 Searching for .twa:"
+        find . -maxdepth 2 -name .twa -type d 2>/dev/null || true
+        echo "📄 Check gradle files:"
+        ls -la .twa 2>/dev/null || echo ".twa not found"
 
         if [ $EXIT_CODE -ne 0 ]; then
           echo "❌ bubblewrap init failed"
           exit $EXIT_CODE
         fi
 
-        echo "✅ init completed"
-        ls -la
         if [ ! -d ".twa" ]; then
           echo "❌ .twa directory missing!"
           find . -maxdepth 2 -type d -name ".twa" 2>/dev/null
           exit 1
         fi
-        echo "✅ .twa exists"
+
+        echo "✅ init completed, .twa exists"
         ls -la .twa
 
     - name: Upload init log if failed
