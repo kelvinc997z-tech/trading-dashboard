@@ -379,92 +379,56 @@ export default function Dashboard() {
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-8">
 
-      {/* Stats Cards - Enhanced */}
+      {/* Stats Cards - Futuristic */}
       <div className="grid gap-4 md:gap-6 grid-cols-2 md:grid-cols-4 mb-6">
-        {[
-          {
-            label: "Open Positions",
-            value: openTradesCount,
-            sublabel: "Active trades",
-            icon: (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            ),
-            gradient: "from-blue-500 to-cyan-500",
-            trend: "+2.4%",
-            trendUp: true
-          },
-          {
-            label: "Today's P&L",
-            value: realizedToday.toFixed(2),
-            sublabel: "Net profit",
-            icon: (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            ),
-            gradient: "from-emerald-500 to-teal-500",
-            positive: realizedToday >= 0,
-            trend: realizedToday >= 0 ? "+4.2%" : "-1.8%",
-            trendUp: realizedToday >= 0
-          },
-          {
-            label: "Total Equity",
-            value: "$0",
-            sublabel: "Portfolio value",
-            icon: (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            ),
-            gradient: "from-purple-500 to-pink-500",
-            trend: "+12.5%",
-            trendUp: true
-          },
-          {
-            label: "System Status",
-            value: "Online",
-            sublabel: "All systems go",
-            icon: (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            ),
-            gradient: "from-emerald-500 to-green-500",
-            status: "operational"
-          },
-        ].map((stat, idx) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
-            className="glass-card rounded-2xl p-6 hover:shadow-soft-lg transition-all duration-300 group metric-card"
-          >
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  {stat.label}
-                </p>
-                <p className={`text-2xl font-bold ${stat.positive !== undefined ? (stat.positive ? 'text-emerald-500' : 'text-red-500') : ''}`}>
-                  {stat.value}
-                </p>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{stat.sublabel}</span>
-                  {stat.trend && (
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${stat.trendUp ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
-                      {stat.trend}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.gradient} text-white icon-glow shadow-lg`}>
-                {stat.icon}
-              </div>
-            </div>
-          </motion.div>
-        ))}
+        <StatCard
+          label="Open Positions"
+          value={openTradesCount}
+          sublabel="Active trades"
+          icon={
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          }
+          gradient="blue"
+          trend={{ value: "+2.4%", up: true }}
+        />
+        <StatCard
+          label="Today's P&L"
+          value={realizedToday.toFixed(2)}
+          sublabel="Net profit"
+          icon={
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+          gradient="emerald"
+          positive={realizedToday >= 0}
+          trend={{ value: realizedToday >= 0 ? "+4.2%" : "-1.8%", up: realizedToday >= 0 }}
+        />
+        <StatCard
+          label="AI Confidence"
+          value="87%"
+          sublabel="Signal accuracy"
+          icon={
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          }
+          gradient="purple"
+          trend={{ value: "+5.3%", up: true }}
+        />
+        <StatCard
+          label="System Status"
+          value="Online"
+          sublabel="All systems go"
+          icon={
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          }
+          gradient="emerald"
+        />
       </div>
 
       {/* Dashboard Tabs - Enhanced */}
