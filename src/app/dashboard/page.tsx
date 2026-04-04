@@ -597,7 +597,7 @@ export default function Dashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + idx * 0.05 }}
                 >
-                  <GlassCard gradient="blue" className="h-full flex flex-col">
+                  <GlassCard gradient="purple" className="h-full flex flex-col">
                     <div className="flex justify-between items-center mb-4">
                       <div>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">{pair.symbol}</h3>
