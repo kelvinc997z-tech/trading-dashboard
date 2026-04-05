@@ -13,37 +13,37 @@ export default function Header() {
   const nextTheme = themes[(currentIndex + 1) % themes.length];
   
   return (
-    <header className="sticky top-0 z-50 bg-white border-b">
+    <header className="sticky top-0 z-50 bg-background/95 border-b backdrop-blur-sm">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <Link href="/dashboard" className="text-2xl font-bold text-gray-900">
+        <Link href="/dashboard" className="text-2xl font-bold text-foreground">
           Klepon Market Research
         </Link>
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
+          <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
             Dashboard
           </Link>
-          <Link href="/market" className="text-gray-600 hover:text-gray-900">
+          <Link href="/market" className="text-muted-foreground hover:text-foreground">
             Market
           </Link>
-          <Link href="/quant-ai" className="text-gray-600 hover:text-gray-900">
+          <Link href="/quant-ai" className="text-muted-foreground hover:text-foreground">
             Quant AI
           </Link>
-          <Link href="/pricing" className="text-gray-600 hover:text-gray-900">
+          <Link href="/pricing" className="text-muted-foreground hover:text-foreground">
             Pro Account
           </Link>
         </nav>
         <div className="flex items-center gap-4">
           <button
             onClick={() => setTheme(nextTheme)}
-            className="px-3 py-1 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 text-sm"
+            className="px-3 py-1 rounded-lg border border-border text-muted-foreground hover:bg-secondary hover:text-foreground text-sm"
             aria-label="Toggle theme"
           >
             {theme}
           </button>
-          <Link href="/login" className="text-gray-600 hover:text-gray-900">
+          <Link href="/login" className="text-muted-foreground hover:text-foreground">
             Sign In
           </Link>
-          <Link href="/login" className="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition">
+          <Link href="/login" className="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium hover:opacity-90 transition">
             Get Started
           </Link>
         </div>

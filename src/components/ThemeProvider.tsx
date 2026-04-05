@@ -35,9 +35,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted) return;
     const html = document.documentElement;
     // Remove all theme classes
-    html.classList.remove("theme-pro", "theme-bloomberg", "theme-apple");
+    html.classList.remove("theme-pro", "theme-bloomberg", "theme-apple", "dark", "light");
     // Add current theme class
     html.classList.add(`theme-${theme}`);
+    // Add dark/light class for Tailwind dark mode variants
+    if (theme === "pro" || theme === "bloomberg") {
+      html.classList.add("dark");
+    } else {
+      html.classList.add("light");
+    }
     // Save to localStorage
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme, mounted]);
