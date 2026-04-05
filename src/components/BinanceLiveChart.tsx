@@ -29,6 +29,8 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
   };
   const wsSymbol = getBinanceSymbol(symbol);
 
+  const currentSourceRef = useRef<string>("");
+
   // Fetch initial historical data via REST
   const fetchData = useCallback(async () => {
     try {
@@ -60,7 +62,7 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
       setData(history);
       const source = result.source || "binance";
       setDataSource(source);
-      
+      currentSourceRef.current = source;
       // Accept WebSocket updates for any real data source (not synthetic)
       shouldAcceptWsUpdates.current = !source.toLowerCase().includes("synthetic");
 
@@ -114,8 +116,12 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
       setChangePercent((changeVal / lastClosedPriceRef.current) * 100);
     }
 
-    // If this kline is final (candle closed), add to historical data
+    // Only append to historical data if source is Binance
     if (kline.isFinal) {
+      if (currentSourceRef.current !== 'Binance') {
+        // Skip appending for non-Binance sources (e.g., CMC, Aggregated)
+        return;
+      }
       const newPoint = {
         time: kline.time,
         price: closePrice,
@@ -129,7 +135,7 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
         }
         return updated;
       });
-      // Update last closed price reference
+      // Update last closed price reference only when we appended
       lastClosedPriceRef.current = closePrice;
     }
   }, []);
