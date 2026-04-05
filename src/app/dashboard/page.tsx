@@ -3,14 +3,16 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, BarChart2, TrendingUp, PieChart, Newspaper, Eye, Crown, Brain, Zap, Calendar } from "lucide-react";
+import { Activity, BarChart2, PieChart, Eye, Calendar } from "lucide-react";
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
-import MarketOutlook from "@/components/MarketOutlook";
 import BinanceLiveChart from "@/components/BinanceLiveChart";
 import RealTimeChart from "@/components/RealTimeChart";
 import AdvancedChart from "@/components/AdvancedChart";
 import EconomicCalendarMini from "@/components/EconomicCalendarMini";
+import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
+import CorrelationMatrix from "@/components/CorrelationMatrix";
+import WatchlistOutlook from "@/components/WatchlistOutlook";
 import StatCard from "@/components/ui/StatCard";
 import GlassCard from "@/components/ui/GlassCard";
 import ConfidenceBar from "@/components/ConfidenceBar";
@@ -85,7 +87,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"charts" | "overview" | "economic">("charts");
+  const [activeTab, setActiveTab] = useState<"charts" | "outlook" | "economic" | "performance" | "correlation">("charts");
 
   // Get symbol from query params on mount
   useEffect(() => {
@@ -452,10 +454,22 @@ export default function Dashboard() {
                 desc: "Price & signals"
               },
               { 
-                id: "overview", 
-                label: "Overview", 
+                id: "outlook", 
+                label: "Outlook", 
                 icon: Eye,
-                desc: "Market summary"
+                desc: "Watchlist signals"
+              },
+              { 
+                id: "correlation", 
+                label: "Correlation", 
+                icon: BarChart2,
+                desc: "Asset relationships"
+              },
+              { 
+                id: "performance", 
+                label: "Performance", 
+                icon: PieChart,
+                desc: "Your stats"
               },
               { 
                 id: "economic", 
@@ -645,9 +659,21 @@ export default function Dashboard() {
       )}
 
       {/* Tab Content for other tabs */}
-      {activeTab === "overview" && (
+      {activeTab === "outlook" && (
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <MarketOutlook />
+          <WatchlistOutlook />
+        </div>
+      )}
+
+      {activeTab === "correlation" && (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+          <CorrelationMatrix />
+        </div>
+      )}
+
+      {activeTab === "performance" && (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+          <PerformanceClient />
         </div>
       )}
 
