@@ -767,34 +767,34 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // For crypto: CoinMarketCap first (primary data source)
+    // For crypto: Binance first (real-time WebSocket capable)
     if (CRYPTO_SYMBOLS.includes(symbol)) {
-      // 1. CoinMarketCap (primary - professional market data)
+      // 1. Binance (primary - real-time WebSocket)
+      const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
+      if (binanceData) {
+        console.log(`[MarketData] ${symbol} served from Binance`);
+        return NextResponse.json(binanceData);
+      }
+
+      // 2. CoinMarketCap (high-quality reference data)
       const cmcData = await fetchCoinMarketCapOHLC(symbol, timeframe, 200);
       if (cmcData) {
         console.log(`[MarketData] ${symbol} served from CoinMarketCap`);
         return NextResponse.json(cmcData);
       }
 
-      // 2. Aggregated (volume-weighted from multiple exchanges)
+      // 3. Aggregated (volume-weighted from multiple exchanges)
       const aggData = await fetchAggregatedOHLC(symbol, timeframe, 200);
       if (aggData) {
         console.log(`[MarketData] ${symbol} served from Aggregated (multi-exchange)`);
         return NextResponse.json(aggData);
       }
 
-      // 3. FreeCryptoAPI (single-source REST)
+      // 4. FreeCryptoAPI (single-source REST)
       const freeCryptoData = await fetchFreeCryptoAPIOHLC(symbol, timeframe, 200);
       if (freeCryptoData) {
         console.log(`[MarketData] ${symbol} served from FreeCryptoAPI`);
         return NextResponse.json(freeCryptoData);
-      }
-
-      // 4. Binance (fallback with real-time WebSocket)
-      const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
-      if (binanceData) {
-        console.log(`[MarketData] ${symbol} served from Binance`);
-        return NextResponse.json(binanceData);
       }
 
       // 5. CoinAPI (secondary REST source)
