@@ -20,6 +20,8 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
   const [error, setError] = useState<string | null>(null);
   const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected" | "failed">("connecting");
 
+  console.log("[BinanceLiveChart] props:", { symbol, interval }); // DEBUG
+
   const handleData = useCallback((newCandle: { time: string; open: number; high: number; low: number; close: number; volume: number }) => {
     setData(prev => {
       const updated = [...prev, { time: newCandle.time, price: newCandle.close, volume: newCandle.volume }];
@@ -29,7 +31,7 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
   }, []);
 
   const { isConnected, send } = useBinanceWebSocket({
-    symbol: symbol.toLowerCase() + "usdt",
+    symbol: symbol.toLowerCase() + "usdt", // WS uses lowercase
     interval,
     onData: handleData,
     onError: (err) => {
@@ -40,6 +42,7 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
   });
 
   useEffect(() => {
+    console.log("[BinanceLiveChart] WS connected:", isConnected, "symbol:", symbol.toLowerCase() + "usdt"); // DEBUG
     setWsStatus(isConnected ? "connected" : "connecting");
   }, [isConnected]);
 
@@ -50,7 +53,8 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
         setLoading(true);
         setError(null);
         const limit = 200;
-        const binanceSymbol = symbol.toLowerCase() + "usdt";
+        const binanceSymbol = symbol.toUpperCase() + "USDT"; // Binance requires uppercase
+        console.log("[BinanceLiveChart] REST fetch:", `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`); // DEBUG
         const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`);
         if (!res.ok) throw new Error(`Binance API: ${res.status}`);
         const raw: any[][] = await res.json();
