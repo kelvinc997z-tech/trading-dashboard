@@ -558,7 +558,7 @@ export default function Dashboard() {
                           {user?.role === "pro" ? (
                             <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
                           ) : (
-                            <BinanceLiveChart symbol={pair.symbol.toLowerCase() + "usdt"} interval={timeframe} />
+                            <BinanceLiveChart symbol={pair.symbol.toUpperCase() + "USDT"} interval={timeframe} />
                           )}
                         </div>
                       )}

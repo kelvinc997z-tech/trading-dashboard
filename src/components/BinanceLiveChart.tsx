@@ -18,23 +18,30 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
   const [changePercent, setChangePercent] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected" | "failed">("connecting");
 
   const handleData = useCallback((newCandle: { time: string; open: number; high: number; low: number; close: number; volume: number }) => {
     setData(prev => {
       const updated = [...prev, { time: newCandle.time, price: newCandle.close, volume: newCandle.volume }];
-      // Keep last 200 points
       return updated.slice(-200);
     });
     setCurrentPrice(newCandle.close);
   }, []);
 
-  // WebSocket connection for real-time updates
   const { isConnected, send } = useBinanceWebSocket({
-    symbol,
+    symbol: symbol.toLowerCase() + "usdt",
     interval,
     onData: handleData,
-    onError: (err) => setError("WebSocket error"),
+    onError: (err) => {
+      console.error("WebSocket error:", err);
+      setWsStatus("failed");
+      setError("WebSocket disconnected. Using REST fallback.");
+    },
   });
+
+  useEffect(() => {
+    setWsStatus(isConnected ? "connected" : "connecting");
+  }, [isConnected]);
 
   // Fetch initial historical data via REST API
   useEffect(() => {
@@ -43,7 +50,8 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
         setLoading(true);
         setError(null);
         const limit = 200;
-        const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol.toUpperCase()}&interval=${interval}&limit=${limit}`);
+        const binanceSymbol = symbol.toLowerCase() + "usdt";
+        const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`);
         if (!res.ok) throw new Error(`Binance API: ${res.status}`);
         const raw: any[][] = await res.json();
 
@@ -98,13 +106,16 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
     );
   }
 
-  if (error) {
+  if (error && data.length === 0) {
     return (
       <div className="w-full border border-red-200 dark:border-red-900 rounded-lg p-4" style={{ height }}>
-        <div className="text-red-600 dark:text-red-400 text-sm">
-          Chart error: {error}. Showing synthetic data.
+        <div className="text-red-600 dark:text-red-400 text-sm mb-2">
+          {error}
         </div>
-        <ResponsiveContainer width="100%" height={height - 40}>
+        <div className="text-xs text-muted-foreground mb-2">
+          WS Status: {wsStatus} | Data points: {data.length}
+        </div>
+        <ResponsiveContainer width="100%" height={height - 60}>
           <AreaChart data={data}>
             <defs>
               <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
@@ -188,7 +199,7 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
         )}
       </ResponsiveContainer>
       <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
-        <span className={`px-2 py-0.5 rounded ${isConnected ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"}`}>
+        <span className={`px-2 py-0.5 rounded text-xs ${isConnected ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"}`}>
           {isConnected ? "Live" : "Connecting..."}
         </span>
         {currentPrice && (
@@ -199,6 +210,9 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
             </span>
           </>
         )}
+        <span className="ml-auto text-xs text-muted-foreground/70">
+          {data.length} points
+        </span>
       </div>
     </div>
   );
