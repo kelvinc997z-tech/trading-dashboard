@@ -414,30 +414,32 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // For crypto: try multiple sources
+    // For crypto: Binance first (for real-time WebSocket support)
     if (CRYPTO_SYMBOLS.includes(symbol)) {
-      // 1. Coinglass Spot
-      const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
-      if (spotData) {
-        console.log(`[MarketData] ${symbol} served from Coinglass Spot`);
-        return NextResponse.json(spotData);
-      }
-
-      // 2. Coinglass Futures
-      const futuresData = await fetchCoinglassFuturesOHLC(symbol, timeframe, 200);
-      if (futuresData) {
-        console.log(`[MarketData] ${symbol} served from Coinglass Futures`);
-        return NextResponse.json(futuresData);
-      }
-
-      // 3. Binance
+      // 1. Binance (primary - real-time capable)
       const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
       if (binanceData) {
         console.log(`[MarketData] ${symbol} served from Binance`);
         return NextResponse.json(binanceData);
       }
 
-      // 4. CoinGecko
+      // 2. Coinglass Spot (fallback if API key exists)
+      const coinglassKey = process.env.COINGLASS_API_KEY;
+      if (coinglassKey) {
+        const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
+        if (spotData) {
+          console.log(`[MarketData] ${symbol} served from Coinglass Spot`);
+          return NextResponse.json(spotData);
+        }
+
+        const futuresData = await fetchCoinglassFuturesOHLC(symbol, timeframe, 200);
+        if (futuresData) {
+          console.log(`[MarketData] ${symbol} served from Coinglass Futures`);
+          return NextResponse.json(futuresData);
+        }
+      }
+
+      // 3. CoinGecko (free fallback)
       const cgData = await fetchCoinGeckoOHLC(symbol, timeframe, 200);
       if (cgData) {
         console.log(`[MarketData] ${symbol} served from CoinGecko`);
