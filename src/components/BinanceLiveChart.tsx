@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
+import { useBinanceWebSocket } from "@/hooks/useBinanceWebSocket";
 
 interface BinanceLiveChartProps {
   symbol: string; // e.g., "BTC", "ETH", "SOL", "XRP", "XAU"
@@ -18,7 +19,11 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<string>("");
+  
+  const shouldAcceptWsUpdates = useRef(false);
+  const wsSymbol = `${symbol.toLowerCase()}usdt`;
 
+  // Fetch initial historical data via REST
   const fetchData = useCallback(async () => {
     try {
       setError(null);
@@ -44,7 +49,8 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
       }));
 
       setData(history);
-      setDataSource(result.source || "unknown");
+      setDataSource(result.source || "binance");
+      shouldAcceptWsUpdates.current = true;
 
       if (history.length > 0) {
         const last = history[history.length - 1].price;
@@ -56,6 +62,7 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
     } catch (err: any) {
       console.error("Crypto data fetch error:", err);
       setError(err.message);
+      shouldAcceptWsUpdates.current = false;
       // Use fallback synthetic data
       const fallback = generateFallbackData(symbol, 200);
       setData(fallback);
@@ -72,13 +79,44 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
     }
   }, [symbol, interval]);
 
-  // Fetch initial data
+  // Fetch initial data on mount
   useEffect(() => {
     fetchData();
-    // Poll every 60 seconds for updates
-    const intervalId = setInterval(fetchData, 60000);
-    return () => clearInterval(intervalId);
   }, [fetchData]);
+
+  // WebSocket for real-time updates
+  useBinanceWebSocket({
+    symbol: wsSymbol,
+    interval,
+    onData: (kline) => {
+      if (!shouldAcceptWsUpdates.current) return;
+      
+      const newPoint = {
+        time: kline.time,
+        price: kline.close,
+        volume: kline.volume,
+      };
+      
+      setData(prev => {
+        const updated = [...prev, newPoint];
+        return updated.slice(-200); // keep last 200 points
+      });
+      
+      // Update current price and change based on last two points
+      setCurrentPrice(kline.close);
+      setData(prevData => {
+        const lastPrice = prevData[prevData.length - 1]?.price || kline.close;
+        const prevPrice = prevData[prevData.length - 2]?.price || lastPrice;
+        setChange(kline.close - prevPrice);
+        setChangePercent(((kline.close - prevPrice) / prevPrice) * 100);
+        return prevData; // return unchanged, we just needed to compute change
+      });
+    },
+    onError: (err) => {
+      console.error("WebSocket error:", err);
+      // Could trigger fallback to REST polling if needed
+    }
+  });
 
   // Calculate min/max for Y-axis domain
   const prices = data.map(d => d.price);
@@ -216,6 +254,7 @@ function generateFallbackData(symbol: string, points: number = 50) {
     ETH: 3500,
     SOL: 150,
     XRP: 0.6,
+    KAS: 0.17,
     AAPL: 170,
     AMD: 120,
     NVDA: 240,
