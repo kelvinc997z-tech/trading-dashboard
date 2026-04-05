@@ -34,7 +34,7 @@ export default function EconomicCalendarMini() {
         const data = await res.json();
 
         if (!data.economicCalendar || !Array.isArray(data.economicCalendar)) {
-          throw new Error("Invalid data format from Finnhub");
+          throw new Error("Invalid data format from API");
         }
 
         // Transform with timezone (Asia/Jakarta = GMT+7)
@@ -131,7 +131,7 @@ export default function EconomicCalendarMini() {
 
   return (
     <div className="space-y-4">
-      {/* Summary */}
+      {/* Summary - responsive grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-muted/50 rounded-lg p-3">
           <p className="text-xs text-muted-foreground">Today's Events</p>
@@ -159,7 +159,7 @@ export default function EconomicCalendarMini() {
 
       {/* Filter & List */}
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Filter className="w-4 h-4 text-muted-foreground" />
           <select
             value={filterImpact}
@@ -171,6 +171,9 @@ export default function EconomicCalendarMini() {
             <option value="medium">Medium Impact</option>
             <option value="low">Low Impact</option>
           </select>
+          <span className="text-xs text-muted-foreground">
+            Showing {filteredEvents.length} events
+          </span>
         </div>
 
         {filteredEvents.length === 0 ? (
@@ -179,22 +182,26 @@ export default function EconomicCalendarMini() {
             <p className="text-sm">No events for today</p>
           </div>
         ) : (
-          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-            {filteredEvents.slice(0, 20).map((event, idx) => (
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+            {filteredEvents.slice(0, 50).map((event, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-muted/50 transition"
+                className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 rounded-lg border border-border bg-card hover:bg-muted/50 transition"
               >
-                <div className="flex items-center gap-2 w-24">
-                  <Clock className="w-3 h-3 text-muted-foreground" />
-                  <span className="font-mono text-sm text-foreground">{event.time}</span>
+                <div className="flex items-center gap-2 w-full sm:w-24 min-w-0">
+                  <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                  <span className="font-mono text-sm text-foreground truncate">{event.time}</span>
                 </div>
-                <div className="w-16">
+                <div className="w-full sm:w-16 flex-shrink-0">
                   <span className="font-bold text-sm text-foreground">{event.currency}</span>
                 </div>
-                <div className="flex-1 text-sm text-foreground truncate">{event.event}</div>
-                <div className={`px-2 py-1 rounded-full text-xs font-medium border ${impactBadge(event.impact)}`}>
-                  {event.impact}
+                <div className="flex-1 text-sm text-foreground truncate min-w-0">
+                  {event.event}
+                </div>
+                <div className="flex-shrink-0">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${impactBadge(event.impact)}`}>
+                    {event.impact}
+                  </span>
                 </div>
               </div>
             ))}
