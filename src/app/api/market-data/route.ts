@@ -27,9 +27,12 @@ function getCoinMarketCapSymbol(symbol: string): string {
 // Fetch from CoinMarketCap (requires COINMARKETCAP_API_KEY)
 async function fetchCoinMarketCapOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
   const apiKey = process.env.COINMARKETCAP_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.log(`[CMC] API key not set, skipping ${symbol}`);
+    return null;
+  }
 
-  const cmcSymbol = getCoinMarketCapSymbol(symbol);
+  console.log(`[CMC] Fetching ${symbol} ${timeframe} (limit: ${limit})`);
   // CMC requires convert to USD and returns latest quotes
   // For OHLC history, we need to use the v2 endpoint with historical data
   // Note: CMC free tier has limited historical access
@@ -58,22 +61,13 @@ async function fetchCoinMarketCapOHLC(symbol: string, timeframe: string = "1h", 
     }
     const data: any = await res.json();
     
+    console.log(`[CMC] Response for ${symbol}:`, { status: res.status, quotesCount: data?.data?.quotes?.length || 0 });
+    
     // CMC v2 OHLC response structure
     // {
     //   "data": {
     //     "symbol": "BTC",
-    //     "quotes": [
-    //       {
-    //         "timestamp": "2024-01-01T00:00:00.000Z",
-    //         "open": "50000",
-    //         "high": "50500",
-    //         "low": "49900",
-    //         "close": "50300",
-    //         "volume": "123.45",
-    //         "market_cap": "1234567890",
-    //         "quote": { "USD": { "price": 50300, "volume_24h": 123.45, "market_cap": 1234567890 } }
-    //       }
-    //     ]
+    //     "quotes": [...]
     //   }
     // }
     const quotes = data?.data?.quotes || [];
