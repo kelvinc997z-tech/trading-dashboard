@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, BarChart2, TrendingUp, PieChart, Newspaper, Eye, Crown, Brain, Zap } from "lucide-react";
+import { Activity, BarChart2, TrendingUp, PieChart, Newspaper, Eye, Crown, Brain, Zap, Calendar } from "lucide-react";
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import MarketOutlook from "@/components/MarketOutlook";
@@ -11,6 +11,7 @@ import RealTimeChart from "@/components/RealTimeChart";
 import AdvancedChart from "@/components/AdvancedChart";
 import MarketSentiment from "@/components/MarketSentiment";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
+import EconomicCalendarMini from "@/components/EconomicCalendarMini";
 import StatCard from "@/components/ui/StatCard";
 import GlassCard from "@/components/ui/GlassCard";
 import ConfidenceBar from "@/components/ConfidenceBar";
@@ -78,7 +79,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"charts" | "overview" | "sentiment" | "performance">("charts");
+  const [activeTab, setActiveTab] = useState<"charts" | "overview" | "sentiment" | "performance" | "economic">("charts");
 
   // Get symbol from query params on mount
   useEffect(() => {
@@ -462,6 +463,12 @@ export default function Dashboard() {
                 icon: PieChart,
                 desc: "Your stats"
               },
+              { 
+                id: "economic", 
+                label: "Economic", 
+                icon: Calendar,
+                desc: "Today's events"
+              },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -659,6 +666,12 @@ export default function Dashboard() {
       {activeTab === "performance" && (
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
           <PerformanceClient />
+        </div>
+      )}
+
+      {activeTab === "economic" && (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+          <EconomicCalendarMini />
         </div>
       )}
 
