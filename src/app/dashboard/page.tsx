@@ -10,8 +10,6 @@ import MarketOutlook from "@/components/MarketOutlook";
 import BinanceLiveChart from "@/components/BinanceLiveChart";
 import RealTimeChart from "@/components/RealTimeChart";
 import AdvancedChart from "@/components/AdvancedChart";
-import MarketSentiment from "@/components/MarketSentiment";
-import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import EconomicCalendarMini from "@/components/EconomicCalendarMini";
 import StatCard from "@/components/ui/StatCard";
 import GlassCard from "@/components/ui/GlassCard";
@@ -86,7 +84,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"charts" | "overview" | "sentiment" | "performance" | "economic">("charts");
+  const [activeTab, setActiveTab] = useState<"charts" | "overview" | "economic">("charts");
 
   // Get symbol from query params on mount
   useEffect(() => {
@@ -457,18 +455,6 @@ export default function Dashboard() {
                 label: "Overview", 
                 icon: Eye,
                 desc: "Market summary"
-              },
-              { 
-                id: "sentiment", 
-                label: "Sentiment", 
-                icon: TrendingUp,
-                desc: "Market mood"
-              },
-              { 
-                id: "performance", 
-                label: "Performance", 
-                icon: PieChart,
-                desc: "Your stats"
               },
               { 
                 id: "economic", 
