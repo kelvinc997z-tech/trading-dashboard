@@ -7,7 +7,7 @@ import { Activity, BarChart2, TrendingUp, PieChart, Newspaper, Eye, Crown, Brain
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import MarketOutlook from "@/components/MarketOutlook";
-import RealTimeChart from "@/components/RealTimeChart";
+import BinanceLiveChart from "@/components/BinanceLiveChart";
 import AdvancedChart from "@/components/AdvancedChart";
 import MarketSentiment from "@/components/MarketSentiment";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
@@ -557,7 +557,7 @@ export default function Dashboard() {
                           {user?.role === "pro" ? (
                             <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
                           ) : (
-                            <RealTimeChart symbol={pair.symbol} timeframe={timeframe} />
+                            <BinanceLiveChart symbol={pair.symbol.toLowerCase() + "usdt"} interval={timeframe} />
                           )}
                         </div>
                       )}
@@ -575,7 +575,7 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* US Stocks Charts */}
+          {/* US Stocks Charts } */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
