@@ -47,6 +47,9 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
         throw new Error(result.error);
       }
 
+      // DEBUG: log source and current price
+      console.log(`[BinanceLiveChart] ${symbol} loaded:`, { source: result.source, price: result.current?.price, points: result.history?.length });
+
       // Transform to chart data
       const history = (result.history || []).map((h: any) => ({
         time: h.time,

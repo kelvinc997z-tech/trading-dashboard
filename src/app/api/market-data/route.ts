@@ -4,6 +4,12 @@ const CRYPTO_SYMBOLS = ["XAUT", "BTC", "ETH", "SOL", "XRP", "KAS"];
 const US_STOCKS = ["AAPL", "AMD", "NVDA", "MSFT", "GOOGL", "TSM"];
 const SUPPORTED_SYMBOLS = [...CRYPTO_SYMBOLS, ...US_STOCKS];
 
+// Normalize symbol to internal format (XAUT for gold)
+function normalizeSymbol(symbol: string): string {
+  if (symbol === "XAU") return "XAUT"; // Alias: XAU → XAUT
+  return symbol;
+}
+
 // Map our symbols to CoinMarketCap format
 function getCoinMarketCapSymbol(symbol: string): string {
   // CMC uses standard symbols: XAU, BTC, ETH, SOL, XRP, KAS
@@ -766,9 +772,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Normalize symbol (XAU → XAUT)
+  const normalizedSymbol = normalizeSymbol(symbol);
+
   try {
     // For crypto: Binance first (real-time WebSocket capable)
-    if (CRYPTO_SYMBOLS.includes(symbol)) {
+    if (CRYPTO_SYMBOLS.includes(normalizedSymbol)) {
       // 1. Binance (primary - real-time WebSocket)
       const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
       if (binanceData) {
@@ -784,21 +793,21 @@ export async function GET(request: NextRequest) {
       }
 
       // 3. Aggregated (volume-weighted from multiple exchanges)
-      const aggData = await fetchAggregatedOHLC(symbol, timeframe, 200);
+      const aggData = await fetchAggregatedOHLC(normalizedSymbol, timeframe, 200);
       if (aggData) {
         console.log(`[MarketData] ${symbol} served from Aggregated (multi-exchange)`);
         return NextResponse.json(aggData);
       }
 
       // 4. FreeCryptoAPI (single-source REST)
-      const freeCryptoData = await fetchFreeCryptoAPIOHLC(symbol, timeframe, 200);
+      const freeCryptoData = await fetchFreeCryptoAPIOHLC(normalizedSymbol, timeframe, 200);
       if (freeCryptoData) {
         console.log(`[MarketData] ${symbol} served from FreeCryptoAPI`);
         return NextResponse.json(freeCryptoData);
       }
 
       // 5. CoinAPI (secondary REST source)
-      const coinAPIData = await fetchCoinAPIOHLC(symbol, timeframe, 200);
+      const coinAPIData = await fetchCoinAPIOHLC(normalizedSymbol, timeframe, 200);
       if (coinAPIData) {
         console.log(`[MarketData] ${symbol} served from CoinAPI`);
         return NextResponse.json(coinAPIData);
@@ -807,21 +816,21 @@ export async function GET(request: NextRequest) {
       // 6. Coinglass Spot (fallback if API key exists)
       const coinglassKey = process.env.COINGLASS_API_KEY;
       if (coinglassKey) {
-        const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
+        const spotData = await fetchCoinglassSpotOHLC(normalizedSymbol, timeframe, 200);
         if (spotData) {
           console.log(`[MarketData] ${symbol} served from Coinglass Spot`);
           return NextResponse.json(spotData);
         }
 
-        const futuresData = await fetchCoinglassFuturesOHLC(symbol, timeframe, 200);
+        const futuresData = await fetchCoinglassFuturesOHLC(normalizedSymbol, timeframe, 200);
         if (futuresData) {
           console.log(`[MarketData] ${symbol} served from Coinglass Futures`);
           return NextResponse.json(futuresData);
         }
       }
 
-      // 4. CoinGecko (free fallback)
-      const cgData = await fetchCoinGeckoOHLC(symbol, timeframe, 200);
+      // 7. CoinGecko (free fallback)
+      const cgData = await fetchCoinGeckoOHLC(normalizedSymbol, timeframe, 200);
       if (cgData) {
         console.log(`[MarketData] ${symbol} served from CoinGecko`);
         return NextResponse.json(cgData);
