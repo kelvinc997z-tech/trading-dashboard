@@ -58,8 +58,8 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
       const source = result.source || "binance";
       setDataSource(source);
       
-      // Only accept WebSocket updates if data is from Binance
-      shouldAcceptWsUpdates.current = source.toLowerCase().includes("binance");
+      // Accept WebSocket updates for any real data source (not synthetic)
+      shouldAcceptWsUpdates.current = !source.toLowerCase().includes("synthetic");
 
       // Initialize lastClosedPrice from historical data
       if (history.length > 0) {
