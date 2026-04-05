@@ -304,8 +304,11 @@ To unlock **full functionality**, add these environment variables in **Vercel Da
 
 | Variable | Purpose | Status | Get From |
 |----------|---------|--------|----------|
+| `COINAPI_API_KEY` | Primary crypto data (REST) | ✅ Added | [coinapi.io](https://coinapi.io) |
+| `FREECRYPTOAPI_API_KEY` | Secondary crypto data (REST) | ✅ Added | [freeapi.coincap.io](https://freeapi.coincap.io) |
+| `BINANCE_API_KEY` | Real-time WebSocket (optional) | Optional | [binance.com](https://binance.com) |
+| `ALCHEMY_API_KEY` | Ethereum on-chain data | ✅ Added | [alchemy.com](https://alchemy.com) |
 | `MASSIVE_API_KEY` | US stock data (AAPL, NVDA, etc.) | ⚠️ Needed | [massive-api.com](https://massive-api.com) |
-| `COINMARKETCAP_API_KEY` | Crypto prices & signals | ⚠️ Needed | [pro.coinmarketcap.com](https://pro.coinmarketcap.com) |
 | `NEXT_PUBLIC_FINNHUB_API_KEY` | News & sentiment | ⚠️ Optional | [finnhub.io](https://finnhub.io) |
 | `CRYPTOQUANT_API_KEY` | On-chain metrics | ⏳ Pending activation | [portal.cryptoquant.com](https://portal.cryptoquant.com) |
 | `SUPABASE_URL` | Database & storage | ✅ Already set (local) | Supabase dashboard |
@@ -314,6 +317,19 @@ To unlock **full functionality**, add these environment variables in **Vercel Da
 **Setup script:** `./set-vercel-envs.sh` (automates environment variable addition)
 
 ---
+
+### 📡 **Data Source Priority (Crypto)**
+
+| Priority | Source | Type | Real-time? |
+|----------|--------|------}|
+| 1 | **CoinAPI** | REST | ❌ No |
+| 2 | **Binance** | REST + WebSocket | ✅ Yes |
+| 3 | **FreeCryptoAPI** | REST | ❌ No |
+| 4 | Coinglass | REST | ❌ No |
+| 5 | CoinGecko | REST (free) | ❌ No |
+| 6 | Synthetic | Dummy data | ❌ No |
+
+**Note:** Only Binance supports WebSocket real-time updates. If CoinAPI or FreeCryptoAPI is used as primary, price updates will be REST-only (polling every interval). Binance is automatically used as fallback if primary sources fail.
 
 ## 🎨 Design System
 
@@ -734,6 +750,26 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Issues**: [GitHub Issues](https://github.com/kelvinc997z-tech/trading-dashboard/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/kelvinc997z-tech/trading-dashboard/discussions)
 - **Email**: support@kelvinc997z.tech
+
+---
+
+## 🗓️ Economic Calendar Widget
+
+Trading Dashboard now includes **MQL5 Tradays** embedded widget for real-time economic events:
+
+- **Embed code**: User-provided HTML/JavaScript snippet
+- **Auto-updates**: Real-time event data from MQL5
+- **Timezone**: Automatically converted to Asia/Jakarta (GMT+7)
+- **Component**: `src/components/EconomicCalendarWidget.tsx`
+- **No API key needed**: Widget loads directly from MQL5 CDN
+- **Fully customizable**: Width, height, display mode via widget parameters
+
+**Widget features:**
+- High/Medium/Low impact indicators
+- Event grouping by date
+- Currency filter
+- Country flags
+- Real-time updates
 
 ---
 
