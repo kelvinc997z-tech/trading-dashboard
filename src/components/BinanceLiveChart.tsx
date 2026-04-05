@@ -2,10 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
-import { useBinanceWebSocket } from "@/hooks/useBinanceWebSocket";
 
 interface BinanceLiveChartProps {
-  symbol: string; // e.g., "BTCUSDT"
+  symbol: string; // e.g., "BTC", "ETH", "SOL", "XRP", "XAU"
   interval?: string; // default "1h"
   height?: number;
   showArea?: boolean;
@@ -18,81 +17,68 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
   const [changePercent, setChangePercent] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected" | "failed">("connecting");
+  const [dataSource, setDataSource] = useState<string>("");
 
-  console.log("[BinanceLiveChart] props:", { symbol, interval }); // DEBUG
-
-  const handleData = useCallback((newCandle: { time: string; open: number; high: number; low: number; close: number; volume: number }) => {
-    setData(prev => {
-      const updated = [...prev, { time: newCandle.time, price: newCandle.close, volume: newCandle.volume }];
-      return updated.slice(-200);
-    });
-    setCurrentPrice(newCandle.close);
-  }, []);
-
-  const { isConnected, send } = useBinanceWebSocket({
-    symbol: symbol.toLowerCase() + "usdt", // WS uses lowercase
-    interval,
-    onData: handleData,
-    onError: (err) => {
-      console.error("WebSocket error:", err);
-      setWsStatus("failed");
-      setError("WebSocket disconnected. Using REST fallback.");
-    },
-  });
-
-  useEffect(() => {
-    console.log("[BinanceLiveChart] WS connected:", isConnected, "symbol:", symbol.toLowerCase() + "usdt"); // DEBUG
-    setWsStatus(isConnected ? "connected" : "connecting");
-  }, [isConnected]);
-
-  // Fetch initial historical data via REST API
-  useEffect(() => {
-    async function fetchHistory() {
-      try {
-        setLoading(true);
-        setError(null);
-        const limit = 200;
-        const binanceSymbol = symbol.toUpperCase() + "USDT"; // Binance requires uppercase
-        console.log("[BinanceLiveChart] REST fetch:", `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`); // DEBUG
-        const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`);
-        if (!res.ok) throw new Error(`Binance API: ${res.status}`);
-        const raw: any[][] = await res.json();
-
-        const history = raw.map(c => ({
-          time: new Date(Number(c[0])).toISOString(),
-          price: parseFloat(c[4]),
-          volume: parseFloat(c[5]),
-        }));
-
-        setData(history);
-        if (history.length > 0) {
-          const last = history[history.length - 1].price;
-          const prev = history[history.length - 2]?.price || last;
-          setCurrentPrice(last);
-          setChange(last - prev);
-          setChangePercent(((last - prev) / prev) * 100);
-        }
-      } catch (err: any) {
-        console.error("Binance history fetch error:", err);
-        setError(err.message);
-        // Use fallback synthetic data
-        const fallback = generateFallbackData(symbol, 200);
-        setData(fallback);
-        if (fallback.length > 0) {
-          const last = fallback[fallback.length - 1].price;
-          const prev = fallback[fallback.length - 2]?.price || last;
-          setCurrentPrice(last);
-          setChange(last - prev);
-          setChangePercent(((last - prev) / prev) * 100);
-        }
-      } finally {
-        setLoading(false);
+  const fetchData = useCallback(async () => {
+    try {
+      setError(null);
+      const upperSymbol = symbol.toUpperCase();
+      const res = await fetch(`/api/market-data?symbol=${upperSymbol}&timeframe=${interval}`);
+      
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(err.error || `HTTP ${res.status}`);
       }
-    }
 
-    fetchHistory();
+      const result = await res.json();
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      // Transform to chart data
+      const history = (result.history || []).map((h: any) => ({
+        time: h.time,
+        price: h.price || h.close,
+        volume: h.volume || 0,
+      }));
+
+      setData(history);
+      setDataSource(result.source || "unknown");
+
+      if (history.length > 0) {
+        const last = history[history.length - 1].price;
+        const prev = history[history.length - 2]?.price || last;
+        setCurrentPrice(last);
+        setChange(last - prev);
+        setChangePercent(((last - prev) / prev) * 100);
+      }
+    } catch (err: any) {
+      console.error("Crypto data fetch error:", err);
+      setError(err.message);
+      // Use fallback synthetic data
+      const fallback = generateFallbackData(symbol, 200);
+      setData(fallback);
+      if (fallback.length > 0) {
+        const last = fallback[fallback.length - 1].price;
+        const prev = fallback[fallback.length - 2]?.price || last;
+        setCurrentPrice(last);
+        setChange(last - prev);
+        setChangePercent(((last - prev) / prev) * 100);
+        setDataSource("synthetic");
+      }
+    } finally {
+      setLoading(false);
+    }
   }, [symbol, interval]);
+
+  // Fetch initial data
+  useEffect(() => {
+    fetchData();
+    // Poll every 60 seconds for updates
+    const intervalId = setInterval(fetchData, 60000);
+    return () => clearInterval(intervalId);
+  }, [fetchData]);
 
   // Calculate min/max for Y-axis domain
   const prices = data.map(d => d.price);
@@ -117,7 +103,7 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
           {error}
         </div>
         <div className="text-xs text-muted-foreground mb-2">
-          WS Status: {wsStatus} | Data points: {data.length}
+          Source: {dataSource}
         </div>
         <ResponsiveContainer width="100%" height={height - 60}>
           <AreaChart data={data}>
@@ -203,8 +189,8 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
         )}
       </ResponsiveContainer>
       <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
-        <span className={`px-2 py-0.5 rounded text-xs ${isConnected ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"}`}>
-          {isConnected ? "Live" : "Connecting..."}
+        <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+          {dataSource}
         </span>
         {currentPrice && (
           <>
