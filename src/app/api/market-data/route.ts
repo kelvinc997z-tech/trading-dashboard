@@ -103,6 +103,74 @@ async function fetchCoinAPIOHLC(symbol: string, timeframe: string = "1h", limit:
   }
 }
 
+// Fetch from FreeCryptoAPI (requires API key)
+async function fetchFreeCryptoAPIOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
+  const apiKey = process.env.FREECRYPTOAPI_API_KEY;
+  if (!apiKey) return null;
+
+  const coinSymbol = getCoinAPISymbol(symbol);
+  const intervalMap: Record<string, string> = {
+    "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m",
+    "1h": "1h", "4h": "4h", "1d": "1d"
+  };
+  const interval = intervalMap[timeframe];
+  if (!interval) {
+    console.warn(`[MarketData] FreeCryptoAPI: timeframe ${timeframe} not supported`);
+    return null;
+  }
+
+  const url = `https://freeapi.coincap.io/v2/assets/${coinSymbol}/history?interval=${interval}&limit=${limit}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "Authorization": `Bearer ${apiKey}`
+      }
+    });
+    if (!res.ok) {
+      console.error(`[MarketData] FreeCryptoAPI fetch error ${symbol}: ${res.status}`);
+      return null;
+    }
+    const json = await res.json();
+    const data = json.data || [];
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    const history = data.map(item => ({
+      time: new Date(Number(item.time)).toISOString(),
+      open: Number(item.price),
+      high: Number(item.price),
+      low: Number(item.price),
+      close: Number(item.price),
+      price: Number(item.price),
+      volume: Number(item.volume),
+    })).sort((a, b) => a.time.localeCompare(b.time));
+
+    if (history.length === 0) return null;
+
+    const current = history[history.length - 1];
+    const previous = history.length > 1 ? history[history.length - 2] : current;
+    const change = current.close - previous.close;
+    const changePercent = (change / previous.close) * 100;
+
+    return {
+      symbol,
+      source: "FreeCryptoAPI",
+      current: {
+        price: current.close,
+        close: current.close,
+        change: Number(change.toFixed(2)),
+        changePercent: Number(changePercent.toFixed(2)),
+        high: current.high,
+        low: current.low,
+      },
+      history,
+    };
+  } catch (e) {
+    console.error(`[MarketData] FreeCryptoAPI fetch exception for ${symbol}:`, e);
+    return null;
+  }
+}
+
 function getPeriodHours(timeframe: string): number {
   switch (timeframe) {
     case "1m": return 1/60;
@@ -549,7 +617,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(binanceData);
       }
 
-      // 3. Coinglass Spot (fallback if API key exists)
+      // 3. FreeCryptoAPI (alternative REST source)
+      const freeCryptoData = await fetchFreeCryptoAPIOHLC(symbol, timeframe, 200);
+      if (freeCryptoData) {
+        console.log(`[MarketData] ${symbol} served from FreeCryptoAPI`);
+        return NextResponse.json(freeCryptoData);
+      }
+
+      // 4. Coinglass Spot (fallback if API key exists)
       const coinglassKey = process.env.COINGLASS_API_KEY;
       if (coinglassKey) {
         const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
