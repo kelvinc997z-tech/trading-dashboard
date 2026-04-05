@@ -4,6 +4,111 @@ const CRYPTO_SYMBOLS = ["XAUT", "BTC", "ETH", "SOL", "XRP", "KAS"];
 const US_STOCKS = ["AAPL", "AMD", "NVDA", "MSFT", "GOOGL", "TSM"];
 const SUPPORTED_SYMBOLS = [...CRYPTO_SYMBOLS, ...US_STOCKS];
 
+// Map our symbols to CoinMarketCap format
+function getCoinMarketCapSymbol(symbol: string): string {
+  // CMC uses standard symbols: XAU, BTC, ETH, SOL, XRP, KAS
+  const map: Record<string, string> = {
+    "XAUT": "XAU", // Gold
+    "BTC": "BTC",
+    "ETH": "ETH",
+    "SOL": "SOL",
+    "XRP": "XRP",
+    "KAS": "KAS"
+  };
+  return map[symbol] || symbol;
+}
+
+// Fetch from CoinMarketCap (requires COINMARKETCAP_API_KEY)
+async function fetchCoinMarketCapOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
+  const apiKey = process.env.COINMARKETCAP_API_KEY;
+  if (!apiKey) return null;
+
+  const cmcSymbol = getCoinMarketCapSymbol(symbol);
+  // CMC requires convert to USD and returns latest quotes
+  // For OHLC history, we need to use the v2 endpoint with historical data
+  // Note: CMC free tier has limited historical access
+  const url = new URL(`https://pro-api.coinmarketcap.com/v2/cryptocurrency/ohlcv/historical`);
+  url.searchParams.append("symbol", cmcSymbol);
+  url.searchParams.append("convert", "USD");
+  url.searchParams.append("time_period", timeframe);
+  url.searchParams.append("time_start", new Date(Date.now() - limit * 60 * 60 * 1000).toISOString());
+  url.searchParams.append("time_end", new Date().toISOString());
+  url.searchParams.append("count", limit.toString());
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: {
+        "X-CMC_PRO_API_KEY": apiKey,
+        "Accept": "application/json"
+      }
+    });
+    if (!res.ok) {
+      if (res.status === 429) {
+        console.warn(`[MarketData] CMC rate limit hit for ${symbol}`);
+      } else {
+        console.error(`[MarketData] CMC fetch error ${symbol}: ${res.status}`);
+      }
+      return null;
+    }
+    const data: any = await res.json();
+    
+    // CMC v2 OHLC response structure
+    // {
+    //   "data": {
+    //     "symbol": "BTC",
+    //     "quotes": [
+    //       {
+    //         "timestamp": "2024-01-01T00:00:00.000Z",
+    //         "open": "50000",
+    //         "high": "50500",
+    //         "low": "49900",
+    //         "close": "50300",
+    //         "volume": "123.45",
+    //         "market_cap": "1234567890",
+    //         "quote": { "USD": { "price": 50300, "volume_24h": 123.45, "market_cap": 1234567890 } }
+    //       }
+    //     ]
+    //   }
+    // }
+    const quotes = data?.data?.quotes || [];
+    if (!Array.isArray(quotes) || quotes.length === 0) return null;
+
+    const history = quotes.map((q: any) => ({
+      time: q.timestamp,
+      open: Number(q.open),
+      high: Number(q.high),
+      low: Number(q.low),
+      close: Number(q.close),
+      price: Number(q.close),
+      volume: Number(q.volume),
+    })).sort((a, b) => a.time.localeCompare(b.time));
+
+    if (history.length === 0) return null;
+
+    const current = history[history.length - 1];
+    const previous = history.length > 1 ? history[history.length - 2] : current;
+    const change = current.close - previous.close;
+    const changePercent = (change / previous.close) * 100;
+
+    return {
+      symbol,
+      source: "CoinMarketCap",
+      current: {
+        price: current.close,
+        close: current.close,
+        change: Number(change.toFixed(2)),
+        changePercent: Number(changePercent.toFixed(2)),
+        high: current.high,
+        low: current.low,
+      },
+      history,
+    };
+  } catch (e) {
+    console.error(`[MarketData] CoinMarketCap fetch exception for ${symbol}:`, e);
+    return null;
+  }
+}
+
 // Map our symbols to CoinAPI format
 function getCoinAPISymbol(symbol: string): string {
   const map: Record<string, string> = {
@@ -662,37 +767,44 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // For crypto: Aggregated multi-exchange first (most accurate)
+    // For crypto: CoinMarketCap first (primary data source)
     if (CRYPTO_SYMBOLS.includes(symbol)) {
-      // 1. Aggregated (volume-weighted from multiple exchanges)
+      // 1. CoinMarketCap (primary - professional market data)
+      const cmcData = await fetchCoinMarketCapOHLC(symbol, timeframe, 200);
+      if (cmcData) {
+        console.log(`[MarketData] ${symbol} served from CoinMarketCap`);
+        return NextResponse.json(cmcData);
+      }
+
+      // 2. Aggregated (volume-weighted from multiple exchanges)
       const aggData = await fetchAggregatedOHLC(symbol, timeframe, 200);
       if (aggData) {
         console.log(`[MarketData] ${symbol} served from Aggregated (multi-exchange)`);
         return NextResponse.json(aggData);
       }
 
-      // 2. FreeCryptoAPI (primary single-source REST)
+      // 3. FreeCryptoAPI (single-source REST)
       const freeCryptoData = await fetchFreeCryptoAPIOHLC(symbol, timeframe, 200);
       if (freeCryptoData) {
         console.log(`[MarketData] ${symbol} served from FreeCryptoAPI`);
         return NextResponse.json(freeCryptoData);
       }
 
-      // 3. Binance (fallback with real-time WebSocket)
+      // 4. Binance (fallback with real-time WebSocket)
       const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
       if (binanceData) {
         console.log(`[MarketData] ${symbol} served from Binance`);
         return NextResponse.json(binanceData);
       }
 
-      // 4. CoinAPI (secondary REST source)
+      // 5. CoinAPI (secondary REST source)
       const coinAPIData = await fetchCoinAPIOHLC(symbol, timeframe, 200);
       if (coinAPIData) {
         console.log(`[MarketData] ${symbol} served from CoinAPI`);
         return NextResponse.json(coinAPIData);
       }
 
-      // 5. Coinglass Spot (fallback if API key exists)
+      // 6. Coinglass Spot (fallback if API key exists)
       const coinglassKey = process.env.COINGLASS_API_KEY;
       if (coinglassKey) {
         const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
