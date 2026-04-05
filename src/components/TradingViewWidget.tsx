@@ -3,8 +3,8 @@
 import { useEffect, useRef } from "react";
 
 interface TradingViewWidgetProps {
-  symbol: string; // e.g., "BTC", "ETH", "XAUT"
-  interval?: string; // "1", "5", "15", "60", "D", "W", "M"
+  symbol: string;
+  interval?: string;
   height?: number;
   theme?: "light" | "dark";
 }
@@ -15,26 +15,19 @@ export default function TradingViewWidget({ symbol, interval = "60", height = 40
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Clear any existing widget
     containerRef.current.innerHTML = "";
 
-    // Map our symbols to TradingView format
     const tvSymbol = getTradingViewSymbol(symbol);
+    const containerId = `tv-widget-${symbol}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Create script container
-    const scriptContainer = document.createElement("div");
-    scriptContainer.id = `tradingview_widget_${symbol}_${Math.random().toString(36).substr(2, 9)}`;
-    containerRef.current.appendChild(scriptContainer);
-
-    // Create widget script
     const script = document.createElement("script");
     script.src = "https://s3.tradingview.com/tv.js";
     script.async = true;
     script.onload = () => {
-      if (window.TradingView) {
-        new window.TradingView.widget({
+      if (typeof window !== "undefined" && (window as any).TradingView) {
+        new (window as any).TradingView.widget({
           autosize: true,
-          symbol: `BINANCE:${tvSymbol}USDT`, // Use Binance pair
+          symbol: `BINANCE:${tvSymbol}USDT`,
           interval: interval,
           timezone: "Asia/Jakarta",
           theme: theme,
@@ -50,11 +43,15 @@ export default function TradingViewWidget({ symbol, interval = "60", height = 40
           hide_top_toolbar: false,
           withdateranges: true,
           save_image: false,
-          container_id: scriptContainer.id,
+          container_id: containerId,
         });
       }
     };
-    scriptContainer.appendChild(script);
+
+    const wrapper = document.createElement("div");
+    wrapper.id = containerId;
+    containerRef.current.appendChild(wrapper);
+    containerRef.current.appendChild(script);
 
     return () => {
       if (containerRef.current) {
@@ -68,7 +65,7 @@ export default function TradingViewWidget({ symbol, interval = "60", height = 40
 
 function getTradingViewSymbol(symbol: string): string {
   const map: Record<string, string> = {
-    "XAUT": "XAU", // Gold uses XAU on TradingView
+    "XAUT": "XAU",
     "BTC": "BTC",
     "ETH": "ETH",
     "SOL": "SOL",
@@ -82,11 +79,4 @@ function getTradingViewSymbol(symbol: string): string {
     "TSM": "TSM",
   };
   return map[symbol] || symbol;
-}
-
-// Extend window interface for TradingView
-declare global {
-  interface Window {
-    TradingView: any;
-  }
 }
