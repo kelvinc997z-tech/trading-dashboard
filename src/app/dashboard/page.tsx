@@ -72,6 +72,18 @@ const US_STOCKS = [
   { symbol: "TSM", name: "Taiwan Semiconductor Manufacturing" },
 ];
 
+// Helper: convert symbol to Binance format
+function toBinanceSymbol(symbol: string): string {
+  const map: Record<string, string> = {
+    XAUT: "XAUUSDT",
+    BTC: "BTCUSDT",
+    ETH: "ETHUSDT",
+    SOL: "SOLUSDT",
+    XRP: "XRPUSDT",
+  };
+  return map[symbol] || `${symbol}USDT`;
+}
+
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [markets, setMarkets] = useState<Record<string, { price: number }>>({});
@@ -558,7 +570,7 @@ export default function Dashboard() {
                           {user?.role === "pro" ? (
                             <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
                           ) : (
-                            <BinanceLiveChart symbol={pair.symbol.toUpperCase() + "USDT"} interval={timeframe} />
+                            <BinanceLiveChart symbol={toBinanceSymbol(pair.symbol)} interval={timeframe} />
                           )}
                         </div>
                       )}
