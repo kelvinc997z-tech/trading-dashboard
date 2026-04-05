@@ -21,9 +21,10 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
   const [dataSource, setDataSource] = useState<string>("");
   
   const shouldAcceptWsUpdates = useRef(false);
-  // Convert symbol to Binance format for WebSocket
+  const lastClosedPriceRef = useRef<number | null>(null);
+  
   const getBinanceSymbol = (sym: string): string => {
-    if (sym === "XAUT") return "xauusdt"; // Binance uses XAU for gold, not XAUT
+    if (sym === "XAUT") return "xauusdt";
     return `${sym.toLowerCase()}usdt`;
   };
   const wsSymbol = getBinanceSymbol(symbol);
@@ -56,12 +57,14 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
       setData(history);
       const source = result.source || "binance";
       setDataSource(source);
+      
       // Only accept WebSocket updates if data is from Binance
       shouldAcceptWsUpdates.current = source.toLowerCase().includes("binance");
 
-      // Compute current price and change from history
+      // Initialize lastClosedPrice from historical data
       if (history.length > 0) {
         const last = history[history.length - 1].price;
+        lastClosedPriceRef.current = last;
         const prev = history[history.length - 2]?.price || last;
         setCurrentPrice(last);
         setChange(last - prev);
@@ -77,6 +80,7 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
       if (fallback.length > 0) {
         const last = fallback[fallback.length - 1].price;
         const prev = fallback[fallback.length - 2]?.price || last;
+        lastClosedPriceRef.current = last;
         setCurrentPrice(last);
         setChange(last - prev);
         setChangePercent(((last - prev) / prev) * 100);
@@ -93,25 +97,39 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
   }, [fetchData]);
 
   // WebSocket onData handler (memoized)
-  const handleWsData = useCallback((kline: { time: string; close: number; volume: number }) => {
+  const handleWsData = useCallback((kline: { time: string; close: number; volume: number; isFinal: boolean }) => {
     if (!shouldAcceptWsUpdates.current) return;
 
-    setData(prev => {
-      const prevPrice = prev[prev.length - 1]?.price;
-      const newPoint = { time: kline.time, price: kline.close, volume: kline.volume };
-      const updated = [...prev, newPoint].slice(-200);
-      
-      // Update change and current price
-      setCurrentPrice(kline.close);
-      if (prevPrice !== undefined) {
-        const changeVal = kline.close - prevPrice;
-        setChange(changeVal);
-        setChangePercent((changeVal / prevPrice) * 100);
-      }
-      
-      return updated;
-    });
-  }, []); // setters are stable
+    const closePrice = kline.close;
+
+    setCurrentPrice(closePrice);
+    
+    // Update change based on last closed candle
+    if (lastClosedPriceRef.current !== null) {
+      const changeVal = closePrice - lastClosedPriceRef.current;
+      setChange(changeVal);
+      setChangePercent((changeVal / lastClosedPriceRef.current) * 100);
+    }
+
+    // If this kline is final (candle closed), add to historical data
+    if (kline.isFinal) {
+      const newPoint = {
+        time: kline.time,
+        price: closePrice,
+        volume: kline.volume,
+      };
+      setData(prev => {
+        const updated = [...prev, newPoint];
+        // Keep last 200 points
+        if (updated.length > 200) {
+          return updated.slice(updated.length - 200);
+        }
+        return updated;
+      });
+      // Update last closed price reference
+      lastClosedPriceRef.current = closePrice;
+    }
+  }, []);
 
   const handleWsError = useCallback((err: Event) => {
     console.error("WebSocket error:", err);

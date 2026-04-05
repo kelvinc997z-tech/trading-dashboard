@@ -24,7 +24,7 @@ interface KlineMessage {
 interface UseBinanceWebSocketProps {
   symbol: string; // e.g., "btcusdt"
   interval: string; // e.g., "1m", "5m", "15m", "1h", "4h", "1d"
-  onData: (data: { time: string; open: number; high: number; low: number; close: number; volume: number }) => void;
+  onData: (data: { time: string; close: number; volume: number; isFinal: boolean }) => void;
   onError?: (error: Event) => void;
 }
 
@@ -47,15 +47,13 @@ export function useBinanceWebSocket({ symbol, interval, onData, onError }: UseBi
     ws.onmessage = (event) => {
       try {
         const msg: KlineMessage = JSON.parse(event.data);
-        if (msg.eventType === "kline" && msg.kline.isFinal) {
+        if (msg.eventType === "kline") {
           const k = msg.kline;
           onData({
             time: new Date(k.closeTime).toISOString(),
-            open: parseFloat(k.open),
-            high: parseFloat(k.high),
-            low: parseFloat(k.low),
             close: parseFloat(k.close),
             volume: parseFloat(k.volume),
+            isFinal: k.isFinal,
           });
         }
       } catch (e) {
