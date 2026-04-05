@@ -468,47 +468,6 @@ function transformCoinglassData(symbol: string, data: any) {
   };
 }
 
-// US Stocks fallback: fetch from Massive API (with synthetic fallback)
-async function fetchMassiveOHLC(symbol: string, timeframe: string = "1h") {
-  try {
-    const candles = await fetchStockOHLC(symbol, timeframe);
-    if (!candles || candles.length === 0) {
-      return generateOHLC(symbol, timeframe);
-    }
-    
-    const history = candles.map(c => ({
-      time: c.timestamp,
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
-      price: c.close,
-      volume: c.volume || 0,
-    }));
-
-    const current = history[history.length - 1];
-    const previous = history.length > 1 ? history[history.length - 2] : current;
-    const change = current.close - previous.close;
-    const changePercent = (change / previous.close) * 100;
-
-    return {
-      symbol,
-      current: {
-        price: current.close,
-        close: current.close,
-        change: Number(change.toFixed(2)),
-        changePercent: Number(changePercent.toFixed(2)),
-        high: current.high,
-        low: current.low,
-      },
-      history,
-    };
-  } catch (e) {
-    console.error(`Massive fetch error for ${symbol}:`, e);
-    return generateOHLC(symbol, timeframe);
-  }
-}
-
 // Placeholder for Finnhub stock/forex fetch if needed for US stocks
 async function fetchFinnhubOHLC(symbol: string, timeframe: string) {
   // Finnhub uses different endpoint for crypto? Actually Finnhub has crypto but limited
