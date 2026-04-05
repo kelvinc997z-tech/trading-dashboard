@@ -626,16 +626,12 @@ export default function Dashboard() {
                       </div>
                     </div>
                     
-                    <div className="flex-1 min-h-[200px] chart-container rounded-xl p-1 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 dark:to-gray-900/50">
+                    <div className="flex-1 min-h-[200px] chart-container rounded-xl p-1 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 to-gray-900/50">
                       {isLoading ? (
                         <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-40 sm:h-48">
-                          {user?.role === "pro" ? (
-                            <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
-                          ) : (
-                            <RealTimeChart symbol={pair.symbol} timeframe={timeframe} />
-                          )}
+                          <RealTimeChart symbol={pair.symbol} timeframe={timeframe} />
                         </div>
                       )}
                     </div>
