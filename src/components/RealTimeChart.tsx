@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import WatchlistButton from "@/components/watchlist/WatchlistButton";
+import ConfidenceBar from "@/components/ConfidenceBar";
 
 interface MarketData {
   symbol: string;
@@ -26,6 +27,7 @@ interface MarketData {
 interface RealTimeChartProps {
   symbol?: string;
   timeframe?: string;
+  confidence?: number; // 0-100
 }
 
 export default function RealTimeChart({ symbol = "XAUT", timeframe = "1h" }: RealTimeChartProps) {

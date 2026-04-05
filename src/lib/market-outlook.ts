@@ -6,6 +6,59 @@
 
 import { fetchCoinglassOHLC } from "@/lib/coinglass";
 
+/**
+ * Manual signal overrides (for specific analyst recommendations)
+ * These take priority over auto-generated signals
+ */
+const MANUAL_SIGNALS: Record<string, Partial<MarketPair>> = {
+  "XAUT/USD": {
+    symbol: "XAUT/USD",
+    name: "GOLD XAUT Crypto",
+    emoji: "🪙",
+    signal: "sell",
+    entry: 4670,
+    tp: 4600,
+    sl: 4750,
+    confidence: 0.72,
+    reasoning: "Based on manual market outlook: Sell 4670 → TP 4600, SL 4750"
+  }
+};
+
+export { MANUAL_SIGNALS };
+
+/**
+ * Fetch current price and enhance a manual signal with live pricing
+ */
+async function enhanceWithCurrentPrice(
+  symbol: string,
+  manualSignal: Partial<MarketPair>
+): Promise<MarketPair> {
+  try {
+    // Convert symbol format: XAUT/USD -> XAUT for our market-data API
+    const apiSymbol = symbol.replace("/USD", "");
+    const priceRes = await fetch(`/api/market-data?symbol=${encodeURIComponent(apiSymbol)}`);
+    if (priceRes.ok) {
+      const priceData = await priceRes.json();
+      const currentPrice = priceData.current?.price ?? priceData.current?.close ?? manualSignal.entry ?? 0;
+      // Calculate change from entry to current
+      const change = manualSignal.entry ? ((currentPrice - manualSignal.entry) / manualSignal.entry) * 100 : 0;
+      return {
+        ...manualSignal,
+        currentPrice,
+        change
+      } as MarketPair;
+    }
+  } catch (e) {
+    console.error(`Failed to fetch price for ${symbol}:`, e);
+  }
+  // Fallback: just return manual signal without current price
+  return {
+    ...manualSignal,
+    currentPrice: manualSignal.entry,
+    change: 0
+  } as MarketPair;
+}
+
 export interface MarketPair {
   symbol: string;
   name: string;
@@ -247,6 +300,16 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
 
   for (const pair of pairsConfig) {
     try {
+      // Check if manual signal override exists
+      const manualSignal = MANUAL_SIGNALS[pair.symbol];
+
+      if (manualSignal) {
+        // Use manual signal, but still fetch current price for display
+        const manualWithPrice = await enhanceWithCurrentPrice(pair.symbol, manualSignal);
+        results.push(manualWithPrice);
+        continue;
+      }
+
       // Check if COINGLASS_API_KEY is set
       if (!process.env.COINGLASS_API_KEY) {
         // For XAUT/USD specifically: do NOT use fallback dummy
