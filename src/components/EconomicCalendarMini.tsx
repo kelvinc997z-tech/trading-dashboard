@@ -100,9 +100,10 @@ export default function EconomicCalendarMini() {
       medium: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900",
       low: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-900",
       unknown: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-900",
-    };
-    const key = impact && styles[impact as keyof typeof styles] ? impact : "unknown";
-    return styles[key];
+    } as const;
+    
+    const validKey = (impact && styles[impact as keyof typeof styles]) ? impact : "unknown";
+    return styles[validKey as keyof typeof styles];
   };
 
   if (loading) {
