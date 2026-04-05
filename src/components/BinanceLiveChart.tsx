@@ -21,7 +21,12 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
   const [dataSource, setDataSource] = useState<string>("");
   
   const shouldAcceptWsUpdates = useRef(false);
-  const wsSymbol = `${symbol.toLowerCase()}usdt`;
+  // Convert symbol to Binance format for WebSocket
+  const getBinanceSymbol = (sym: string): string => {
+    if (sym === "XAUT") return "xauusdt"; // Binance uses XAU for gold, not XAUT
+    return `${sym.toLowerCase()}usdt`;
+  };
+  const wsSymbol = getBinanceSymbol(symbol);
 
   // Fetch initial historical data via REST
   const fetchData = useCallback(async () => {
@@ -49,8 +54,10 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
       }));
 
       setData(history);
-      setDataSource(result.source || "binance");
-      shouldAcceptWsUpdates.current = true;
+      const source = result.source || "binance";
+      setDataSource(source);
+      // Only accept WebSocket updates if data is from Binance
+      shouldAcceptWsUpdates.current = source.toLowerCase().includes("binance");
 
       // Compute current price and change from history
       if (history.length > 0) {
