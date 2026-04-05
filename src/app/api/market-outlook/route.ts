@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateRealTimeOutlook } from "@/lib/market-outlook";
 
 // GET /api/market-outlook
-// Returns REAL-TIME market outlook signals generated from Coinglass OHLC data
-// Marked as dynamic to avoid static generation errors
-import dynamic from "next/dynamic";
-
-export const dynamic = "force-dynamic"; // This route must be dynamic (uses request, external APIs)
+// Returns REAL-TIME market outlook signals
+// Must be dynamic (uses request.url, external APIs)
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
