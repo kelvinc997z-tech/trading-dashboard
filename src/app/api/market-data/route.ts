@@ -452,7 +452,6 @@ export async function GET(request: NextRequest) {
 
     // Fallback
     const synthetic = generateOHLC(symbol, timeframe);
-    synthetic.source = "synthetic";
     return NextResponse.json(synthetic);
   } catch (error: any) {
     console.error(`[MarketData] Error for ${symbol}:`, error);
