@@ -51,7 +51,7 @@ export default function RealTimeChart({ symbol = "XAUT", timeframe = "1h" }: Rea
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, 10000); // poll every 10 seconds for near real-time
     return () => clearInterval(interval);
   }, [symbol]);
 

@@ -562,11 +562,7 @@ export default function Dashboard() {
                         <div className="h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-48">
-                          {user?.role === "pro" ? (
-                            <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
-                          ) : (
-                            <BinanceLiveChart symbol={getBinanceBaseSymbol(pair.symbol)} interval={timeframe} />
-                          )}
+                          <BinanceLiveChart symbol={getBinanceBaseSymbol(pair.symbol)} interval={timeframe} />
                         </div>
                       )}
                     </div>
