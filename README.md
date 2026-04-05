@@ -39,19 +39,18 @@
 ### 🔄 In Progress
 
 - ⏳ **CryptoQuant API Activation** (Professional subscription required)
-- ⏳ **Finnhub Sentiment Integration** (news, social sentiment)
+- ⏳ **Finnhub Sentiment Dashboard** (news + Reddit/Twitter social sentiment)
 - ⏳ **Massive API Setup** (US stock data provider)
+- ⏳ **Multi-language Support** (English / Bahasa Indonesia)
 
 ### 📋 To-Do (Next Features)
 
 - [ ] On-chain data retraining (after CryptoQuant activation) → Target: **60-65%** accuracy
-- [ ] Sentiment analysis dashboard (Finnhub news + Reddit/Twitter)
 - [ ] Trading journal with auto-sync from trades
 - [ ] Backtesting engine with strategy optimization
 - [ ] Portfolio rebalancing suggestions
 - [ ] Telegram/WhatsApp alerts integration
 - [ ] Export trades to CSV/Excel
-- [ ] Multi-language support (EN/ID)
 
 ---
 
@@ -152,6 +151,11 @@ ETH: Entry $2,139  | TP $2,257  (5.5%) | SL $2,088  (2.4%)
 - Updated `.env.example` with all required variables
 - Fixed TypeScript type errors for production
 - Updated dependencies: added `framer-motion`
+
+#### 🌐 Upcoming Features (In Development)
+- **Sentiment Analysis Dashboard**: Finnhub news + Reddit/Twitter social sentiment aggregation
+- **Multi-language Support**: Full internationalization (i18n) for English and Bahasa Indonesia
+- **Real-time Data Sources**: Integrated CoinAPI, FreeCryptoAPI, and Alchemy for enhanced market data
 
 ---
 
@@ -563,7 +567,7 @@ trading-dashboard/
 - [x] **News Feed**: Aggregated crypto, macro, commodities, forex news
 - [x] **Category Filters**: Filter by crypto, macro, commodities, forex
 - [x] **Timeframe Filters**: Last 24h, 7d, 30d
-- [x] **Language Support**: English & Bahasa Indonesia
+- [ ] **Language Support**: English & Bahasa Indonesia (i18n in progress)
 - [x] **Bookmarking**: Save important news articles
 - [x] **Breaking Ticker**: Scrolling marquee for urgent market news
 - [x] **Search**: Full-text search across news headlines
@@ -664,7 +668,7 @@ Surface:    Glassmorphism (rgba + backdrop-blur + border opacity)
 - [x] **News Feed**: Aggregated crypto, macro, commodities, forex news
 - [x] **Category Filters**: Filter by crypto, macro, commodities, forex
 - [x] **Timeframe Filters**: Last 24h, 7d, 30d
-- [x] **Language Support**: English & Bahasa Indonesia
+- [ ] **Language Support**: English & Bahasa Indonesia (i18n in progress)
 - [x] **Bookmarking**: Save important news articles
 - [x] **Breaking Ticker**: Scrolling marquee for urgent market news
 - [x] **Search**: Full-text search across news headlines
