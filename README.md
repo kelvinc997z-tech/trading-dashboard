@@ -1,4 +1,4 @@
-# 🚀 Trading Dashboard V2
+# 🚀 Trading Dashboard V2.5
 
 > **AI-Powered Trading Platform with Dynamic Risk Management & Modern UI**
 
@@ -8,7 +8,7 @@
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success)](https://trading-dashboard.vercel.app)
 [![ML Models](https://img.shields.io/badge/ML%20Accuracy-54.47%25-yellow)](README.md#-model-performance)
 
-**✨ Ditingkatkan dengan:** Modern glassmorphism UI, AI predictions (LSTM/XGBoost), dynamic ATR-based SL/TP, real-time mini-map sidebar, dan **deploymentVercel Production-Ready**.
+**✨ Ditingkatkan dengan:** Modern glassmorphism UI, AI predictions (LSTM/XGBoost), dynamic ATR-based SL/TP, real-time mini-map sidebar, **multiple data sources** (CoinAPI, FreeCryptoAPI, Binance WS), dan **MQL5 Economic Calendar Widget**.
 
 ---
 
@@ -33,8 +33,14 @@
 | **Supabase Storage** | ✅ Integrated | Screenshot upload, bucket: `supabase-bronze-coin` |
 | **Dynamic SL/TP (ATR)** | ✅ Implemented | Volatility-adjusted risk management |
 | **Sidebar Mini Map** | ✅ Live | 10-pair overview with sparklines & signals |
-| **Responsive Design** | ✅ Mobile-ready | Mobile toggle, smooth scroll navigation |
+| **Responsive Design** | ✅ Mobile-ready | Mobile toggle, smooth scroll navigation, V2.5 mobile optimizations |
 | **TypeScript Build Fixes** | ✅ Applied | All type errors resolved for production |
+| **CoinAPI Integration** | ✅ Added | Primary REST crypto data source with high quality |
+| **FreeCryptoAPI Integration** | ✅ Added | Secondary REST crypto data source |
+| **Alchemy API** | ✅ Added | Ethereum on-chain data provider |
+| **Binance WebSocket Real-time** | ✅ Working | Live price updates via WebSocket (1-2 sec latency) |
+| **MQL5 Economic Calendar Widget** | ✅ Embedded | Real-time economic events with custom embed code |
+| **Mobile UI Optimization (V2.5)** | ✅ Deployed | Responsive grids, reduced chart height for phones |
 
 ### 🔄 In Progress
 
@@ -42,6 +48,12 @@
 - ⏳ **Finnhub Sentiment Dashboard** (news + Reddit/Twitter social sentiment)
 - ⏳ **Massive API Setup** (US stock data provider)
 - ⏳ **Multi-language Support** (English / Bahasa Indonesia)
+- ⏳ **Sentiment Analysis Dashboard** (Finnhub news + Reddit/Twitter)
+- ⏳ **Trading Journal** (auto-sync from trades)
+- ⏳ **Backtesting Engine** (strategy optimization)
+- ⏳ **Portfolio Rebalancing** (suggestions)
+- ⏳ **Telegram/WhatsApp Alerts** (notifications)
+- ⏳ **Export to CSV/Excel** (trade history)
 
 ### 📋 To-Do (Next Features)
 
@@ -230,6 +242,44 @@ Response sekarang include volatility metrics:
 - **Mobile sidebar** dengan toggle button
 - **Smooth scroll** dengan highlight effect saat navigasi dari sidebar
 - **Loading states** dan error handling yang lebih baik
+
+---
+
+## V2.5 Release Notes (April 5, 2026)
+
+### 📡 Multi-Source Crypto Data Integration
+- **Added CoinAPI** as primary REST data source (high-quality, paid)
+- **Added FreeCryptoAPI** as secondary REST source (free tier)
+- **Added Alchemy API** for Ethereum on-chain data (wallet balances, NFTs)
+- **Reordered data priority**: CoinAPI → Binance (WS) → FreeCryptoAPI → Coinglass → CoinGecko → Synthetic
+- **Environment keys**: Added `COINAPI_API_KEY`, `FREECRYPTOAPI_API_KEY`, `ALCHEMY_API_KEY`
+- **Binance WebSocket fixes**: Correct message parsing, XAUT→XAU mapping, continuous tick updates
+- **Real-time confirmed**: Charts now show live Binance prices with 1-2 second latency
+
+### 🗓️ Embedded Economic Calendar Widget
+- Replaced native calendar with **MQL5 Tradays** embedded widget
+- User-provided HTML embed code injection
+- Real-time economic events with timezone conversion (Asia/Jakarta)
+- No API key required, loads from CDN
+- Component: `src/components/EconomicCalendarWidget.tsx`
+
+### 📱 Mobile UI Optimization
+- **Responsive chart grids**: 1 col (mobile) → 2 col (sm) → 3 col (xl)
+- **Reduced chart height**: `h-40` (160px) on mobile, `h-48` (192px) on larger screens
+- **Improved spacing**: Gap `gap-4` on mobile, `gap-6` on sm+
+- Better vertical scroll experience on phones
+
+### 🔄 Updated Manual Signal System
+- **WatchlistOutlook component**: Auto-generated signals for Crypto + US Stocks only
+- **Manual override support**: Can inject custom signals (e.g., Gold XAUT Sell 4670)
+- Live price integration with change percentages
+- 10-pair watchlist: XAUT, BTC, ETH, SOL, XRP, KAS, AAPL, AMD, NVDA, MSFT, GOOGL, TSM
+
+### ✅ Performance Improvements
+- **Memoized WebSocket callbacks**: Prevents unnecessary reconnections
+- **Conditional WebSocket enablement**: Only connects when Binance data is active
+- **Efficient data updates**: append-only, capped at 200 points
+- **KAS added** to crypto pairs and fallback prices
 
 ---
 
