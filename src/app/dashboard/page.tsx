@@ -59,6 +59,7 @@ const CRYPTO_PAIRS = [
   { symbol: "ETH", name: "Ethereum" },
   { symbol: "SOL", name: "Solana" },
   { symbol: "XRP", name: "Ripple" },
+  { symbol: "KAS", name: "Kaspa" },
 ];
 
 const US_STOCKS = [
