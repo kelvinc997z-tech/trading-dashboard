@@ -72,16 +72,10 @@ const US_STOCKS = [
   { symbol: "TSM", name: "Taiwan Semiconductor Manufacturing" },
 ];
 
-// Helper: convert symbol to Binance format
-function toBinanceSymbol(symbol: string): string {
-  const map: Record<string, string> = {
-    XAUT: "XAUUSDT",
-    BTC: "BTCUSDT",
-    ETH: "ETHUSDT",
-    SOL: "SOLUSDT",
-    XRP: "XRPUSDT",
-  };
-  return map[symbol] || `${symbol}USDT`;
+// Helper: convert symbol to Binance base symbol (without USDT suffix)
+function getBinanceBaseSymbol(symbol: string): string {
+  if (symbol === "XAUT") return "XAU"; // Binance uses XAUUSDT for gold
+  return symbol; // BTC -> BTC, ETH -> ETH, etc.
 }
 
 export default function Dashboard() {
@@ -570,7 +564,7 @@ export default function Dashboard() {
                           {user?.role === "pro" ? (
                             <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
                           ) : (
-                            <BinanceLiveChart symbol={toBinanceSymbol(pair.symbol)} interval={timeframe} />
+                            <BinanceLiveChart symbol={getBinanceBaseSymbol(pair.symbol)} interval={timeframe} />
                           )}
                         </div>
                       )}
