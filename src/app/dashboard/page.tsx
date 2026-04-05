@@ -9,7 +9,7 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import BinanceLiveChart from "@/components/BinanceLiveChart";
 import RealTimeChart from "@/components/RealTimeChart";
 import AdvancedChart from "@/components/AdvancedChart";
-import EconomicCalendarMini from "@/components/EconomicCalendarMini";
+import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
 import WatchlistOutlook from "@/components/WatchlistOutlook";
@@ -675,7 +675,7 @@ export default function Dashboard() {
 
       {activeTab === "economic" && (
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <EconomicCalendarMini />
+          <EconomicCalendarWidget />
         </div>
       )}
 
