@@ -530,7 +530,7 @@ export default function Dashboard() {
                 {CRYPTO_PAIRS.length} pairs
               </span>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {CRYPTO_PAIRS.map((pair, idx) => (
                 <motion.div
                   key={pair.symbol}
@@ -559,9 +559,9 @@ export default function Dashboard() {
                     
                     <div className="flex-1 min-h-[200px] chart-container rounded-xl p-1 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 dark:to-gray-900/50">
                       {isLoading ? (
-                        <div className="h-48 skeleton rounded-lg" />
+                        <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
-                        <div className="h-48">
+                        <div className="h-40 sm:h-48">
                           <BinanceLiveChart symbol={getBinanceBaseSymbol(pair.symbol)} interval={timeframe} />
                         </div>
                       )}
@@ -599,7 +599,7 @@ export default function Dashboard() {
                 {US_STOCKS.length} stocks
               </span>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {US_STOCKS.map((pair, idx) => (
                 <motion.div
                   key={pair.symbol}
@@ -628,9 +628,9 @@ export default function Dashboard() {
                     
                     <div className="flex-1 min-h-[200px] chart-container rounded-xl p-1 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 dark:to-gray-900/50">
                       {isLoading ? (
-                        <div className="h-48 skeleton rounded-lg" />
+                        <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
-                        <div className="h-48">
+                        <div className="h-40 sm:h-48">
                           {user?.role === "pro" ? (
                             <AdvancedChart symbol={pair.symbol} indicators={["rsi", "macd", "bollinger"]} timeframe={timeframe} />
                           ) : (
