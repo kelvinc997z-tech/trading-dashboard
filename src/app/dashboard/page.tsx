@@ -631,7 +631,7 @@ export default function Dashboard() {
                         <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-40 sm:h-48">
-                          <RealTimeChart symbol={pair.symbol} timeframe={timeframe} />
+                          <TradingViewWidget symbol={pair.symbol} interval={timeframe} height={160} />
                         </div>
                       )}
                     </div>
