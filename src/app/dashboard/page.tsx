@@ -650,18 +650,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {activeTab === "sentiment" && (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <MarketSentiment />
-        </div>
-      )}
-
-      {activeTab === "performance" && (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <PerformanceClient />
-        </div>
-      )}
-
       {activeTab === "economic" && (
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
           <EconomicCalendarMini />
