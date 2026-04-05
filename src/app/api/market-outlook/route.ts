@@ -9,10 +9,13 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const format = searchParams.get("format") || "full"; // "full" or "list"
+    const format = searchParams.get("format") || "full";
 
     // Generate real-time outlook using multiple data sources
+    console.log("[MarketOutlook] GET request received");
     const outlook = await generateRealTimeOutlook();
+
+    console.log("[MarketOutlook] Generated:", { pairs: outlook.pairs.length, sources: outlook.pairs.map(p => p.symbol + ":" + (p as any).source) });
 
     if (format === "list") {
       return NextResponse.json(outlook.pairs);
@@ -22,7 +25,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error("[MarketOutlook] Error:", error);
-    // Return fallback data even on error to prevent build failures
     return NextResponse.json(
       {
         generatedAt: new Date().toISOString(),
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest) {
         ],
         disclaimer: "Some signals may be delayed or unavailable due to API limits"
       },
-      { status: 200 } // Return 200 to not break builds/static pages
+      { status: 200 }
     );
   }
 }
