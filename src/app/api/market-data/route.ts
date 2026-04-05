@@ -601,27 +601,27 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // For crypto: CoinAPI first (high-quality data)
+    // For crypto: FreeCryptoAPI first (primary, REST)
     if (CRYPTO_SYMBOLS.includes(symbol)) {
-      // 1. CoinAPI (primary if key configured)
-      const coinAPIData = await fetchCoinAPIOHLC(symbol, timeframe, 200);
-      if (coinAPIData) {
-        console.log(`[MarketData] ${symbol} served from CoinAPI`);
-        return NextResponse.json(coinAPIData);
+      // 1. FreeCryptoAPI (primary - REST)
+      const freeCryptoData = await fetchFreeCryptoAPIOHLC(symbol, timeframe, 200);
+      if (freeCryptoData) {
+        console.log(`[MarketData] ${symbol} served from FreeCryptoAPI`);
+        return NextResponse.json(freeCryptoData);
       }
 
-      // 2. Binance (real-time WebSocket capable)
+      // 2. Binance (fallback with real-time WebSocket)
       const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
       if (binanceData) {
         console.log(`[MarketData] ${symbol} served from Binance`);
         return NextResponse.json(binanceData);
       }
 
-      // 3. FreeCryptoAPI (alternative REST source)
-      const freeCryptoData = await fetchFreeCryptoAPIOHLC(symbol, timeframe, 200);
-      if (freeCryptoData) {
-        console.log(`[MarketData] ${symbol} served from FreeCryptoAPI`);
-        return NextResponse.json(freeCryptoData);
+      // 3. CoinAPI (secondary REST source)
+      const coinAPIData = await fetchCoinAPIOHLC(symbol, timeframe, 200);
+      if (coinAPIData) {
+        console.log(`[MarketData] ${symbol} served from CoinAPI`);
+        return NextResponse.json(coinAPIData);
       }
 
       // 4. Coinglass Spot (fallback if API key exists)
