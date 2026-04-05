@@ -5,9 +5,9 @@ const CACHE_TTL = 1800; // 30 minutes
 let cachedData: { data: any; timestamp: number } | null = null;
 
 export async function GET() {
-  const token = process.env.TWELVE_DATA_API_KEY;
+  const token = process.env.FINNHUB_API_KEY;
   if (!token) {
-    return NextResponse.json({ error: "TWELVE_DATA_API_KEY not set" }, { status: 500 });
+    return NextResponse.json({ error: "FINNHUB_API_KEY not set" }, { status: 500 });
   }
 
   // Return cached data if still valid
@@ -21,29 +21,58 @@ export async function GET() {
   }
 
   try {
-    const res = await fetch(`https://api.twelvedata.com/api/v1/economic_calendar?apikey=${token}`);
+    // Finnhub Economic Calendar: /api/v1/calendar/economic
+    // Accepts from/to as unix timestamps (in seconds)
+    // We'll fetch today's events (from midnight to midnight)
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    const from = Math.floor(startOfDay.getTime() / 1000);
+    const to = Math.floor(endOfDay.getTime() / 1000);
+
+    const url = `https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${token}`;
+    const res = await fetch(url);
+
     if (!res.ok) {
-      throw new Error(`Twelve Data error: ${res.status}`);
+      throw new Error(`Finnhub error: ${res.status}`);
     }
+
     const data = await res.json();
 
     // Normalize to our format: { economicCalendar: [...] }
-    // Twelve Data returns { values: [...], page, per_page, total_pages, total_records }
+    // Finnhub returns { economicCalendar: [{ date, hour, country, event, impact, actual, forecast, previous }] }
     const normalized = {
-      economicCalendar: (data.values || []).map((item: any) => {
-        const { date: dateStr, time: timeStr, country, event, importance, actual, forecast, previous } = item;
-        // Combine date and time to Unix timestamp (seconds) assuming UTC
-        const dateTime = new Date(`${dateStr}T${timeStr || "00:00"}:00Z`);
+      economicCalendar: (data.economicCalendar || []).map((item: any) => {
+        // item.date is in YYYY-MM-DD format, item.hour is HH:MM (local timezone? usually UTC?)
+        // We'll treat the date as local and convert to timestamp assuming UTC midnight + offset
+        const dateTimeStr = `${item.date}T${item.hour || "00:00"}:00`;
+        const dateTime = new Date(dateTimeStr);
         const timestamp = Math.floor(dateTime.getTime() / 1000);
+
+        // Convert to Jakarta timezone display (GMT+7)
+        const jakartaOffset = 7 * 60; // minutes
+        const jakartaTime = new Date(dateTime.getTime() + jakartaOffset * 60 * 1000);
+
         return {
-          date: timestamp,
-          time: timeStr,
-          country,
-          event,
-          impact: importance,
-          actual,
-          forecast,
-          previous,
+          timestamp,
+          date: jakartaTime.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }),
+          time: jakartaTime.toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }),
+          currency: item.country,
+          event: item.event,
+          impact: item.impact, // "high", "medium", "low", or undefined
+          actual: item.actual,
+          forecast: item.forecast,
+          previous: item.previous,
         };
       }),
     };
@@ -61,6 +90,7 @@ export async function GET() {
       },
     });
   } catch (err: any) {
+    console.error("Finnhub economic calendar error:", err);
     // If cache exists, return stale data on error (better than nothing)
     if (cachedData) {
       return NextResponse.json(cachedData.data, {
