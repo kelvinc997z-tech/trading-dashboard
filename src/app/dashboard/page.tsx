@@ -8,6 +8,7 @@ import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import MarketOutlook from "@/components/MarketOutlook";
 import BinanceLiveChart from "@/components/BinanceLiveChart";
+import RealTimeChart from "@/components/RealTimeChart";
 import AdvancedChart from "@/components/AdvancedChart";
 import MarketSentiment from "@/components/MarketSentiment";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
