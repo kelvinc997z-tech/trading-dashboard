@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CRYPTO_SYMBOLS = ["XAUT", "BTC", "ETH", "SOL", "XRP"];
+const CRYPTO_SYMBOLS = ["XAUT", "BTC", "ETH", "SOL", "XRP", "KAS"];
 const US_STOCKS = ["AAPL", "AMD", "NVDA", "MSFT", "GOOGL", "TSM"];
 const SUPPORTED_SYMBOLS = [...CRYPTO_SYMBOLS, ...US_STOCKS];
 
@@ -11,6 +11,7 @@ function generateOHLC(symbol: string, timeframe: string = "1h") {
     "ETH": 3500,
     "SOL": 150,
     "XRP": 0.6,
+    "KAS": 0.17,
     "AAPL": 170,
     "AMD": 120,
     "NVDA": 240,
@@ -144,6 +145,7 @@ async function fetchCoinGeckoOHLC(symbol: string, timeframe: string = "1h", limi
     SOL: "solana",
     XRP: "ripple",
     XAUT: "tether-gold",
+    KAS: "kaspa",
   };
   const coinId = idMap[symbol];
   if (!coinId) return null;

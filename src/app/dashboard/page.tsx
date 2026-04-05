@@ -75,7 +75,7 @@ const US_STOCKS = [
 // Helper: convert symbol to Binance base symbol (without USDT suffix)
 function getBinanceBaseSymbol(symbol: string): string {
   if (symbol === "XAUT") return "XAU"; // Binance uses XAUUSDT for gold
-  return symbol; // BTC -> BTC, ETH -> ETH, etc.
+  return symbol; // BTC -> BTC, ETH -> ETH, KAS -> KAS, etc.
 }
 
 export default function Dashboard() {
