@@ -3,21 +3,26 @@
 import { useEffect, useRef, useState } from "react";
 
 interface KlineMessage {
-  eventType: "kline";
-  eventTime: number;
-  symbol: string;
-  kline: {
-    startTime: number;
-    closeTime: number;
-    symbol: string;
-    interval: string;
-    open: string;
-    close: string;
-    high: string;
-    low: string;
-    volume: string;
-    trades: number;
-    isFinal: boolean;
+  e: string; // "kline"
+  E: number; // event time
+  s: string; // symbol
+  k: {
+    t: number; // start time
+    T: number; // close time
+    s: string; // symbol
+    i: string; // interval
+    o: string; // open
+    c: string; // close
+    h: string; // high
+    l: string; // low
+    v: string; // volume
+    n: number; // number of trades
+    x: boolean; // is this kline closed?
+    q: string; // quote asset volume
+    V: string; // taker buy base asset volume
+    Q: string; // taker buy quote asset volume
+    b: string; // ignore
+    a: string; // ignore
   };
 }
 
@@ -47,13 +52,13 @@ export function useBinanceWebSocket({ symbol, interval, onData, onError }: UseBi
     ws.onmessage = (event) => {
       try {
         const msg: KlineMessage = JSON.parse(event.data);
-        if (msg.eventType === "kline") {
-          const k = msg.kline;
+        if (msg.e === "kline") {
+          const k = msg.k;
           onData({
-            time: new Date(k.closeTime).toISOString(),
-            close: parseFloat(k.close),
-            volume: parseFloat(k.volume),
-            isFinal: k.isFinal,
+            time: new Date(k.T).toISOString(),
+            close: parseFloat(k.c),
+            volume: parseFloat(k.v),
+            isFinal: k.x,
           });
         }
       } catch (e) {
