@@ -174,17 +174,17 @@ async function fetchFreeCryptoAPIOHLC(symbol: string, timeframe: string = "1h", 
 // Fetch aggregated OHLC from multiple exchanges (volume-weighted average)
 async function fetchAggregatedOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
   const exchanges = [
-    { name: "binance", fetch: fetchBinanceOHLC },
-    { name: "coingecko", fetch: fetchCoinGeckoOHLC },
-    { name: "coinglass_spot", fetch: () => fetchCoinglassSpotOHLC(symbol, timeframe, limit) },
-    { name: "coinglass_futures", fetch: () => fetchCoinglassFuturesOHLC(symbol, timeframe, limit) },
+    { name: "binance", fetch: (s: string, t: string, l: number) => fetchBinanceOHLC(s, t, l) },
+    { name: "coingecko", fetch: (s: string, t: string, l: number) => fetchCoinGeckoOHLC(s, t, l) },
+    { name: "coinglass_spot", fetch: (s: string, t: string, l: number) => fetchCoinglassSpotOHLC(s, t, l) },
+    { name: "coinglass_futures", fetch: (s: string, t: string, l: number) => fetchCoinglassFuturesOHLC(s, t, l) },
   ];
 
   // Fetch from all exchanges in parallel
   const results = await Promise.allSettled(
     exchanges.map(async (ex) => {
       try {
-        const data = await ex.fetch();
+        const data = await ex.fetch(symbol, timeframe, limit);
         if (data) {
           return { source: ex.name, data };
         }
