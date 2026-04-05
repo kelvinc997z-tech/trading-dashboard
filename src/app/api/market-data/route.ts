@@ -32,7 +32,8 @@ async function fetchCoinMarketCapOHLC(symbol: string, timeframe: string = "1h", 
     return null;
   }
 
-  console.log(`[CMC] Fetching ${symbol} ${timeframe} (limit: ${limit})`);
+  const cmcSymbol = getCoinMarketCapSymbol(symbol);
+  console.log(`[CMC] Fetching ${symbol} (as ${cmcSymbol}) ${timeframe} (limit: ${limit})`);
   // CMC requires convert to USD and returns latest quotes
   // For OHLC history, we need to use the v2 endpoint with historical data
   // Note: CMC free tier has limited historical access
