@@ -52,6 +52,7 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
       setDataSource(result.source || "binance");
       shouldAcceptWsUpdates.current = true;
 
+      // Compute current price and change from history
       if (history.length > 0) {
         const last = history[history.length - 1].price;
         const prev = history[history.length - 2]?.price || last;
@@ -84,38 +85,38 @@ export default function BinanceLiveChart({ symbol, interval = "1h", height = 400
     fetchData();
   }, [fetchData]);
 
+  // WebSocket onData handler (memoized)
+  const handleWsData = useCallback((kline: { time: string; close: number; volume: number }) => {
+    if (!shouldAcceptWsUpdates.current) return;
+
+    setData(prev => {
+      const prevPrice = prev[prev.length - 1]?.price;
+      const newPoint = { time: kline.time, price: kline.close, volume: kline.volume };
+      const updated = [...prev, newPoint].slice(-200);
+      
+      // Update change and current price
+      setCurrentPrice(kline.close);
+      if (prevPrice !== undefined) {
+        const changeVal = kline.close - prevPrice;
+        setChange(changeVal);
+        setChangePercent((changeVal / prevPrice) * 100);
+      }
+      
+      return updated;
+    });
+  }, []); // setters are stable
+
+  const handleWsError = useCallback((err: Event) => {
+    console.error("WebSocket error:", err);
+    // Could trigger fallback to REST polling if needed
+  }, []);
+
   // WebSocket for real-time updates
   useBinanceWebSocket({
     symbol: wsSymbol,
     interval,
-    onData: (kline) => {
-      if (!shouldAcceptWsUpdates.current) return;
-      
-      const newPoint = {
-        time: kline.time,
-        price: kline.close,
-        volume: kline.volume,
-      };
-      
-      setData(prev => {
-        const updated = [...prev, newPoint];
-        return updated.slice(-200); // keep last 200 points
-      });
-      
-      // Update current price and change based on last two points
-      setCurrentPrice(kline.close);
-      setData(prevData => {
-        const lastPrice = prevData[prevData.length - 1]?.price || kline.close;
-        const prevPrice = prevData[prevData.length - 2]?.price || lastPrice;
-        setChange(kline.close - prevPrice);
-        setChangePercent(((kline.close - prevPrice) / prevPrice) * 100);
-        return prevData; // return unchanged, we just needed to compute change
-      });
-    },
-    onError: (err) => {
-      console.error("WebSocket error:", err);
-      // Could trigger fallback to REST polling if needed
-    }
+    onData: handleWsData,
+    onError: handleWsError
   });
 
   // Calculate min/max for Y-axis domain
