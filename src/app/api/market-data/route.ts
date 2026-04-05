@@ -326,15 +326,24 @@ async function fetchCoinMarketCap(symbol: string, apiKey: string, timeframe: str
   return generateOHLC(symbol, timeframe);
 }
 
+interface Candle {
+  timestamp: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number;
+}
+
 async function fetchMassiveOHLC(symbol: string, timeframe: string = "1h") {
   // Existing Massive code for US Stocks
   try {
-    const candles = await fetchStockOHLC(symbol, timeframe);
+    const candles: Candle[] = await fetchStockOHLC(symbol, timeframe);
     if (!candles || candles.length === 0) {
       return generateOHLC(symbol, timeframe);
     }
     
-    const history = candles.map(c => ({
+    const history = candles.map((c: Candle) => ({
       time: c.timestamp,
       open: c.open,
       high: c.high,
