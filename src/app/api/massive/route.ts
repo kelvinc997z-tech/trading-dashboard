@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
     // 1. Fetch OHLC from Massive
     const rawData = await fetchStockOHLC(symbol, timeframe, count);
 
-    if (!rawData.c || rawData.c.length === 0) {
-      return NextResponse.json({ error: "No data returned from Massive" }, { status: 404 });
+    if (!rawData || !rawData.c || rawData.c.length === 0) {
+      return NextResponse.json({ error: "No data returned from Massive (API key may be missing or symbol not found)" }, { status: 404 });
     }
 
     // 2. Convert to database format

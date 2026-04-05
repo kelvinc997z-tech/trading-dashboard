@@ -21,40 +21,62 @@ export async function fetchStockOHLC(
   symbol: string,
   timeframe: string = "1h",
   count: number = 200
-) {
-  // Convert timeframe to Massive format (if needed)
-  const interval = convertTimeframe(timeframe);
-  
-  const params = new URLSearchParams({
-    symbol: symbol.toUpperCase(),
-    interval,
-    limit: count.toString(),
-  });
+): Promise<any | null> {
+  try {
+    const apiKey = process.env.MASSIVE_API_KEY;
+    if (!apiKey) {
+      console.log(`[Massive] API key not set, skipping ${symbol}`);
+      return null;
+    }
+    // Convert timeframe to Massive format (if needed)
+    const interval = convertTimeframe(timeframe);
+    
+    const params = new URLSearchParams({
+      symbol: symbol.toUpperCase(),
+      interval,
+      limit: count.toString(),
+    });
 
-  const res = await fetch(`${MASSIVE_BASE}/stocks/candles?${params}`, {
-    headers: getMassiveHeaders(),
-    next: { revalidate: 3600 }, // cache 1 hour
-  });
+    const res = await fetch(`${MASSIVE_BASE}/stocks/candles?${params}`, {
+      headers: getMassiveHeaders(),
+      next: { revalidate: 3600 }, // cache 1 hour
+    });
 
-  if (!res.ok) {
-    throw new Error(`Massive API error: ${res.status} ${res.statusText}`);
+    if (!res.ok) {
+      console.warn(`[Massive] Error ${symbol}: ${res.status} ${res.statusText}`);
+      return null;
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error(`[Massive] Fetch error for ${symbol}:`, error);
+    return null;
   }
-
-  return await res.json();
 }
 
 // Fetch latest quote (real-time price)
-export async function fetchStockQuote(symbol: string) {
-  const res = await fetch(`${MASSIVE_BASE}/stocks/quote?symbol=${symbol.toUpperCase()}`, {
-    headers: getMassiveHeaders(),
-    next: { revalidate: 60 }, // cache 1 minute
-  });
+export async function fetchStockQuote(symbol: string): Promise<any | null> {
+  try {
+    const apiKey = process.env.MASSIVE_API_KEY;
+    if (!apiKey) {
+      console.log(`[Massive] API key not set, skipping quote for ${symbol}`);
+      return null;
+    }
+    const res = await fetch(`${MASSIVE_BASE}/stocks/quote?symbol=${symbol.toUpperCase()}`, {
+      headers: getMassiveHeaders(),
+      next: { revalidate: 60 }, // cache 1 minute
+    });
 
-  if (!res.ok) {
-    throw new Error(`Massive quote fetch failed: ${res.status}`);
+    if (!res.ok) {
+      console.warn(`[Massive] Quote error ${symbol}: ${res.status} ${res.statusText}`);
+      return null;
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error(`[Massive] Quote fetch error for ${symbol}:`, error);
+    return null;
   }
-
-  return await res.json();
 }
 
 // Helper: convert timeframe to Massive interval format

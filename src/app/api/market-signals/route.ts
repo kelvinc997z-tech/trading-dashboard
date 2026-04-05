@@ -101,37 +101,53 @@ export async function GET() {
           // Crypto: try CoinMarketCap (or fallback dummy)
           const cmcApiKey = process.env.COINMARKETCAP_API_KEY;
           if (!cmcApiKey) {
+            console.log(`[MarketSignals] COINMARKETCAP_API_KEY not set, using dummy for ${symbol}`);
             const dummy = generateDummySignals(symbol, 100 + Math.random() * 200);
             allSignals.push(...dummy);
             continue;
           }
-          const res = await fetch(`https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${symbol}&convert=USD`, {
-            headers: { 'X-CMC_PRO_API_KEY': cmcApiKey },
-            next: { revalidate: 30 }
-          });
-          if (!res.ok) throw new Error(`CMC error ${res.status}`);
-          const data = await res.json();
-          const coin = data.data[symbol]?.[0];
-          if (!coin) throw new Error("Coin not found");
-          currentPrice = coin.quote.USD.price;
-          // Generate synthetic OHLC history for technical indicators (with high/low)
-          history = [];
-          let lastClose = currentPrice;
-          for (let i = 0; i < 24; i++) {
-            const time = new Date(Date.now() - (23 - i) * 60 * 60 * 1000);
-            const open = lastClose;
-            const volatilityFactor = 0.02;
-            let close = open + (Math.random() - 0.5) * (currentPrice * volatilityFactor);
-            const high = Math.max(open, close) + Math.random() * (currentPrice * 0.01);
-            const low = Math.min(open, close) - Math.random() * (currentPrice * 0.01);
-            history.push({
-              datetime: time.toISOString(),
-              price: Number(close.toFixed(2)),
-              high: Number(high.toFixed(2)),
-              low: Number(low.toFixed(2)),
-              close: Number(close.toFixed(2)),
+          try {
+            const res = await fetch(`https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${symbol}&convert=USD`, {
+              headers: { 'X-CMC_PRO_API_KEY': cmcApiKey },
+              next: { revalidate: 30 }
             });
-            lastClose = close;
+            if (!res.ok) {
+              if (res.status === 429) {
+                console.warn(`[MarketSignals] CMC rate limit hit for ${symbol}, using dummy`);
+                const dummy = generateDummySignals(symbol, 100 + Math.random() * 200);
+                allSignals.push(...dummy);
+                continue;
+              }
+              throw new Error(`CMC error ${res.status}`);
+            }
+            const data = await res.json();
+            const coin = data.data[symbol]?.[0];
+            if (!coin) throw new Error("Coin not found");
+            currentPrice = coin.quote.USD.price;
+            // Generate synthetic OHLC history for technical indicators (with high/low)
+            history = [];
+            let lastClose = currentPrice;
+            for (let i = 0; i < 24; i++) {
+              const time = new Date(Date.now() - (23 - i) * 60 * 60 * 1000);
+              const open = lastClose;
+              const volatilityFactor = 0.02;
+              let close = open + (Math.random() - 0.5) * (currentPrice * volatilityFactor);
+              const high = Math.max(open, close) + Math.random() * (currentPrice * 0.01);
+              const low = Math.min(open, close) - Math.random() * (currentPrice * 0.01);
+              history.push({
+                datetime: time.toISOString(),
+                price: Number(close.toFixed(2)),
+                high: Number(high.toFixed(2)),
+                low: Number(low.toFixed(2)),
+                close: Number(close.toFixed(2)),
+              });
+              lastClose = close;
+            }
+          } catch (cmcErr: any) {
+            console.error(`[MarketSignals] CMC fetch failed for ${symbol}:`, cmcErr);
+            const dummy = generateDummySignals(symbol, 100 + Math.random() * 200);
+            allSignals.push(...dummy);
+            continue;
           }
         }
 

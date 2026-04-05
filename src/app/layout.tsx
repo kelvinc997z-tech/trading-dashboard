@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -13,11 +13,14 @@ export const metadata: Metadata = {
   title: "Trading Dashboard Pro",
   description: "Real-time crypto & stock trading dashboard with signals",
   manifest: "/manifest.json",
-  themeColor: "#10b981",
   icons: {
     icon: "/icon.svg",
     apple: "/icon.svg",
   }
+};
+
+export const viewport: Viewport = {
+  themeColor: "#10b981"
 };
 
 export default function RootLayout({
