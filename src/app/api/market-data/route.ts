@@ -4,6 +4,125 @@ const CRYPTO_SYMBOLS = ["XAUT", "BTC", "ETH", "SOL", "XRP", "KAS"];
 const US_STOCKS = ["AAPL", "AMD", "NVDA", "MSFT", "GOOGL", "TSM"];
 const SUPPORTED_SYMBOLS = [...CRYPTO_SYMBOLS, ...US_STOCKS];
 
+// Map our symbols to CoinAPI format
+function getCoinAPISymbol(symbol: string): string {
+  const map: Record<string, string> = {
+    "XAUT": "XAU-USD", // Gold
+    "BTC": "BTC-USD",
+    "ETH": "ETH-USD",
+    "SOL": "SOL-USD",
+    "XRP": "XRP-USD",
+    "KAS": "KAS-USD"
+  };
+  return map[symbol] || `${symbol}-USD`;
+}
+
+// Fetch from CoinAPI (requires COINAPI_API_KEY)
+async function fetchCoinAPIOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
+  const apiKey = process.env.COINAPI_API_KEY;
+  if (!apiKey) return null;
+
+  const coinSymbol = getCoinAPISymbol(symbol);
+  // CoinAPI uses ISO 8601 periods: 1h, 4h, 1d, etc.
+  const period = timeframe;
+  
+  // Calculate date range (last N periods)
+  const endDate = new Date();
+  let startDate = new Date();
+  const limitDays = Math.ceil(limit * getPeriodHours(timeframe) / 24);
+  startDate.setDate(endDate.getDate() - limitDays);
+  
+  const url = new URL(`https://rest.coinapi.io/v1/ohlcv/${coinSymbol}/history`);
+  url.searchParams.append("period_id", period);
+  url.searchParams.append("time_start", startDate.toISOString());
+  url.searchParams.append("time_end", endDate.toISOString());
+  url.searchParams.append("limit", limit.toString());
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: {
+        "X-CoinAPI-Key": apiKey,
+        "Accept": "application/json"
+      }
+    });
+    if (!res.ok) {
+      console.error(`[MarketData] CoinAPI fetch error ${symbol}: ${res.status}`);
+      return null;
+    }
+    const data: any[] = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    // Transform CoinAPI format to our format
+    // CoinAPI returns: [
+    //   {
+    //     time_period_start: "2024-01-01T00:00:00.0000000Z",
+    //     time_period_end: "2024-01-01T01:00:00.0000000Z",
+    //     time_open: "2024-01-01T00:00:00.0000000Z",
+    //     time_close: "2024-01-01T01:00:00.0000000Z",
+    //     price_open: "50000.0",
+    //     price_high: "50500.0",
+    //     price_low: "49900.0",
+    //     price_close: "50300.0",
+    //     volume_traded: "123.45",
+    //     trades_count: 100
+    //   }
+    // ]
+    const history = data.map(item => ({
+      time: item.time_period_start,
+      open: Number(item.price_open),
+      high: Number(item.price_high),
+      low: Number(item.price_low),
+      close: Number(item.price_close),
+      price: Number(item.price_close),
+      volume: Number(item.volume_traded),
+    })).sort((a, b) => a.time.localeCompare(b.time));
+
+    if (history.length === 0) return null;
+
+    const current = history[history.length - 1];
+    const previous = history.length > 1 ? history[history.length - 2] : current;
+    const change = current.close - previous.close;
+    const changePercent = (change / previous.close) * 100;
+
+    return {
+      symbol,
+      source: "CoinAPI",
+      current: {
+        price: current.close,
+        close: current.close,
+        change: Number(change.toFixed(2)),
+        changePercent: Number(changePercent.toFixed(2)),
+        high: current.high,
+        low: current.low,
+      },
+      history,
+    };
+  } catch (e) {
+    console.error(`[MarketData] CoinAPI fetch exception for ${symbol}:`, e);
+    return null;
+  }
+}
+
+function getPeriodHours(timeframe: string): number {
+  switch (timeframe) {
+    case "1m": return 1/60;
+    case "5m": return 5/60;
+    case "15m": return 15/60;
+    case "30m": return 30/60;
+    case "1h": return 1;
+    case "2h": return 2;
+    case "4h": return 4;
+    case "6h": return 6;
+    case "8h": return 8;
+    case "12h": return 12;
+    case "1d": return 24;
+    case "3d": return 72;
+    case "1w": return 168;
+    case "1M": return 730; // approx
+    default: return 1;
+  }
+}
+
 function generateOHLC(symbol: string, timeframe: string = "1h") {
   const basePrices: Record<string, number> = {
     "XAUT": 2350,
@@ -414,16 +533,23 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // For crypto: Binance first (for real-time WebSocket support)
+    // For crypto: CoinAPI first (high-quality data)
     if (CRYPTO_SYMBOLS.includes(symbol)) {
-      // 1. Binance (primary - real-time capable)
+      // 1. CoinAPI (primary if key configured)
+      const coinAPIData = await fetchCoinAPIOHLC(symbol, timeframe, 200);
+      if (coinAPIData) {
+        console.log(`[MarketData] ${symbol} served from CoinAPI`);
+        return NextResponse.json(coinAPIData);
+      }
+
+      // 2. Binance (real-time WebSocket capable)
       const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
       if (binanceData) {
         console.log(`[MarketData] ${symbol} served from Binance`);
         return NextResponse.json(binanceData);
       }
 
-      // 2. Coinglass Spot (fallback if API key exists)
+      // 3. Coinglass Spot (fallback if API key exists)
       const coinglassKey = process.env.COINGLASS_API_KEY;
       if (coinglassKey) {
         const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
@@ -439,7 +565,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // 3. CoinGecko (free fallback)
+      // 4. CoinGecko (free fallback)
       const cgData = await fetchCoinGeckoOHLC(symbol, timeframe, 200);
       if (cgData) {
         console.log(`[MarketData] ${symbol} served from CoinGecko`);
