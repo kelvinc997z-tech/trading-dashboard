@@ -73,35 +73,33 @@ function generateOHLC(symbol: string, timeframe: string = "1h") {
 
 // Fetch from Binance (no API key required)
 async function fetchBinanceOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
-  // Map symbol to Binance format: XAUT -> XAUUSDT, BTC -> BTCUSDT, etc.
   const binanceSymbol = symbol === "XAUT" ? "XAUUSDT" : `${symbol}USDT`;
   const binanceSymbolUpper = binanceSymbol.toUpperCase();
-  
-  // Binance interval mapping
+
   const intervalMap: Record<string, string> = {
     "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m",
     "1h": "1h", "2h": "2h", "4h": "4h", "6h": "6h", "8h": "8h", "12h": "12h",
     "1d": "1d", "3d": "3d", "1w": "1w", "1M": "1M"
   };
-  
+
   const interval = intervalMap[timeframe];
   if (!interval) {
-    console.warn(`Binance: timeframe ${timeframe} not supported`);
+    console.warn(`[MarketData] Binance: timeframe ${timeframe} not supported`);
     return null;
   }
-  
+
   const safeLimit = Math.min(limit, 1000);
   const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbolUpper}&interval=${interval}&limit=${safeLimit}`;
-  
+
   try {
     const res = await fetch(url);
     if (!res.ok) {
-      console.error(`Binance fetch error ${symbol}: ${res.status}`);
+      console.error(`[MarketData] Binance fetch error ${symbol}: ${res.status}`);
       return null;
     }
     const data: any[][] = await res.json();
     if (!Array.isArray(data) || data.length === 0) return null;
-    
+
     const history = data.map(candle => ({
       time: new Date(Number(candle[0])).toISOString(),
       open: Number(candle[1]),
@@ -113,12 +111,12 @@ async function fetchBinanceOHLC(symbol: string, timeframe: string = "1h", limit:
     }));
 
     if (history.length === 0) return null;
-    
+
     const current = history[history.length - 1];
     const previous = history.length > 1 ? history[history.length - 2] : current;
     const change = current.close - previous.close;
     const changePercent = (change / previous.close) * 100;
-    
+
     return {
       symbol,
       source: "Binance",
@@ -133,7 +131,7 @@ async function fetchBinanceOHLC(symbol: string, timeframe: string = "1h", limit:
       history,
     };
   } catch (e) {
-    console.error(`Binance fetch error for ${symbol}:`, e);
+    console.error(`[MarketData] Binance fetch exception for ${symbol}:`, e);
     return null;
   }
 }
@@ -181,12 +179,12 @@ async function fetchCoinGeckoOHLC(symbol: string, timeframe: string = "1h", limi
   try {
     const res = await fetch(url);
     if (!res.ok) {
-      console.error(`CoinGecko fetch error for ${symbol}: ${res.status}`);
+      console.error(`[MarketData] CoinGecko fetch error for ${symbol}: ${res.status}`);
       return null;
     }
     const data: any[][] = await res.json();
     if (!Array.isArray(data) || data.length === 0) {
-      console.error(`CoinGecko returned no data for ${symbol}`);
+      console.error(`[MarketData] CoinGecko returned no data for ${symbol}`);
       return null;
     }
 
@@ -238,48 +236,61 @@ async function fetchCoinGeckoOHLC(symbol: string, timeframe: string = "1h", limi
       history,
     };
   } catch (e) {
-    console.error(`CoinGecko fetch error for ${symbol}:`, e);
+    console.error(`[MarketData] CoinGecko fetch exception for ${symbol}:`, e);
     return null;
   }
 }
 
-// Fetch from Coinglass (requires API key)
-async function fetchCoinglassOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
+// Fetch from Coinglass Futures (requires API key)
+async function fetchCoinglassFuturesOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
   const apiKey = process.env.COINGLASS_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.log(`[MarketData] Coinglass API key not set, skipping futures`);
+    return null;
+  }
 
-  // Coinglass uses different symbol format: BTC -> BTC, XAUT -> XAU
+  // Map symbol for Coinglass futures: XAUT -> XAU, others unchanged
   const coinglassSymbol = symbol === "XAUT" ? "XAU" : symbol;
-  
-  // Coinglass endpoint for klines/candles
-  const url = `https://open-api.coinglass.com/public/v2/klines?symbol=${coinglassSymbol}&timeframe=${timeframe}&limit=${limit}`;
-  
+
+  const intervalMap: Record<string, string> = {
+    "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m",
+    "1h": "1h", "2h": "2h", "4h": "4h", "6h": "6h", "8h": "8h", "12h": "12h",
+    "1d": "1d", "3d": "3d", "1w": "1w", "1M": "1M"
+  };
+  const interval = intervalMap[timeframe];
+  if (!interval) {
+    console.warn(`[MarketData] Coinglass futures: unsupported timeframe ${timeframe}`);
+    return null;
+  }
+
+  // Futures endpoint
+  const url = `https://open-api.coinglass.com/api/v1/futures/kline?symbol=${coinglassSymbol}&interval=${interval}&limit=${limit}`;
+
   try {
     const res = await fetch(url, {
       headers: {
-        'accept': 'application/json',
-        'coinglassSecret': apiKey,
+        'coinglass:secret': apiKey,
       },
     });
     if (!res.ok) {
-      console.error(`Coinglass fetch error for ${symbol}: ${res.status}`);
+      const errText = await res.text();
+      console.error(`[MarketData] Coinglass futures error ${res.status}: ${errText}`);
       return null;
     }
     const data = await res.json();
-    if (!data || !Array.isArray(data.data)) {
-      console.error(`Coinglass invalid response for ${symbol}`);
+    if (data.code !== 200 || !data.data) {
+      console.error(`[MarketData] Coinglass futures invalid response:`, data);
       return null;
     }
 
-    // Coinglass returns array of [time, open, high, low, close, volume] (类似 Binance)
-    const history = data.data.map((item: any[]) => ({
-      time: new Date(Number(item[0])).toISOString(),
-      open: Number(item[1]),
-      high: Number(item[2]),
-      low: Number(item[3]),
-      close: Number(item[4]),
-      price: Number(item[4]),
-      volume: Number(item[5]),
+    const history = data.data.map((candle: any[]) => ({
+      time: new Date(candle[0]).toISOString(),
+      open: Number(candle[1]),
+      high: Number(candle[2]),
+      low: Number(candle[3]),
+      close: Number(candle[4]),
+      price: Number(candle[4]),
+      volume: Number(candle[5]),
     }));
 
     if (history.length === 0) return null;
@@ -291,7 +302,7 @@ async function fetchCoinglassOHLC(symbol: string, timeframe: string = "1h", limi
 
     return {
       symbol,
-      source: "Coinglass",
+      source: "Coinglass Futures",
       current: {
         price: current.close,
         close: current.close,
@@ -303,7 +314,85 @@ async function fetchCoinglassOHLC(symbol: string, timeframe: string = "1h", limi
       history,
     };
   } catch (e) {
-    console.error(`Coinglass fetch error for ${symbol}:`, e);
+    console.error(`[MarketData] Coinglass futures fetch exception for ${symbol}:`, e);
+    return null;
+  }
+}
+
+// Fetch from Coinglass Spot (requires API key)
+async function fetchCoinglassSpotOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
+  const apiKey = process.env.COINGLASS_API_KEY;
+  if (!apiKey) {
+    console.log(`[MarketData] Coinglass API key not set, skipping spot`);
+    return null;
+  }
+
+  // Map symbol for spot: XAUT -> XAUUSDT, others append USDT
+  const spotSymbol = symbol === "XAUT" ? "XAUUSDT" : `${symbol}USDT`;
+
+  const intervalMap: Record<string, string> = {
+    "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m",
+    "1h": "1h", "2h": "2h", "4h": "4h", "6h": "6h", "8h": "8h", "12h": "12h",
+    "1d": "1d", "3d": "3d", "1w": "1w", "1M": "1M"
+  };
+  const interval = intervalMap[timeframe];
+  if (!interval) {
+    console.warn(`[MarketData] Coinglass spot: unsupported timeframe ${timeframe}`);
+    return null;
+  }
+
+  // Spot endpoint
+  const url = `https://open-api.coinglass.com/api/v1/spot/kline?symbol=${spotSymbol}&interval=${interval}&limit=${limit}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'coinglass:secret': apiKey,
+      },
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`[MarketData] Coinglass spot error ${res.status}: ${errText}`);
+      return null;
+    }
+    const data = await res.json();
+    if (data.code !== 200 || !data.data) {
+      console.error(`[MarketData] Coinglass spot invalid response:`, data);
+      return null;
+    }
+
+    const history = data.data.map((candle: any[]) => ({
+      time: new Date(candle[0]).toISOString(),
+      open: Number(candle[1]),
+      high: Number(candle[2]),
+      low: Number(candle[3]),
+      close: Number(candle[4]),
+      price: Number(candle[4]),
+      volume: Number(candle[5]),
+    }));
+
+    if (history.length === 0) return null;
+
+    const current = history[history.length - 1];
+    const previous = history.length > 1 ? history[history.length - 2] : current;
+    const change = current.close - previous.close;
+    const changePercent = (change / previous.close) * 100;
+
+    return {
+      symbol,
+      source: "Coinglass Spot",
+      current: {
+        price: current.close,
+        close: current.close,
+        change: Number(change.toFixed(2)),
+        changePercent: Number(changePercent.toFixed(2)),
+        high: current.high,
+        low: current.low,
+      },
+      history,
+    };
+  } catch (e) {
+    console.error(`[MarketData] Coinglass spot fetch exception for ${symbol}:`, e);
     return null;
   }
 }
@@ -313,6 +402,8 @@ export async function GET(request: NextRequest) {
   const symbol = searchParams.get("symbol") || "XAUT";
   const timeframe = searchParams.get("timeframe") || "1h";
 
+  console.log(`[MarketData] Request: symbol=${symbol}, timeframe=${timeframe}`);
+
   if (!SUPPORTED_SYMBOLS.includes(symbol)) {
     return NextResponse.json(
       { error: `Unsupported symbol. Supported: ${SUPPORTED_SYMBOLS.join(", ")}` },
@@ -321,34 +412,48 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // For crypto: try Coinglass first (if key exists), then Binance, then CoinGecko
+    // For crypto: try multiple sources
     if (CRYPTO_SYMBOLS.includes(symbol)) {
-      // 1. Coinglass (if API key set)
-      const cgData = await fetchCoinglassOHLC(symbol, timeframe, 200);
-      if (cgData) {
-        return NextResponse.json(cgData);
+      // 1. Coinglass Spot
+      const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
+      if (spotData) {
+        console.log(`[MarketData] ${symbol} served from Coinglass Spot`);
+        return NextResponse.json(spotData);
       }
 
-      // 2. Binance (free, no key required)
+      // 2. Coinglass Futures
+      const futuresData = await fetchCoinglassFuturesOHLC(symbol, timeframe, 200);
+      if (futuresData) {
+        console.log(`[MarketData] ${symbol} served from Coinglass Futures`);
+        return NextResponse.json(futuresData);
+      }
+
+      // 3. Binance
       const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
       if (binanceData) {
+        console.log(`[MarketData] ${symbol} served from Binance`);
         return NextResponse.json(binanceData);
       }
 
-      // 3. CoinGecko (free, rate-limited)
-      const coingeckoData = await fetchCoinGeckoOHLC(symbol, timeframe, 200);
-      if (coingeckoData) {
-        return NextResponse.json(coingeckoData);
+      // 4. CoinGecko
+      const cgData = await fetchCoinGeckoOHLC(symbol, timeframe, 200);
+      if (cgData) {
+        console.log(`[MarketData] ${symbol} served from CoinGecko`);
+        return NextResponse.json(cgData);
       }
+
+      console.warn(`[MarketData] All sources failed for ${symbol}, returning synthetic`);
     } else {
-      // For US Stocks: currently only synthetic (no API key configured)
-      // Could add Finnhub or Massive later
+      // US Stocks: fallback to synthetic (or could add other APIs later)
+      console.log(`[MarketData] ${symbol} is stock, returning synthetic`);
     }
 
-    // All sources failed, return fallback synthetic data
-    return NextResponse.json(generateOHLC(symbol, timeframe));
+    // Fallback
+    const synthetic = generateOHLC(symbol, timeframe);
+    synthetic.source = "synthetic";
+    return NextResponse.json(synthetic);
   } catch (error: any) {
-    console.error(`Market data fetch error for ${symbol}:`, error);
+    console.error(`[MarketData] Error for ${symbol}:`, error);
     return NextResponse.json({ error: error.message || "Unknown error" }, { status: 500 });
   }
 }
