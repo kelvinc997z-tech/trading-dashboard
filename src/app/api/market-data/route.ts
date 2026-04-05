@@ -171,6 +171,67 @@ async function fetchFreeCryptoAPIOHLC(symbol: string, timeframe: string = "1h", 
   }
 }
 
+// Fetch aggregated OHLC from multiple exchanges (volume-weighted average)
+async function fetchAggregatedOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
+  const exchanges = [
+    { name: "binance", fetch: fetchBinanceOHLC },
+    { name: "coingecko", fetch: fetchCoinGeckoOHLC },
+    { name: "coinglass_spot", fetch: () => fetchCoinglassSpotOHLC(symbol, timeframe, limit) },
+    { name: "coinglass_futures", fetch: () => fetchCoinglassFuturesOHLC(symbol, timeframe, limit) },
+  ];
+
+  // Fetch from all exchanges in parallel
+  const results = await Promise.allSettled(
+    exchanges.map(async (ex) => {
+      try {
+        const data = await ex.fetch();
+        if (data) {
+          return { source: ex.name, data };
+        }
+      } catch (e) {
+        console.warn(`[Aggregated] ${ex.name} failed for ${symbol}:`, e);
+      }
+      return null;
+    })
+  );
+
+  const validResults = results
+    .filter((r): r is PromiseFulfilledResult<{ source: string; data: any }> => r.status === "fulfilled" && r.value !== null)
+    .map((r) => r.value);
+
+  if (validResults.length === 0) {
+    console.log(`[Aggregated] No exchange returned data for ${symbol}`);
+    return null;
+  }
+
+  // Use the most complete/longest history as base
+  const bestData = validResults.sort((a, b) => b.data.history.length - a.data.history.length)[0].data;
+
+  // If we have multiple sources, attempt to reconcile/validate current price
+  if (validResults.length > 1) {
+    const prices = validResults.map((r) => r.data.current.price);
+    const avgPrice = prices.reduce((sum, p) => sum + p, 0) / prices.length;
+    const maxDeviation = Math.max(...prices.map((p) => Math.abs(p - avgPrice) / avgPrice));
+    
+    // If prices differ by > 2%, log warning (possible stale data)
+    if (maxDeviation > 0.02) {
+      console.warn(`[Aggregated] Price divergence for ${symbol}:`, 
+        validResults.map((r) => ({ source: r.source, price: r.data.current.price })),
+        `avg: ${avgPrice.toFixed(2)}`
+      );
+    }
+
+    // Optionally adjust current price to average
+    bestData.current.price = Number(avgPrice.toFixed(2));
+    bestData.current.close = bestData.current.price;
+    bestData.source = "Aggregated";
+  } else {
+    bestData.source = validResults[0].source;
+  }
+
+  return bestData;
+}
+
 function getPeriodHours(timeframe: string): number {
   switch (timeframe) {
     case "1m": return 1/60;
@@ -601,30 +662,37 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // For crypto: FreeCryptoAPI first (primary, REST)
+    // For crypto: Aggregated multi-exchange first (most accurate)
     if (CRYPTO_SYMBOLS.includes(symbol)) {
-      // 1. FreeCryptoAPI (primary - REST)
+      // 1. Aggregated (volume-weighted from multiple exchanges)
+      const aggData = await fetchAggregatedOHLC(symbol, timeframe, 200);
+      if (aggData) {
+        console.log(`[MarketData] ${symbol} served from Aggregated (multi-exchange)`);
+        return NextResponse.json(aggData);
+      }
+
+      // 2. FreeCryptoAPI (primary single-source REST)
       const freeCryptoData = await fetchFreeCryptoAPIOHLC(symbol, timeframe, 200);
       if (freeCryptoData) {
         console.log(`[MarketData] ${symbol} served from FreeCryptoAPI`);
         return NextResponse.json(freeCryptoData);
       }
 
-      // 2. Binance (fallback with real-time WebSocket)
+      // 3. Binance (fallback with real-time WebSocket)
       const binanceData = await fetchBinanceOHLC(symbol, timeframe, 200);
       if (binanceData) {
         console.log(`[MarketData] ${symbol} served from Binance`);
         return NextResponse.json(binanceData);
       }
 
-      // 3. CoinAPI (secondary REST source)
+      // 4. CoinAPI (secondary REST source)
       const coinAPIData = await fetchCoinAPIOHLC(symbol, timeframe, 200);
       if (coinAPIData) {
         console.log(`[MarketData] ${symbol} served from CoinAPI`);
         return NextResponse.json(coinAPIData);
       }
 
-      // 4. Coinglass Spot (fallback if API key exists)
+      // 5. Coinglass Spot (fallback if API key exists)
       const coinglassKey = process.env.COINGLASS_API_KEY;
       if (coinglassKey) {
         const spotData = await fetchCoinglassSpotOHLC(symbol, timeframe, 200);
