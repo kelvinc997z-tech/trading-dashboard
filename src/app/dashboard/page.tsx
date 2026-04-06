@@ -669,8 +669,10 @@ export default function Dashboard() {
       )}
 
       {activeTab === "economic" && (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <EconomicCalendarWidget />
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+          <div className="h-[800px]">
+            <EconomicCalendarWidget />
+          </div>
         </div>
       )}
 
