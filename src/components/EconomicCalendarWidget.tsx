@@ -41,8 +41,8 @@ export default function EconomicCalendarWidget() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1">
-        <div id="economicCalendarWidget" className="w-full h-[700px]" />
+      <div className="flex-1 min-h-[500px]">
+        <div id="economicCalendarWidget" className="w-full h-full" />
       </div>
       <div className="ecw-copyright text-xs text-gray-500 text-center py-2">
         <a
