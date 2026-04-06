@@ -15,7 +15,6 @@ interface CandleData {
   high: number;
   low: number;
   close: number;
-  volume?: number;
 }
 
 // Symbol mapping for Crypto.com format
@@ -133,15 +132,9 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
         timeVisible: true,
         secondsVisible: false,
       },
-    }) as any; // cast to any to avoid type errors
+    }) as any;
 
     const candlestickSeries = (chart as any).addCandlestickSeries({
-      upColor: "#26a69a",
-      downColor: "#ef5350",
-      borderVisible: false,
-      wickUpColor: "#26a69a",
-      wickDownColor: "#ef5350",
-    });
       upColor: "#26a69a",
       downColor: "#ef5350",
       borderVisible: false,
@@ -152,14 +145,13 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
     chartRef.current = chart;
     seriesRef.current = candlestickSeries;
 
-    // Set initial data if available
     if (candles.length > 0) {
-      (candlestickSeries as any).setData(candles);
+      candlestickSeries.setData(candles);
     }
 
     const handleResize = () => {
       if (containerRef.current) {
-        chart.applyOptions({
+        (chart as any).applyOptions({
           width: containerRef.current.clientWidth,
           height,
         });
@@ -169,7 +161,7 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      chart.remove();
+      (chart as any).remove();
       wsRef.current?.close();
     };
   }, [height]);
@@ -179,14 +171,12 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
     return () => wsRef.current?.close();
   }, [connectWebSocket]);
 
-  // Also update chart when candles change (initial load)
   useEffect(() => {
     if (seriesRef.current && candles.length > 0) {
       seriesRef.current.setData(candles);
     }
   }, [candles]);
 
-  // Calculate change % from candles
   const changeStats = useCallback(() => {
     if (candles.length < 2) return { change: 0, changePercent: 0, isPositive: true };
     const latest = candles[candles.length - 1];
