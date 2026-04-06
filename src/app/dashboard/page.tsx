@@ -7,9 +7,7 @@ import { Activity, BarChart2, PieChart, Eye, Calendar } from "lucide-react";
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import TradingViewWidget from "@/components/TradingViewWidget";
-import BinanceLiveChart from "@/components/BinanceLiveChart";
-import RealTimeChart from "@/components/RealTimeChart";
-import AdvancedChart from "@/components/AdvancedChart";
+import MassiveStockChart from "@/components/MassiveStockChart";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
@@ -73,12 +71,6 @@ const US_STOCKS = [
   { symbol: "GOOGL", name: "Alphabet Inc." },
   { symbol: "TSM", name: "Taiwan Semiconductor Manufacturing" },
 ];
-
-// Helper: convert symbol to Binance base symbol (without USDT suffix)
-function getBinanceBaseSymbol(symbol: string): string {
-  if (symbol === "XAUT") return "XAU"; // Binance uses XAUUSDT for gold
-  return symbol; // BTC -> BTC, ETH -> ETH, KAS -> KAS, etc.
-}
 
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -563,7 +555,7 @@ export default function Dashboard() {
                         <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-40 sm:h-48">
-                          <BinanceLiveChart symbol={getBinanceBaseSymbol(pair.symbol)} interval={timeframe} />
+                          <TradingViewWidget symbol={pair.symbol} interval={timeframe} height={160} />
                         </div>
                       )}
                     </div>
@@ -632,7 +624,7 @@ export default function Dashboard() {
                         <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-40 sm:h-48">
-                          <TradingViewWidget symbol={pair.symbol} interval={timeframe} height={160} />
+                          <MassiveStockChart symbol={pair.symbol} timeframe={timeframe} height={160} />
                         </div>
                       )}
                     </div>
@@ -671,8 +663,10 @@ export default function Dashboard() {
       )}
 
       {activeTab === "economic" && (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <EconomicCalendarWidget />
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+          <div className="h-[800px]">
+            <EconomicCalendarWidget />
+          </div>
         </div>
       )}
 
