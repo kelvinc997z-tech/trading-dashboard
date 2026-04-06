@@ -555,7 +555,7 @@ export default function Dashboard() {
                         <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-40 sm:h-48">
-                          <BinanceLiveChart symbol={getBinanceBaseSymbol(pair.symbol)} interval={timeframe} />
+                          <BinanceLiveChart symbol={pair.symbol} interval={timeframe} />
                         </div>
                       )}
                     </div>
