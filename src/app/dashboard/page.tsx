@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Activity, BarChart2, PieChart, Eye, Calendar } from "lucide-react";
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
+import CryptoComChart from "@/components/CryptoComChart";
 import MassiveStockChart from "@/components/MassiveStockChart";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
@@ -554,7 +555,7 @@ export default function Dashboard() {
                         <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-40 sm:h-48">
-                          <MassiveStockChart symbol={pair.symbol} timeframe={timeframe} height={160} />
+                          <CryptoComChart symbol={pair.symbol} timeframe={timeframe} height={160} />
                         </div>
                       )}
                     </div>
