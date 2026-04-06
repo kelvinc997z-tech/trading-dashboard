@@ -1,7 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { createChart, ColorType } from "lightweight-charts";
+import { useEffect, useState, useCallback } from "react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import WatchlistButton from "@/components/watchlist/WatchlistButton";
+
+interface OHLCData {
+  timestamp: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number;
+}
 
 interface CryptoComChartProps {
   symbol: string;
@@ -9,215 +19,69 @@ interface CryptoComChartProps {
   height?: number;
 }
 
-interface CandleData {
-  time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-}
-
-function toCryptoComSymbol(symbol: string): string {
-  const map: Record<string, string> = {
-    "XAUT": "XAU_USD",
-    "BTC": "BTC_USD",
-    "ETH": "ETH_USD",
-    "SOL": "SOL_USD",
-    "XRP": "XRP_USD",
-    "KAS": "KAS_USD",
-  };
-  return map[symbol] || `${symbol}_USD`;
-}
-
-function timeframeToInterval(timeframe: string): string {
-  const map: Record<string, string> = {
-    "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m",
-    "1h": "1h", "4h": "4h", "1d": "1d", "1w": "1w"
-  };
-  return map[timeframe] || "1h";
-}
-
 export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 }: CryptoComChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<any>(null);
-  const seriesRef = useRef<any>(null);
-  const wsRef = useRef<WebSocket | null>(null);
+  const [data, setData] = useState<OHLCData[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [changePercent, setChangePercent] = useState<number>(0);
   const [isPositive, setIsPositive] = useState<boolean>(true);
-  const [candles, setCandles] = useState<CandleData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const symbolCc = toCryptoComSymbol(symbol);
-  const interval = timeframeToInterval(timeframe);
-  const channel = `candles.${symbolCc}_${interval}`;
-
-  const connectWebSocket = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
-
+  const fetchData = useCallback(async () => {
     try {
-      const ws = new WebSocket("wss://stream.crypto.com/v1/market/candles");
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        console.log(`[CryptoCom] Connected for ${symbol} ${interval}`);
-        ws.send(JSON.stringify({
-          id: 1,
-          method: "SUBSCRIBE",
-          params: [channel],
-          jsonrpc: "2.0",
-        }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.result?.status === "SUCCESS") return;
-          
-          if (data.result?.channel === channel && Array.isArray(data.result?.data)) {
-            const newCandle = data.result.data[0];
-            const candle: CandleData = {
-              time: Math.floor(newCandle.t / 1000),
-              open: newCandle.o,
-              high: newCandle.h,
-              low: newCandle.l,
-              close: newCandle.c,
-            };
-
-            setCandles(prev => {
-              const filtered = prev.filter(c => c.time !== candle.time);
-              const updated = [...filtered, candle].sort((a, b) => a.time - b.time);
-              return updated.slice(-500);
-            });
-
-            setCurrentPrice(candle.close);
-            
-            if (seriesRef.current) {
-              try {
-                seriesRef.current.update(candle);
-              } catch (e) {
-                console.warn("[CryptoCom] Update error:", e);
-              }
-            }
-          }
-        } catch (e) {
-          console.error("[CryptoCom] Parse error:", e);
-        }
-      };
-
-      ws.onerror = (err) => {
-        console.error("[CryptoCom] WS error:", err);
-        setError("WebSocket connection error");
-      };
-
-      ws.onclose = () => {
-        console.log("[CryptoCom] WS closed, reconnecting in 3s...");
-        setTimeout(connectWebSocket, 3000);
-      };
-    } catch (e) {
-      console.error("[CryptoCom] Connection failed:", e);
-      setError("Failed to connect to Crypto.com");
-    }
-  }, [channel]);
-
-  useEffect(() => {
-    let mounted = true;
-    
-    if (!containerRef.current) return;
-
-    try {
-      const chart = createChart(containerRef.current, {
-        width: containerRef.current.clientWidth,
-        height,
-        layout: { 
-          background: { type: ColorType.Solid, color: "transparent" }, 
-          textColor: "#d1d4dc" 
-        },
-        grid: { 
-          vertLines: { color: "rgba(42, 46, 57, 0.5)" }, 
-          horzLines: { color: "rgba(42, 46, 57, 0.5)" } 
-        },
-        crosshair: { mode: 1 },
-        rightPriceScale: { borderColor: "rgba(197, 203, 206, 0.8)" },
-        timeScale: { 
-          borderColor: "rgba(197, 203, 206, 0.8)", 
-          timeVisible: true, 
-          secondsVisible: false 
-        },
-      }) as any;
-
-      const candlestickSeries = (chart as any).addCandlestickSeries({
-        upColor: "#26a69a",
-        downColor: "#ef5350",
-        borderVisible: false,
-        wickUpColor: "#26a69a",
-        wickDownColor: "#ef5350",
-      });
-
-      if (mounted) {
-        chartRef.current = chart;
-        seriesRef.current = candlestickSeries;
-
-        if (candles.length > 0) {
-          candlestickSeries.setData(candles);
-        }
-
-        const handleResize = () => {
-          if (containerRef.current && chartRef.current) {
-            try {
-              (chartRef.current as any).applyOptions({
-                width: containerRef.current.clientWidth,
-                height,
-              });
-            } catch (e) {
-              console.warn("[CryptoCom] Resize error:", e);
-            }
-          }
-        };
-        window.addEventListener("resize", handleResize);
-
-        return () => {
-          mounted = false;
-          window.removeEventListener("resize", handleResize);
-          try {
-            (chart as any).remove();
-          } catch (e) {
-            console.warn("[CryptoCom] Chart remove error:", e);
-          }
-          wsRef.current?.close();
-        };
+      setLoading(true);
+      setError(null);
+      // Use the same market-data API for crypto (Binance, CoinGecko, etc.)
+      const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}&limit=200`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to fetch data");
       }
-    } catch (e) {
-      console.error("[CryptoCom] Chart init error:", e);
-      if (mounted) setError("Failed to initialize chart");
-    }
-  }, [height]);
+      const json = await res.json();
+      
+      if (json.error) throw new Error(json.error);
 
-  useEffect(() => {
-    connectWebSocket();
-    return () => wsRef.current?.close();
-  }, [connectWebSocket]);
+      // Transform to our OHLC format
+      const history = (json.history || []).map((h: any) => ({
+        timestamp: h.time,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume,
+      }));
 
-  useEffect(() => {
-    if (seriesRef.current && candles.length > 0) {
-      try {
-        seriesRef.current.setData(candles);
-      } catch (e) {
-        console.warn("[CryptoCom] SetData error:", e);
+      setData(history);
+
+      // Set current price and change
+      if (json.current) {
+        setCurrentPrice(json.current.price || json.current.close);
+        const changePct = json.current.changePercent || 0;
+        setChangePercent(changePct);
+        setIsPositive(changePct >= 0);
       }
+    } catch (err: any) {
+      console.error("[CryptoComChart] Error:", err);
+      setError(err.message || "Failed to load");
+    } finally {
+      setLoading(false);
     }
-  }, [candles]);
+  }, [symbol, timeframe]);
 
   useEffect(() => {
-    if (candles.length >= 2) {
-      const latest = candles[candles.length - 1];
-      const prev = candles[candles.length - 2];
-      const change = latest.close - prev.close;
-      const pct = (change / prev.close) * 100;
-      setChangePercent(pct);
-      setIsPositive(change >= 0);
-    }
-  }, [candles]);
+    fetchData();
+    // Refresh every 30 seconds for crypto
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="h-64 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -230,26 +94,72 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
     );
   }
 
-  try {
-    return (
-      <div>
-        {currentPrice !== null && (
-          <div className="text-center mb-2">
-            <span className="font-bold">{symbol}</span>
-            <span className={`ml-2 ${isPositive ? "text-green-500" : "text-red-500"}`}>
-              ${currentPrice.toFixed(2)} ({isPositive ? "+" : ""}{changePercent.toFixed(2)}%)
-            </span>
-          </div>
-        )}
-        <div ref={containerRef} style={{ width: "100%", height }} />
-      </div>
-    );
-  } catch (e) {
-    console.error("[CryptoCom] Render error:", e);
+  if (data.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <p className="text-sm text-gray-600 dark:text-gray-400">Chart unavailable</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">No data available</p>
       </div>
     );
   }
+
+  // Transform for Recharts line (using close price)
+  const chartData = data.map(d => ({
+    time: new Date(d.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    close: d.close,
+  }));
+
+  const latest = data[data.length - 1];
+  const prev = data[data.length - 2] || latest;
+  const change = latest.close - prev.close;
+  const changePct = (change / prev.close) * 100;
+  const positive = change >= 0;
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{symbol}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            ${latest.close.toFixed(2)}
+            <span className={`ml-2 ${positive ? 'text-green-500' : 'text-red-500'}`}>
+              ({positive ? '+' : ''}{changePct.toFixed(2)}%)
+            </span>
+          </p>
+        </div>
+        <WatchlistButton symbol={symbol} size={24} />
+      </div>
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300 dark:stroke-gray-600" />
+          <XAxis 
+            dataKey="time" 
+            tick={{ fontSize: 12 }}
+            className="text-gray-600 dark:text-gray-300"
+          />
+          <YAxis 
+            domain={['auto', 'auto']}
+            tick={{ fontSize: 12 }}
+            className="text-gray-600 dark:text-gray-300"
+          />
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: 'var(--tooltip-bg, white)',
+              border: '1px solid var(--tooltip-border, #e5e7eb)',
+              borderRadius: '0.5rem',
+              color: 'var(--tooltip-color, #111827)'
+            }}
+            formatter={(value: number, name: string) => [value.toFixed(2), name.toUpperCase()]}
+          />
+          <Line 
+            type="monotone" 
+            dataKey="close" 
+            stroke={positive ? "#16a34a" : "#dc2626"} 
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  );
 }
