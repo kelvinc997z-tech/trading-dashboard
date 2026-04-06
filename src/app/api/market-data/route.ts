@@ -358,7 +358,7 @@ function getPeriodHours(timeframe: string): number {
   }
 }
 
-function generateOHLC(symbol: string, timeframe: string = "1h") {
+function generateOHLC(symbol: string, timeframe: string = "1h", source: string = "synthetic") {
   const basePrices: Record<string, number> = {
     "XAUT": 2350,
     "BTC": 65000,
@@ -414,6 +414,7 @@ function generateOHLC(symbol: string, timeframe: string = "1h") {
   const changePercent = (change / previous.close) * 100;
   return {
     symbol,
+    source,
     current: {
       price: current.close,
       close: current.close,
@@ -838,7 +839,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fallback
-    const synthetic = generateOHLC(symbol, timeframe);
+    const synthetic = generateOHLC(symbol, timeframe, "synthetic");
     return NextResponse.json(synthetic);
   } catch (error: any) {
     console.error(`[MarketData] Error for ${symbol}:`, error);
