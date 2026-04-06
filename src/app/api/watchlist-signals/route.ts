@@ -1,7 +1,7 @@
 "use server";
 
 import { NextRequest, NextResponse } from "next/server";
-import { fetchBinanceOHLC } from "./market-data";
+import { fetchBinanceOHLC } from "@/lib/market-data";
 
 interface Signal {
   symbol: string;
