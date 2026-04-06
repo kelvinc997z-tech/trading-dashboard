@@ -92,9 +92,12 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
 
             setCurrentPrice(candle.close);
             
-            // Calculate change %
             if (seriesRef.current) {
-              seriesRef.current.update(candle);
+              try {
+                seriesRef.current.update(candle);
+              } catch (e) {
+                console.warn("[CryptoCom] Update error:", e);
+              }
             }
           }
         } catch (e) {
@@ -117,19 +120,9 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
     }
   }, [channel]);
 
-  // Calculate change % whenever candles update
   useEffect(() => {
-    if (candles.length >= 2) {
-      const latest = candles[candles.length - 1];
-      const prev = candles[candles.length - 2];
-      const change = latest.close - prev.close;
-      const pct = (change / prev.close) * 100;
-      setChangePercent(pct);
-      setIsPositive(change >= 0);
-    }
-  }, [candles]);
-
-  useEffect(() => {
+    let mounted = true;
+    
     if (!containerRef.current) return;
 
     try {
@@ -161,31 +154,42 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
         wickDownColor: "#ef5350",
       });
 
-      chartRef.current = chart;
-      seriesRef.current = candlestickSeries;
+      if (mounted) {
+        chartRef.current = chart;
+        seriesRef.current = candlestickSeries;
 
-      if (candles.length > 0) {
-        candlestickSeries.setData(candles);
-      }
-
-      const handleResize = () => {
-        if (containerRef.current && chartRef.current) {
-          (chartRef.current as any).applyOptions({
-            width: containerRef.current.clientWidth,
-            height,
-          });
+        if (candles.length > 0) {
+          candlestickSeries.setData(candles);
         }
-      };
-      window.addEventListener("resize", handleResize);
 
-      return () => {
-        window.removeEventListener("resize", handleResize);
-        (chart as any).remove();
-        wsRef.current?.close();
-      };
+        const handleResize = () => {
+          if (containerRef.current && chartRef.current) {
+            try {
+              (chartRef.current as any).applyOptions({
+                width: containerRef.current.clientWidth,
+                height,
+              });
+            } catch (e) {
+              console.warn("[CryptoCom] Resize error:", e);
+            }
+          }
+        };
+        window.addEventListener("resize", handleResize);
+
+        return () => {
+          mounted = false;
+          window.removeEventListener("resize", handleResize);
+          try {
+            (chart as any).remove();
+          } catch (e) {
+            console.warn("[CryptoCom] Chart remove error:", e);
+          }
+          wsRef.current?.close();
+        };
+      }
     } catch (e) {
       console.error("[CryptoCom] Chart init error:", e);
-      setError("Failed to initialize chart");
+      if (mounted) setError("Failed to initialize chart");
     }
   }, [height]);
 
@@ -196,7 +200,22 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
 
   useEffect(() => {
     if (seriesRef.current && candles.length > 0) {
-      seriesRef.current.setData(candles);
+      try {
+        seriesRef.current.setData(candles);
+      } catch (e) {
+        console.warn("[CryptoCom] SetData error:", e);
+      }
+    }
+  }, [candles]);
+
+  useEffect(() => {
+    if (candles.length >= 2) {
+      const latest = candles[candles.length - 1];
+      const prev = candles[candles.length - 2];
+      const change = latest.close - prev.close;
+      const pct = (change / prev.close) * 100;
+      setChangePercent(pct);
+      setIsPositive(change >= 0);
     }
   }, [candles]);
 
@@ -211,17 +230,26 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
     );
   }
 
-  return (
-    <div>
-      {currentPrice !== null && (
-        <div className="text-center mb-2">
-          <span className="font-bold">{symbol}</span>
-          <span className={`ml-2 ${isPositive ? "text-green-500" : "text-red-500"}`}>
-            ${currentPrice.toFixed(2)} ({isPositive ? "+" : ""}{changePercent.toFixed(2)}%)
-          </span>
-        </div>
-      )}
-      <div ref={containerRef} style={{ width: "100%", height }} />
-    </div>
-  );
+  try {
+    return (
+      <div>
+        {currentPrice !== null && (
+          <div className="text-center mb-2">
+            <span className="font-bold">{symbol}</span>
+            <span className={`ml-2 ${isPositive ? "text-green-500" : "text-red-500"}`}>
+              ${currentPrice.toFixed(2)} ({isPositive ? "+" : ""}{changePercent.toFixed(2)}%)
+            </span>
+          </div>
+        )}
+        <div ref={containerRef} style={{ width: "100%", height }} />
+      </div>
+    );
+  } catch (e) {
+    console.error("[CryptoCom] Render error:", e);
+    return (
+      <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <p className="text-sm text-gray-600 dark:text-gray-400">Chart unavailable</p>
+      </div>
+    );
+  }
 }
