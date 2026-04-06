@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { createChart, ColorType, IChartApi, ISeriesApi } from "lightweight-charts";
+import { createChart, ColorType, IChartApi, ISeriesApi, CandlestickData } from "lightweight-charts";
 
 interface CryptoComChartProps {
   symbol: string;
@@ -9,14 +9,8 @@ interface CryptoComChartProps {
   height?: number;
 }
 
-interface CandleData {
-  time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume?: number;
-}
+// Use the exact type from lightweight-charts
+type CandleData = CandlestickData<number>;
 
 // Symbol mapping for Crypto.com format
 function toCryptoComSymbol(symbol: string): string {
@@ -103,7 +97,7 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
           // Update current price & change
           setCurrentPrice(candle.close);
           if (seriesRef.current) {
-            seriesRef.current.update(candle as any);
+            seriesRef.current.update(candle);
           }
         }
       } catch (e) {
