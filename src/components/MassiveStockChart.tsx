@@ -26,10 +26,12 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/stocks/ohlc?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}&limit=200`);
+      const res = await fetch(
+        `/api/massive/ohlc?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}&limit=200`
+      );
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Failed to fetch stock data");
+        throw new Error(err.error || "Failed to fetch stock data from Massive");
       }
       const json = await res.json();
       setData(json.data || []);
@@ -75,7 +77,7 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
         <div className="text-center">
           <p className="text-red-600 dark:text-red-400 font-medium">{error}</p>
           <p className="text-xs text-red-500 dark:text-red-400 mt-1">
-            Pastikan data tersedia di database (run: npx tsx scripts/seed-stocks.ts)
+            Pastikan MASSIVE_API_KEY tersedia dan symbol didukung
           </p>
         </div>
       </div>
@@ -88,19 +90,16 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
         <div className="text-center">
           <p className="text-gray-600 dark:text-gray-400">No data available</p>
           <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-            Jalankan seeding untuk mengisi data
+            Periksa koneksi Massive API
           </p>
         </div>
       </div>
     );
   }
 
-  // Transform for Recharts (show full OHLC as area/line)
+  // Transform for Recharts
   const chartData = data.map((d) => ({
     time: new Date(d.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-    open: d.open,
-    high: d.high,
-    low: d.low,
     close: d.close,
   }));
 
