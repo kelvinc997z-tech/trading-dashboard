@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Activity, BarChart2, PieChart, Eye, Calendar } from "lucide-react";
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
-import TradingViewWidget from "@/components/TradingViewWidget";
+import CandlestickChart from "@/components/CandlestickChart";
 import MassiveStockChart from "@/components/MassiveStockChart";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
@@ -555,7 +555,7 @@ export default function Dashboard() {
                         <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-40 sm:h-48">
-                          <TradingViewWidget symbol={pair.symbol} interval={timeframe} height={160} />
+                          <CandlestickChart symbol={pair.symbol} timeframe={timeframe} height={160} />
                         </div>
                       )}
                     </div>
