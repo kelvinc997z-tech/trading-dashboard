@@ -1,7 +1,68 @@
 "use server";
 
 import { NextRequest, NextResponse } from "next/server";
-import { fetchBinanceOHLC } from "@/lib/market-data";
+
+// Copy of fetchBinanceOHLC from market-data route
+async function fetchBinanceOHLC(symbol: string, timeframe: string = "1h", limit: number = 200): Promise<any | null> {
+  const binanceSymbol = `${symbol.toLowerCase()}usdt`;
+  const intervalMap: Record<string, string> = {
+    "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m",
+    "1h": "1h", "4h": "4h", "1d": "1d"
+  };
+  const interval = intervalMap[timeframe];
+  if (!interval) {
+    console.warn(`[Binance] timeframe ${timeframe} not supported`);
+    return null;
+  }
+
+  const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol.toUpperCase()}&interval=${interval}&limit=${limit}`;
+
+  try {
+    const res = await fetch(url, { next: { revalidate: 15 } }); // 15s cache
+    if (!res.ok) {
+      console.error(`[Binance] fetch error ${symbol}: ${res.status}`);
+      return null;
+    }
+    const data: any[][] = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    const history = data.map(item => ({
+      time: new Date(Number(item[0])).toISOString(),
+      open: Number(item[1]),
+      high: Number(item[2]),
+      low: Number(item[3]),
+      close: Number(item[4]),
+      price: Number(item[4]),
+      volume: Number(item[5]),
+    }));
+
+    if (history.length === 0) return null;
+
+    const current = history[history.length - 1];
+    const previous = history.length > 1 ? history[history.length - 2] : current;
+    const change = current.close - previous.close;
+    const changePercent = (change / previous.close) * 100;
+
+    return {
+      symbol,
+      source: "Binance",
+      current: {
+        price: current.close,
+        close: current.close,
+        change: Number(change.toFixed(2)),
+        changePercent: Number(changePercent.toFixed(2)),
+        high: current.high,
+        low: current.low,
+      },
+      history,
+    };
+  } catch (e) {
+    console.error(`[Binance] fetch exception for ${symbol}:`, e);
+    return null;
+  }
+}
+
+// Rest of the file continues...
 
 interface Signal {
   symbol: string;
