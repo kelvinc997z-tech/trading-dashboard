@@ -7,11 +7,9 @@ import { Activity, BarChart2, PieChart, Eye, Calendar } from "lucide-react";
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import BinanceLiveChart from "@/components/BinanceLiveChart";
-import RealTimeChart from "@/components/RealTimeChart";
-import AdvancedChart from "@/components/AdvancedChart";
+import MassiveStockChart from "@/components/MassiveStockChart";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
-import TradingViewWidget from "@/components/TradingViewWidget";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
 import WatchlistOutlook from "@/components/WatchlistOutlook";
 import StatCard from "@/components/ui/StatCard";
@@ -632,7 +630,7 @@ export default function Dashboard() {
                         <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-40 sm:h-48">
-                          <TradingViewWidget symbol={pair.symbol} interval={timeframe} height={160} />
+                          <MassiveStockChart symbol={pair.symbol} timeframe={timeframe} height={160} />
                         </div>
                       )}
                     </div>
