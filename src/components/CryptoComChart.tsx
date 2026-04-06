@@ -103,7 +103,7 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
           // Update current price & change
           setCurrentPrice(candle.close);
           if (seriesRef.current) {
-            seriesRef.current.update(candle);
+            seriesRef.current.update(candle as any);
           }
         }
       } catch (e) {
@@ -155,6 +155,11 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
 
     chartRef.current = chart;
     seriesRef.current = candlestickSeries;
+
+    // Set initial data if available
+    if (candles.length > 0) {
+      candlestickSeries.setData(candles);
+    }
 
     const handleResize = () => {
       if (containerRef.current) {
