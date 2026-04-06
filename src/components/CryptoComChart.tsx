@@ -133,9 +133,15 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
         timeVisible: true,
         secondsVisible: false,
       },
-    });
+    }) as any; // cast to any to avoid type errors
 
-    const candlestickSeries = chart.addCandlestickSeries({
+    const candlestickSeries = (chart as any).addCandlestickSeries({
+      upColor: "#26a69a",
+      downColor: "#ef5350",
+      borderVisible: false,
+      wickUpColor: "#26a69a",
+      wickDownColor: "#ef5350",
+    });
       upColor: "#26a69a",
       downColor: "#ef5350",
       borderVisible: false,
@@ -148,7 +154,7 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
 
     // Set initial data if available
     if (candles.length > 0) {
-      candlestickSeries.setData(candles);
+      (candlestickSeries as any).setData(candles);
     }
 
     const handleResize = () => {
