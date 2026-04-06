@@ -17,7 +17,6 @@ interface CandleData {
   close: number;
 }
 
-// Symbol mapping for Crypto.com format
 function toCryptoComSymbol(symbol: string): string {
   const map: Record<string, string> = {
     "XAUT": "XAU_USD",
@@ -30,7 +29,6 @@ function toCryptoComSymbol(symbol: string): string {
   return map[symbol] || `${symbol}_USD`;
 }
 
-// Timeframe mapping
 function timeframeToInterval(timeframe: string): string {
   const map: Record<string, string> = {
     "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m",
@@ -45,7 +43,6 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
   const seriesRef = useRef<any>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
-  const [change, setChange] = useState<number>(0);
   const [candles, setCandles] = useState<CandleData[]>([]);
 
   const symbolCc = toCryptoComSymbol(symbol);
@@ -59,15 +56,12 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log(`[CryptoCom] Connected for ${symbol} ${interval}`);
-      ws.send(
-        JSON.stringify({
-          id: 1,
-          method: "SUBSCRIBE",
-          params: [channel],
-          jsonrpc: "2.0",
-        })
-      );
+      ws.send(JSON.stringify({
+        id: 1,
+        method: "SUBSCRIBE",
+        params: [channel],
+        jsonrpc: "2.0",
+      }));
     };
 
     ws.onmessage = (event) => {
@@ -101,14 +95,8 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
       }
     };
 
-    ws.onerror = (err) => {
-      console.error("[CryptoCom] WS error:", err);
-    };
-
-    ws.onclose = () => {
-      console.log("[CryptoCom] WS closed, reconnecting in 3s...");
-      setTimeout(connectWebSocket, 3000);
-    };
+    ws.onerror = (err) => console.error("[CryptoCom] WS error:", err);
+    ws.onclose = () => setTimeout(connectWebSocket, 3000);
   }, [channel]);
 
   useEffect(() => {
@@ -117,21 +105,11 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
     const chart = createChart(containerRef.current, {
       width: containerRef.current.clientWidth,
       height,
-      layout: {
-        background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "#d1d4dc",
-      },
-      grid: {
-        vertLines: { color: "rgba(42, 46, 57, 0.5)" },
-        horzLines: { color: "rgba(42, 46, 57, 0.5)" },
-      },
+      layout: { background: { type: ColorType.Solid, color: "transparent" }, textColor: "#d1d4dc" },
+      grid: { vertLines: { color: "rgba(42, 46, 57, 0.5)" }, horzLines: { color: "rgba(42, 46, 57, 0.5)" } },
       crosshair: { mode: 1 },
       rightPriceScale: { borderColor: "rgba(197, 203, 206, 0.8)" },
-      timeScale: {
-        borderColor: "rgba(197, 203, 206, 0.8)",
-        timeVisible: true,
-        secondsVisible: false,
-      },
+      timeScale: { borderColor: "rgba(197, 203, 206, 0.8)", timeVisible: true, secondsVisible: false },
     }) as any;
 
     const candlestickSeries = (chart as any).addCandlestickSeries({
@@ -151,10 +129,7 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
 
     const handleResize = () => {
       if (containerRef.current) {
-        (chart as any).applyOptions({
-          width: containerRef.current.clientWidth,
-          height,
-        });
+        (chart as any).applyOptions({ width: containerRef.current.clientWidth, height });
       }
     };
     window.addEventListener("resize", handleResize);
@@ -183,14 +158,10 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
     const prev = candles[candles.length - 2];
     const change = latest.close - prev.close;
     const changePercent = (change / prev.close) * 100;
-    return {
-      change,
-      changePercent,
-      isPositive: change >= 0,
-    };
+    return { change, changePercent, isPositive: change >= 0 };
   }, [candles]);
 
-  const { change: chg, changePercent, isPositive } = changeStats();
+  const { changePercent, isPositive } = changeStats();
 
   return (
     <div>
