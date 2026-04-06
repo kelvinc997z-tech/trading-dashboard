@@ -7,7 +7,9 @@ import { Activity, BarChart2, PieChart, Eye, Calendar } from "lucide-react";
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import BinanceLiveChart from "@/components/BinanceLiveChart";
-import MassiveStockChart from "@/components/MassiveStockChart";
+import RealTimeChart from "@/components/RealTimeChart";
+import AdvancedChart from "@/components/AdvancedChart";
+import TradingViewWidget from "@/components/TradingViewWidget";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
@@ -630,7 +632,7 @@ export default function Dashboard() {
                         <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-40 sm:h-48">
-                          <MassiveStockChart symbol={pair.symbol} timeframe={timeframe} height={160} />
+                          <TradingViewWidget symbol={pair.symbol} interval={timeframe} height={160} />
                         </div>
                       )}
                     </div>
@@ -669,10 +671,8 @@ export default function Dashboard() {
       )}
 
       {activeTab === "economic" && (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-          <div className="h-[800px]">
-            <EconomicCalendarWidget />
-          </div>
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+          <EconomicCalendarWidget />
         </div>
       )}
 
