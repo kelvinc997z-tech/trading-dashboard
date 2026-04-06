@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { createChart, ColorType, IChartApi, ISeriesApi, CandlestickData } from "lightweight-charts";
+import { createChart, ColorType } from "lightweight-charts";
 
 interface CryptoComChartProps {
   symbol: string;
@@ -9,8 +9,14 @@ interface CryptoComChartProps {
   height?: number;
 }
 
-// Use the exact type from lightweight-charts
-type CandleData = CandlestickData<number>;
+interface CandleData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number;
+}
 
 // Symbol mapping for Crypto.com format
 function toCryptoComSymbol(symbol: string): string {
@@ -36,8 +42,8 @@ function timeframeToInterval(timeframe: string): string {
 
 export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 }: CryptoComChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const chartRef = useRef<any>(null);
+  const seriesRef = useRef<any>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [change, setChange] = useState<number>(0);
@@ -55,7 +61,6 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
 
     ws.onopen = () => {
       console.log(`[CryptoCom] Connected for ${symbol} ${interval}`);
-      // Subscribe to candle channel
       ws.send(
         JSON.stringify({
           id: 1,
@@ -69,14 +74,10 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
-        // Handle subscription confirmation
         if (data.result?.status === "SUCCESS") return;
         
-        // Handle candle data
         if (data.result?.channel === channel && Array.isArray(data.result?.data)) {
           const newCandle = data.result.data[0];
-          // Crypto.com format: { t: timestamp (ms), o, h, l, c, v, s, i }
           const candle: CandleData = {
             time: Math.floor(newCandle.t / 1000),
             open: newCandle.o,
@@ -87,14 +88,11 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
           };
 
           setCandles(prev => {
-            // Replace if same timestamp exists, otherwise append
             const filtered = prev.filter(c => c.time !== candle.time);
             const updated = [...filtered, candle].sort((a, b) => a.time - b.time);
-            // Keep only last 500 candles
             return updated.slice(-500);
           });
 
-          // Update current price & change
           setCurrentPrice(candle.close);
           if (seriesRef.current) {
             seriesRef.current.update(candle);
@@ -115,7 +113,6 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
     };
   }, [channel]);
 
-  // Initialize chart
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -172,11 +169,17 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
     };
   }, [height]);
 
-  // Connect WS after chart init
   useEffect(() => {
     connectWebSocket();
     return () => wsRef.current?.close();
   }, [connectWebSocket]);
+
+  // Also update chart when candles change (initial load)
+  useEffect(() => {
+    if (seriesRef.current && candles.length > 0) {
+      seriesRef.current.setData(candles);
+    }
+  }, [candles]);
 
   // Calculate change % from candles
   const changeStats = useCallback(() => {
