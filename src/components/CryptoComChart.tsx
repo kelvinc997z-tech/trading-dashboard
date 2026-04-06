@@ -84,7 +84,6 @@ export default function CryptoComChart({ symbol, timeframe = "1h", height = 400 
             high: newCandle.h,
             low: newCandle.l,
             close: newCandle.c,
-            volume: newCandle.v,
           };
 
           setCandles(prev => {
