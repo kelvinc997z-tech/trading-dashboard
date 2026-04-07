@@ -77,6 +77,9 @@ const US_STOCKS = [
   { symbol: "TSM", name: "Taiwan Semiconductor Manufacturing" },
 ];
 
+// Set to true to show crypto charts
+const SHOW_CRYPTO = false;
+
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [markets, setMarkets] = useState<Record<string, { price: number }>>({});
@@ -509,7 +512,7 @@ export default function Dashboard() {
       {activeTab === "charts" && (
         <>
           {/* Crypto Charts */}
-          <motion.div
+          {SHOW_CRYPTO && <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
@@ -591,7 +594,7 @@ export default function Dashboard() {
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+          </motion.div>}
 
           {/* US Stocks Charts } */}
           <motion.div
