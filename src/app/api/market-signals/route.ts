@@ -81,7 +81,7 @@ export async function GET() {
         if (stockSymbols.includes(symbol)) {
           // Fetch US stock from Massive API
           const rawData = await fetchStockOHLC(symbol, "1h", 24);
-          if (!rawData.c || rawData.c.length === 0) {
+          if (!rawData || !rawData.c || rawData.c.length === 0) {
             // Fallback to dummy
             const dummy = generateDummySignals(symbol, 100 + Math.random() * 200);
             allSignals.push(...dummy);

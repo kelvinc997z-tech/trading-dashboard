@@ -1,3 +1,5 @@
+import { OHLCData } from "@/lib/quant-ai/data-collector";
+
 // Utility functions for Massive API
 
 const MASSIVE_BASE_URL = "https://api.massive.com/v1";
@@ -18,6 +20,14 @@ interface MassiveCandleResponse {
   l: number[];
   c: number[];
   v?: number[];
+}
+
+interface MassiveQuoteResponse {
+  symbol: string;
+  price: number;
+  change?: number;
+  changePercent?: number;
+  timestamp?: number;
 }
 
 // FALLBACK HARDCODED KEY - use only if env var missing
@@ -111,15 +121,56 @@ export function convertStockToDatabaseFormat(
   raw: MassiveCandleResponse,
   symbol: string,
   timeframe: string
-): Array<{ timestamp: string; open: number; high: number; low: number; close: number; volume?: number }> {
+): OHLCData[] {
   const { t, o, h, l, c, v } = raw;
 
   return t.map((timestamp, index) => ({
-    timestamp: new Date(timestamp).toISOString(),
+    symbol: symbol.toUpperCase(),
+    timeframe,
+    timestamp: new Date(timestamp * 1000), // Assume seconds, convert to ms
     open: Number(o[index]),
     high: Number(h[index]),
     low: Number(l[index]),
     close: Number(c[index]),
-    volume: v ? Number(v[index]) : undefined,
+    volume: v ? Number(v[index]) : 0,
   }));
+}
+
+// Fetch latest quote (real-time price)
+export async function fetchStockQuote(symbol: string): Promise<MassiveQuoteResponse | null> {
+  try {
+    const apiKey = process.env.MASSIVE_API_KEY;
+    if (!apiKey) {
+      console.log(`[Massive] API key not set, skipping quote for ${symbol}`);
+      return null;
+    }
+
+    const url = new URL(`${MASSIVE_BASE_URL}/stocks/quote`);
+    url.searchParams.append("symbol", symbol.toUpperCase());
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      next: { revalidate: 60 }, // cache 1 minute
+    });
+
+    if (!res.ok) {
+      console.warn(`[Massive] Quote error ${symbol}: ${res.status} ${res.statusText}`);
+      return null;
+    }
+
+    const data: any = await res.json();
+    return {
+      symbol: symbol.toUpperCase(),
+      price: data.price || data.latestPrice || data.c?.[0] || 0,
+      change: data.change,
+      changePercent: data.changePercent,
+      timestamp: data.timestamp || Date.now(),
+    } as MassiveQuoteResponse;
+  } catch (error) {
+    console.error(`[Massive] Quote fetch error for ${symbol}:`, error);
+    return null;
+  }
 }
