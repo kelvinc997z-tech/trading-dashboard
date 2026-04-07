@@ -95,8 +95,11 @@ async function testConnection() {
         console.log(`✅ Bucket "${BUCKET_NAME}" exists:`);
         console.log(`   - ID: ${bucket.id}`);
         console.log(`   - Public: ${bucket.public}`);
-        console.log(`   - File count: ${bucket.fileCount || 'N/A'}`);
-        console.log(`   - Size: ${bucket.size || 0} bytes`);
+        // Compute file count and size from earlier file list
+        const fileCount = files?.length || 0;
+        const totalSize = (files || []).reduce((sum, f) => sum + (f.metadata?.size || 0), 0);
+        console.log(`   - File count: ${fileCount}`);
+        console.log(`   - Size: ${totalSize} bytes`);
       } else {
         console.error(`❌ Bucket "${BUCKET_NAME}" not found!`);
       }

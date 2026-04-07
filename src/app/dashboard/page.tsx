@@ -7,6 +7,8 @@ import { Activity, BarChart2, PieChart, Eye, Calendar } from "lucide-react";
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import BinanceLiveChart from "@/components/BinanceLiveChart";
+import RealTimeChart from "@/components/RealTimeChart";
+import AdvancedChart from "@/components/AdvancedChart";
 import MassiveStockChart from "@/components/MassiveStockChart";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
