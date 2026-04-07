@@ -13,6 +13,8 @@ import MassiveStockChart from "@/components/MassiveStockChart";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import CryptoPriceTicker from "@/components/CryptoPriceTicker";
 import CryptoPriceCard from "@/components/CryptoPriceCard";
+import StockTicker from "@/components/StockTicker";
+import MarketSignals from "@/components/MarketSignals";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
@@ -537,6 +539,16 @@ export default function Dashboard() {
             {/* Live Crypto Price Ticker */}
             <div className="mb-4">
               <CryptoPriceTicker symbols={['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'XAUT']} refreshInterval={30000} />
+            </div>
+
+            {/* Live Stock Ticker */}
+            <div className="mb-4">
+              <StockTicker refreshInterval={30000} />
+            </div>
+
+            {/* Market Signals */}
+            <div className="mb-6">
+              <MarketSignals limit={5} refreshInterval={60000} />
             </div>
 
             {/* Crypto Price Cards */}

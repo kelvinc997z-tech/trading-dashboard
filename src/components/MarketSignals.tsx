@@ -1,125 +1,154 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
-interface Signal {
-  pair: string;
+interface MarketSignal {
+  symbol: string;
+  name: string;
   emoji: string;
-  signal: string;
+  signal: "buy" | "sell" | "neutral";
   entry: number;
   tp: number;
   sl: number;
+  confidence: number;
+  reasoning: string;
+  currentPrice?: number;
+  change?: number;
 }
 
-interface MarketData {
-  date: string;
-  market: string;
-  signals: Signal[];
-  disclaimer: string;
+interface MarketSignalsProps {
+  limit?: number;
+  refreshInterval?: number; // ms
 }
 
-export default function MarketSignals() {
-  const [data, setData] = useState<MarketData | null>(null);
+export default function MarketSignals({
+  limit = 5,
+  refreshInterval = 60000 // 1 minute
+}: MarketSignalsProps) {
+  const [signals, setSignals] = useState<MarketSignal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchSignals = async () => {
-      try {
-        const res = await fetch("/api/market-signals");
-        if (res.ok) {
-          const result = await res.json();
-          setData(result);
-        }
-      } catch (err) {
-        console.error("Failed to fetch signals:", err);
-      } finally {
-        setLoading(false);
+  const fetchSignals = async () => {
+    try {
+      const res = await fetch('/api/market-outlook?format=list');
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
       }
-    };
-    fetchSignals();
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchSignals, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+      const data = await res.json();
 
-  if (loading) {
-    return (
-      <div className="animate-pulse">
-        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-        <div className="space-y-3">
-          {[1,2,3,4,5].map(i => (
-            <div key={i} className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+      // Filter to top signals by confidence (descending)
+      const filtered = data
+        .filter((s: MarketSignal) => s.signal !== 'neutral')
+        .sort((a: MarketSignal, b: MarketSignal) => b.confidence - a.confidence)
+        .slice(0, limit);
 
-  if (!data || data.signals.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        No signals available at the moment.
-      </div>
-    );
-  }
-
-  const formatNumber = (num: number) => {
-    if (num >= 1000) {
-      return num.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      setSignals(filtered);
+      setError(null);
+    } catch (err: any) {
+      console.error('[MarketSignals]', err.message);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    if (Number.isInteger(num)) {
-      return num.toString();
-    }
-    return num.toFixed(5).replace(/\.?0+$/, "");
   };
 
+  useEffect(() => {
+    fetchSignals();
+    const interval = setInterval(fetchSignals, refreshInterval);
+    return () => clearInterval(interval);
+  }, [refreshInterval, limit]);
+
+  const getSignalColor = (signal: string) => {
+    switch (signal) {
+      case "buy": return "bg-green-500";
+      case "sell": return "bg-red-500";
+      default: return "bg-gray-500";
+    }
+  };
+
+  const getSignalText = (signal: string) => {
+    switch (signal) {
+      case "buy": return "BUY";
+      case "sell": return "SELL";
+      default: return "NEUTRAL";
+    }
+  };
+
+  if (loading && signals.length === 0) {
+    return (
+      <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+        <span className="text-sm text-gray-500">Loading market signals...</span>
+      </div>
+    );
+  }
+
+  if (error && signals.length === 0) {
+    return (
+      <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
+        <p className="text-xs text-red-600 dark:text-red-400">Failed to load market signals</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-lg font-semibold">Market Signals</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{data.date} • {data.market}</p>
-        </div>
-        <span className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 px-2 py-1 rounded">
-          Live
-        </span>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 rounded-2xl p-4"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-sm font-bold text-gray-900 dark:text-white">📊 Market Signals</span>
+        <span className="text-xs text-gray-500">(Top by confidence)</span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left">
-          <thead className="text-xs uppercase bg-gray-100 dark:bg-gray-700">
-            <tr>
-              <th className="px-3 py-2">Pair</th>
-              <th className="px-3 py-2">Signal</th>
-              <th className="px-3 py-2">Entry</th>
-              <th className="px-3 py-2">TP</th>
-              <th className="px-3 py-2">SL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.signals.map((s, i) => (
-              <tr key={i} className="border-b dark:border-gray-700">
-                <td className="px-3 py-2 flex items-center gap-2">
-                  <span>{s.emoji}</span>
-                  <span className="font-medium">{s.pair}</span>
-                </td>
-                <td className="px-3 py-2">
-                  <span className={`inline-flex px-2 py-1 text-xs rounded-full ${s.signal === "Buy" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"}`}>
-                    {s.signal}
+      <div className="space-y-3">
+        {signals.map((signal, idx) => (
+          <motion.div
+            key={signal.symbol}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: idx * 0.1 }}
+            className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">{signal.emoji}</div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-gray-900 dark:text-white">{signal.symbol}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold text-white ${getSignalColor(signal.signal)}`}>
+                    {getSignalText(signal.signal)}
                   </span>
-                </td>
-                <td className="px-3 py-2 font-mono">{formatNumber(s.entry)}</td>
-                <td className="px-3 py-2 text-green-600 dark:text-green-400 font-mono">{formatNumber(s.tp)}</td>
-                <td className="px-3 py-2 text-red-600 dark:text-red-400 font-mono">{formatNumber(s.sl)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+                <div className="text-xs text-gray-500">{signal.name}</div>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <div className="text-xs text-gray-500">Confidence</div>
+              <div className="font-mono font-semibold text-gray-900 dark:text-white">
+                {Math.round(signal.confidence)}%
+              </div>
+            </div>
+
+            <div className="text-right hidden sm:block">
+              <div className="text-xs text-gray-500">Entry/TP/SL</div>
+              <div className="font-mono text-sm text-gray-900 dark:text-white">
+                {signal.entry.toFixed(2)} / {signal.tp.toFixed(2)} / {signal.sl.toFixed(2)}
+              </div>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 italic">
-        {data.disclaimer}
-      </p>
-    </div>
+      {signals.length === 0 && !loading && (
+        <div className="text-center py-4 text-gray-500 text-sm">
+          No active signals at the moment
+        </div>
+      )}
+    </motion.div>
   );
 }
