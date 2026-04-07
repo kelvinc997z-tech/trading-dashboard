@@ -116,17 +116,23 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{symbol}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {symbol.replace(/USDT$|USD$|\.US$/, '')}
+          </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             ${latest.close.toFixed(2)}
             <span className={`ml-2 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
               ({isPositive ? '+' : ''}{changePercent.toFixed(2)}%)
             </span>
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Source: {source === 'yahoo' ? 'Yahoo Finance' : source === 'binance' ? 'Binance' : 'Massive'} •
-            {' '}{isCryptoSymbol(symbol) ? 'Crypto' : 'US Stock'}
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+              {source === 'yahoo' ? 'Yahoo Finance' : source === 'binance' ? 'Binance' : 'Massive'}
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {isCryptoSymbol(symbol) ? 'Crypto' : 'US Stock'}
+            </span>
+          </div>
         </div>
         <WatchlistButton symbol={symbol} size={24} />
       </div>
