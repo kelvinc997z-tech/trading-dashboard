@@ -296,6 +296,8 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
     { symbol: "XAG/USD", name: "Silver", emoji: "🥈" },
     {
       symbol: "BTC",
+      name: "Bitcoin",
+      emoji: "₿",
       type: "crypto",
       config: {
         timeframe: "1h",
@@ -314,6 +316,8 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
     },
     {
       symbol: "ETH",
+      name: "Ethereum",
+      emoji: "Ξ",
       type: "crypto",
       config: {
         timeframe: "1h",
@@ -332,6 +336,8 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
     },
     {
       symbol: "SOL",
+      name: "Solana",
+      emoji: "◎",
       type: "crypto",
       config: {
         timeframe: "1h",
@@ -350,6 +356,8 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
     },
     {
       symbol: "XRP",
+      name: "Ripple",
+      emoji: "✕",
       type: "crypto",
       config: {
         timeframe: "1h",
@@ -368,6 +376,8 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
     },
     {
       symbol: "DOGE",
+      name: "Dogecoin",
+      emoji: "Ð",
       type: "crypto",
       config: {
         timeframe: "1h",
