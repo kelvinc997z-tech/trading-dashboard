@@ -166,6 +166,7 @@ export async function fetchStockOHLC(
 
       // Convert v2 response to our internal format
       const results = data.results;
+      // v2 timestamps are already in milliseconds
       const response: MassiveCandleResponse = {
         symbol: sym,
         timeframe,
@@ -252,7 +253,8 @@ export function convertStockToDatabaseFormat(
   return t.map((timestamp, index) => ({
     symbol: symbol.toUpperCase(),
     timeframe,
-    timestamp: new Date(timestamp * 1000), // Assume seconds, convert to ms
+    // v2 returns ms, v1 returns seconds. Normalize to ms for Date constructor.
+    timestamp: new Date(timestamp > 1e12 ? timestamp : timestamp * 1000),
     open: Number(o[index]),
     high: Number(h[index]),
     low: Number(l[index]),
