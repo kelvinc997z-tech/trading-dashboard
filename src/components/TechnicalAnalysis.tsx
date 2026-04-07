@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, ResponsiveContainer } from 'recharts';
 
 interface PairData {
   symbol: string;
@@ -112,7 +112,10 @@ export default function TechnicalAnalysis({
       className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-4"
     >
       <div className="flex items-center gap-2 mb-4">
-        <LineChart className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+        <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v18h18" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 11l4-4 4 4 6-6" />
+        </svg>
         <span className="text-sm font-bold text-gray-900 dark:text-white">Real-time Technical Analysis</span>
         <span className="text-xs text-gray-500">All Pairs (24h)</span>
       </div>
