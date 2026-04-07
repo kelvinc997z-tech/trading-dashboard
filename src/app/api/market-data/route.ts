@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CRYPTO_SYMBOLS = ["XAUT", "BTC", "ETH", "SOL", "XRP", "KAS"];
+const CRYPTO_SYMBOLS = ["XAUT", "BTC", "ETH", "SOL", "XRP", "KAS", "DOGE"];
 const US_STOCKS = ["AAPL", "AMD", "NVDA", "MSFT", "GOOGL", "TSM"];
 const SUPPORTED_SYMBOLS = [...CRYPTO_SYMBOLS, ...US_STOCKS];
 
@@ -12,7 +12,7 @@ function normalizeSymbol(symbol: string): string {
 function getCoinMarketCapSymbol(symbol: string): string {
   const map: Record<string, string> = {
     "XAUT": "XAU",
-    "BTC": "BTC", "ETH": "ETH", "SOL": "SOL", "XRP": "XRP", "KAS": "KAS"
+    "BTC": "BTC", "ETH": "ETH", "SOL": "SOL", "XRP": "XRP", "KAS": "KAS", "DOGE": "DOGE"
   };
   return map[symbol] || symbol;
 }
@@ -138,7 +138,7 @@ async function fetchBinanceOHLC(symbol: string, timeframe: string = "1h", limit:
 async function fetchCoinGeckoOHLC(symbol: string, timeframe: string = "1h", limit: number = 200) {
   const idMap: Record<string, string> = {
     BTC: "bitcoin", ETH: "ethereum", SOL: "solana", XRP: "ripple",
-    XAUT: "tether-gold", KAS: "kaspa",
+    XAUT: "tether-gold", KAS: "kaspa", DOGE: "dogecoin",
   };
   const coinId = idMap[symbol];
   if (!coinId) return null;

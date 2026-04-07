@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchCoinGeckoPrices, toCoinGeckoId } from "@/lib/coingecko";
 
 interface CryptoPriceCardProps {
   symbol: string;
@@ -14,12 +13,15 @@ export default function CryptoPriceCard({ symbol, refreshInterval = 30000 }: Cry
 
   const fetchPrice = async () => {
     try {
-      const data = await fetchCoinGeckoPrices([symbol]);
-      const coinId = toCoinGeckoId(symbol);
-      if (coinId && data[coinId]) {
+      const res = await fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}&timeframe=1h`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.current) {
         setPriceData({
-          price: data[coinId].usd,
-          change24h: data[coinId].usd_24h_change || 0,
+          price: data.current.price,
+          change24h: data.current.changePercent || 0,
         });
       }
     } catch (error) {

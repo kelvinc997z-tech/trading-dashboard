@@ -67,7 +67,7 @@ export default function MarketSentiment({
     return "Extreme Fear";
   };
 
-  if (loading || !sentiment) {
+  if (loading && !sentiment) {
     return (
       <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
@@ -76,7 +76,7 @@ export default function MarketSentiment({
     );
   }
 
-  if (error) {
+  if (error && !sentiment) {
     return (
       <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
         <p className="text-xs text-red-600 dark:text-red-400">Failed to load market sentiment</p>
@@ -84,7 +84,16 @@ export default function MarketSentiment({
     );
   }
 
-  const { overall } = sentiment;
+  // If no sentiment after loading (API returned null/empty), show placeholder
+  if (!sentiment) {
+    return (
+      <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+        <span className="text-sm text-gray-500">No sentiment data available</span>
+      </div>
+    );
+  }
+
+  const overall = sentiment?.overall ?? { score: 0, trend: "neutral" as const, updatedAt: "" };
 
   const score = overall.score ?? 0;
   const trend = overall.trend ?? "neutral";
