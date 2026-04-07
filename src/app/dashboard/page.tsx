@@ -14,7 +14,7 @@ import TradingViewWidget from "@/components/TradingViewWidget";
 import CryptoPriceTicker from "@/components/CryptoPriceTicker";
 import CryptoPriceCard from "@/components/CryptoPriceCard";
 import StockTicker from "@/components/StockTicker";
-import MarketSignals from "@/components/MarketSignals";
+import MarketSentiment from "@/components/MarketSentiment";
 import NewsUpdate from "@/components/NewsUpdate";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
@@ -530,7 +530,7 @@ export default function Dashboard() {
 
             {/* Market Signals */}
             <div className="mb-6">
-              <MarketSignals limit={5} refreshInterval={60000} />
+              <MarketSentiment refreshInterval={3600000} />
             </div>
 
             {/* Crypto Price Cards */}
