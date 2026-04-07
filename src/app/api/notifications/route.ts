@@ -18,28 +18,33 @@ export async function GET(request: NextRequest) {
     where.read = false;
   }
 
-  const notifications = await db.notification.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    take: limit,
-  });
+  try {
+    const notifications = await db.notification.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
 
-  // Parse JSON data fields
-  const parsedNotifications = notifications.map(n => ({
-    ...n,
-    data: n.data ? (() => {
-      try { return typeof n.data === "string" ? JSON.parse(n.data) : n.data; } catch { return null; }
-    })() : null,
-  }));
+    // Parse JSON data fields
+    const parsedNotifications = notifications.map(n => ({
+      ...n,
+      data: n.data ? (() => {
+        try { return typeof n.data === "string" ? JSON.parse(n.data) : n.data; } catch { return null; }
+      })() : null,
+    }));
 
-  const unreadCount = await db.notification.count({
-    where: { userId: session.user.id, read: false },
-  });
+    const unreadCount = await db.notification.count({
+      where: { userId: session.user.id, read: false },
+    });
 
-  return NextResponse.json({
-    notifications: parsedNotifications,
-    unreadCount,
-  });
+    return NextResponse.json({
+      notifications: parsedNotifications,
+      unreadCount,
+    });
+  } catch (error) {
+    console.error("Notifications GET error:", error);
+    return NextResponse.json({ error: "Failed to fetch notifications" }, { status: 500 });
+  }
 }
 
 // PATCH /api/notifications - mark as read
