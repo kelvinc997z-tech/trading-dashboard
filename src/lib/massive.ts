@@ -1,9 +1,9 @@
 /**
- * Massive.com API Client
+ * Massive.com API Client (v2)
  * Fetches US stock data (candlestick, quotes, fundamentals)
  */
 
-const MASSIVE_BASE = "https://api.massive.com/v1"; // Adjust if different
+const MASSIVE_BASE = "https://api.massive.com/v2"; // Use v2 endpoint
 
 export function getMassiveHeaders() {
   const apiKey = process.env.MASSIVE_API_KEY;
@@ -16,7 +16,72 @@ export function getMassiveHeaders() {
   };
 }
 
-// Fetch stock OHLC data
+// Helper: convert timeframe to Massive v2 format
+function convertTimeframeV2(timeframe: string): { multiplier: number; timespan: string } {
+  const match = timeframe.match(/(\d+)([mhdwM])/);
+  if (!match) {
+    return { multiplier: 1, timespan: "hour" };
+  }
+  const mult = parseInt(match[1]);
+  const unit = match[2];
+  const timespanMap: Record<string, string> = {
+    "m": "minute",
+    "h": "hour",
+    "d": "day",
+    "w": "week",
+    "M": "month"
+  };
+  return {
+    multiplier: mult,
+    timespan: timespanMap[unit] || "hour"
+  };
+}
+
+// Calculate date range for fetching
+function getDateRange(limit: number, timeframe: string): { from: string; to: string } {
+  const now = new Date();
+  const { multiplier, timespan } = convertTimeframeV2(timeframe);
+
+  const toDate = new Date();
+  const fromDate = new Date(now);
+
+  let msPerCandle: number;
+  switch (timespan) {
+    case "minute":
+      msPerCandle = 60 * 1000 * multiplier;
+      break;
+    case "hour":
+      msPerCandle = 60 * 60 * 1000 * multiplier;
+      break;
+    case "day":
+      msPerCandle = 24 * 60 * 60 * 1000 * multiplier;
+      break;
+    case "week":
+      msPerCandle = 7 * 24 * 60 * 60 * 1000 * multiplier;
+      break;
+    case "month":
+      msPerCandle = 30 * 24 * 60 * 60 * 1000 * multiplier;
+      break;
+    default:
+      msPerCandle = 60 * 60 * 1000;
+  }
+
+  fromDate.setTime(fromDate.getTime() - (limit * msPerCandle));
+
+  const formatDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  return {
+    from: formatDate(fromDate),
+    to: formatDate(toDate),
+  };
+}
+
+// Fetch stock OHLC data using v2 aggregates endpoint
 export async function fetchStockOHLC(
   symbol: string,
   timeframe: string = "1h",
@@ -28,16 +93,12 @@ export async function fetchStockOHLC(
       console.log(`[Massive] API key not set, skipping ${symbol}`);
       return null;
     }
-    // Convert timeframe to Massive format (if needed)
-    const interval = convertTimeframe(timeframe);
-    
-    const params = new URLSearchParams({
-      symbol: symbol.toUpperCase(),
-      interval,
-      limit: count.toString(),
-    });
 
-    const res = await fetch(`${MASSIVE_BASE}/stocks/candles?${params}`, {
+    const { multiplier, timespan } = convertTimeframeV2(timeframe);
+    const { from, to } = getDateRange(count, timeframe);
+
+    const url = `${MASSIVE_BASE}/aggs/ticker/${symbol.toUpperCase()}/range/${multiplier}/${timespan}/${from}/${to}`;
+    const res = await fetch(`${url}?limit=${count}&adjusted=true`, {
       headers: getMassiveHeaders(),
       next: { revalidate: 3600 }, // cache 1 hour
     });
@@ -47,7 +108,23 @@ export async function fetchStockOHLC(
       return null;
     }
 
-    return await res.json();
+    const data = await res.json();
+
+    // Convert v2 response to v1-like format for compatibility
+    if (data.results && Array.isArray(data.results)) {
+      const results = data.results;
+      return {
+        c: results.map((r: any) => r.c),
+        h: results.map((r: any) => r.h),
+        l: results.map((r: any) => r.l),
+        o: results.map((r: any) => r.o),
+        v: results.map((r: any) => r.v),
+        t: results.map((r: any) => r.t),
+        s: data.ticker || symbol.toUpperCase(),
+      };
+    }
+
+    return data;
   } catch (error) {
     console.error(`[Massive] Fetch error for ${symbol}:`, error);
     return null;
@@ -62,7 +139,10 @@ export async function fetchStockQuote(symbol: string): Promise<any | null> {
       console.log(`[Massive] API key not set, skipping quote for ${symbol}`);
       return null;
     }
-    const res = await fetch(`${MASSIVE_BASE}/stocks/quote?symbol=${symbol.toUpperCase()}`, {
+
+    // Try v2 quotes endpoint
+    const url = `${MASSIVE_BASE}/quotes/${symbol.toUpperCase()}`;
+    const res = await fetch(url, {
       headers: getMassiveHeaders(),
       next: { revalidate: 60 }, // cache 1 minute
     });
@@ -79,49 +159,34 @@ export async function fetchStockQuote(symbol: string): Promise<any | null> {
   }
 }
 
-// Helper: convert timeframe to Massive interval format
-function convertTimeframe(timeframe: string): string {
-  const map: Record<string, string> = {
-    "1m": "1min",
-    "5m": "5min",
-    "15m": "15min",
-    "30m": "30min",
-    "1h": "1hour",
-    "4h": "4hour",
-    "1d": "1day",
-    "1w": "1week",
-    "1mo": "1month",
-  };
-  return map[timeframe] || "1hour";
-}
-
 // Convert Massive OHLC response to our OHLCData format
 export function convertStockToDatabaseFormat(
   massiveData: any,
   symbol: string,
   timeframe: string
 ): any[] {
-  // Adjust based on actual Massive API response structure
-  // Assuming similar to Finnhub: { c: [], h: [], l: [], o: [], v: [], t: [] }
-  if (!massiveData || !massiveData.c || massiveData.c.length === 0) {
+  // Handle both v1 and v2 formats
+  const data = massiveData;
+  if (!data || !data.c || !Array.isArray(data.c) || data.c.length === 0) {
     return [];
   }
 
-  const { c, h, l, o, v, t } = massiveData;
-  const data = [];
+  const { c, h, l, o, v, t } = data;
+  const result = [];
 
   for (let i = 0; i < c.length; i++) {
-    data.push({
+    result.push({
       symbol: symbol.toUpperCase(),
       timeframe,
-      timestamp: new Date(t[i] * 1000), // Massive might return seconds or ms
-      open: o[i],
-      high: h[i],
-      low: l[i],
-      close: c[i],
-      volume: v[i],
+      // v2 returns ms, v1 returns seconds. Normalize to ms.
+      timestamp: new Date(t[i] > 1e12 ? t[i] : t[i] * 1000),
+      open: Number(o[i]),
+      high: Number(h[i]),
+      low: Number(l[i]),
+      close: Number(c[i]),
+      volume: v ? Number(v[i]) : 0,
     });
   }
 
-  return data;
+  return result;
 }
