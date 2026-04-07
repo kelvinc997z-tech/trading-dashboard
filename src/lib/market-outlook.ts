@@ -294,6 +294,60 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
     { symbol: "GBP/USD", name: "GBPUSD", emoji: "💷" },
     { symbol: "OIL/USD", name: "Oil", emoji: "🛢" },
     { symbol: "XAG/USD", name: "Silver", emoji: "🥈" },
+    {
+      symbol: "BTC",
+      type: "crypto",
+      config: {
+        timeframe: "1h",
+        limit: 200,
+        ma_periods: { sma20: 20, sma50: 50, ema12: 12, ema26: 26 },
+        atr_period: 14,
+        indicator_config: {
+          rsi_period: 14,
+          rsi_oversold: 30,
+          rsi_overbought: 70,
+          macd_fast: 12,
+          macd_slow: 26,
+          macd_signal: 9,
+        },
+      },
+    },
+    {
+      symbol: "ETH",
+      type: "crypto",
+      config: {
+        timeframe: "1h",
+        limit: 200,
+        ma_periods: { sma20: 20, sma50: 50, ema12: 12, ema26: 26 },
+        atr_period: 14,
+        indicator_config: {
+          rsi_period: 14,
+          rsi_oversold: 30,
+          rsi_overbought: 70,
+          macd_fast: 12,
+          macd_slow: 26,
+          macd_signal: 9,
+        },
+      },
+    },
+    {
+      symbol: "SOL",
+      type: "crypto",
+      config: {
+        timeframe: "1h",
+        limit: 200,
+        ma_periods: { sma20: 20, sma50: 50, ema12: 12, ema26: 26 },
+        atr_period: 14,
+        indicator_config: {
+          rsi_period: 14,
+          rsi_oversold: 30,
+          rsi_overbought: 70,
+          macd_fast: 12,
+          macd_slow: 26,
+          macd_signal: 9,
+        },
+      },
+    },
   ];
 
   const results: MarketPair[] = [];
