@@ -79,6 +79,8 @@ const US_STOCKS = [
 
 // Set to true to show crypto charts
 const SHOW_CRYPTO_CHARTS = false;
+// Set to true to show crypto price cards
+const SHOW_CRYPTO_PRICE_CARDS = false;
 
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -538,6 +540,7 @@ export default function Dashboard() {
             </div>
 
             {/* Crypto Price Cards */}
+            {SHOW_CRYPTO_PRICE_CARDS && (
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Crypto Prices</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -546,6 +549,7 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
+            )}
 
             {SHOW_CRYPTO_CHARTS && (
             <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
