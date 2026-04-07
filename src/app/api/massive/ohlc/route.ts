@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchOHLC } from "@/lib/data-provider";
 
-// GET /api/massive/ohlc?symbol=AAPL&timeframe=1h&limit=200
-// Unified endpoint: US Stocks (Massive) + Crypto (Yahoo Finance)
+// Unified endpoint: Fetches OHLC data for any symbol
+// - US Stocks & Crypto both supported via Yahoo Finance
+// - Fallback to Massive for US stocks if Yahoo fails
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get("symbol");
@@ -15,9 +16,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await fetchOHLC(symbol, timeframe, limit);
-    return NextResponse.json({ 
-      data: result.data, 
-      symbol: result.symbol, 
+    
+    if (result.data.length === 0 && result.error) {
+      return NextResponse.json({ error: result.error }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      data: result.data,
+      symbol: result.symbol,
       timeframe: result.timeframe,
       source: result.source
     });
