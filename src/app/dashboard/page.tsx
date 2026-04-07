@@ -13,9 +13,6 @@ import MassiveStockChart from "@/components/MassiveStockChart";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import CryptoPriceTicker from "@/components/CryptoPriceTicker";
 import CryptoPriceCard from "@/components/CryptoPriceCard";
-import StockTicker from "@/components/StockTicker";
-import MarketSignals from "@/components/MarketSignals";
-import NewsUpdate from "@/components/NewsUpdate";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
@@ -23,6 +20,9 @@ import WatchlistOutlook from "@/components/WatchlistOutlook";
 import StatCard from "@/components/ui/StatCard";
 import GlassCard from "@/components/ui/GlassCard";
 import ConfidenceBar from "@/components/ConfidenceBar";
+import StockTicker from "@/components/StockTicker";
+import MarketSignals from "@/components/MarketSignals";
+import NewsUpdate from "@/components/NewsUpdate";
 
 interface DbTrade {
   id: string;
@@ -82,7 +82,6 @@ const US_STOCKS = [
 
 // Set to true to show crypto charts
 const SHOW_CRYPTO_CHARTS = false;
-// Set to true to show crypto price cards
 const SHOW_CRYPTO_PRICE_CARDS = false;
 
 export default function Dashboard() {
@@ -420,12 +419,6 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* News Update */}
-      <div className="mb-6">
-        <NewsUpdate limit={5} refreshInterval={300000} />
-      </div>
-      </div>
-
       {/* Dashboard Tabs - Simplified */}
       <div className="px-4 mb-8">
         <div className="relative">
@@ -497,7 +490,7 @@ export default function Dashboard() {
       {/* Multiple Pair Charts - Separate Categories */}
       {activeTab === "charts" && (
         <>
-          {/* Crypto Charts */}
+          {/* Crypto Section */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -523,18 +516,7 @@ export default function Dashboard() {
               <CryptoPriceTicker symbols={['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'XAUT']} refreshInterval={30000} />
             </div>
 
-            {/* Live Stock Ticker */}
-            <div className="mb-4">
-              <StockTicker refreshInterval={30000} />
-            </div>
-
-            {/* Market Signals */}
-            <div className="mb-6">
-              <MarketSignals limit={5} refreshInterval={60000} />
-            </div>
-
             {/* Crypto Price Cards */}
-            {SHOW_CRYPTO_PRICE_CARDS && (
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Crypto Prices</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -543,9 +525,15 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-            )}
+          </motion.div>
 
-            {SHOW_CRYPTO_CHARTS && (
+          {/* Crypto Charts */}
+          {SHOW_CRYPTO_CHARTS && <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-8"
+          >
             <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {CRYPTO_PAIRS.map((pair, idx) => (
                 <motion.div
@@ -593,10 +581,10 @@ export default function Dashboard() {
                 </motion.div>
               ))}
             </div>
-            )}
           </motion.div>
+}
 
-          {/* US Stocks Charts } */}
+          {/* US Stocks Charts */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

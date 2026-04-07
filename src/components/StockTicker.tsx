@@ -25,7 +25,7 @@ export default function StockTicker({
     { symbol: "GOOGL", name: "Alphabet" },
     { symbol: "TSM", name: "TSMC" },
   ],
-  refreshInterval = 30000 // 30 seconds
+  refreshInterval = 30000
 }: StockTickerProps) {
   const [prices, setPrices] = useState<StockPriceData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +48,7 @@ export default function StockTicker({
             let change = 0;
             let changePercent = 0;
             if (history.length >= 2) {
-              const prev = history[history.length - 2]?.close || history[0]?.close;
+              const prev = history[history.length - 2]?.close ?? history[0]?.close;
               if (prev) {
                 change = current - prev;
                 changePercent = (change / prev) * 100;

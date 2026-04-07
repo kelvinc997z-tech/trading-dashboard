@@ -28,22 +28,20 @@ export default function NewsUpdate({
 
   const fetchNews = async () => {
     try {
-      // Use the existing news API endpoint
       const res = await fetch('/api/news?limit=' + limit);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
       const data = await res.json();
 
-      // Transform to our format
-      const newsItems: NewsItem[] = data.news?.map((item: any) => ({
+      const newsItems: NewsItem[] = (data.news || []).map((item: any) => ({
         id: item.id || item.url,
         title: item.title,
         source: item.source || 'Unknown',
         publishedAt: item.publishedAt || item.published_at,
         url: item.url,
         summary: item.summary || item.description,
-      })) || [];
+      }));
 
       setNews(newsItems);
       setError(null);

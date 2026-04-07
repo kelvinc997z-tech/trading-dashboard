@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 interface SentimentData {
   overall: {
-    score: number; // -1 to 1
+    score: number;
     trend: "bullish" | "bearish" | "neutral";
     updatedAt: string;
   };
@@ -51,18 +51,6 @@ export default function MarketSentiment({
     return () => clearInterval(interval);
   }, [refreshInterval]);
 
-  const getSentimentColor = (score: number, trend: string) => {
-    if (trend === "bullish" || score > 0.3) return "text-green-500";
-    if (trend === "bearish" || score < -0.3) return "text-red-500";
-    return "text-amber-500";
-  };
-
-  const getSentimentBg = (score: number, trend: string) => {
-    if (trend === "bullish" || score > 0.3) return "bg-green-500/10 border-green-500/20";
-    if (trend === "bearish" || score < -0.3) return "bg-red-500/10 border-red-500/20";
-    return "bg-amber-500/10 border-amber-500/20";
-  };
-
   const getSentimentLabel = (trend: string) => {
     switch (trend) {
       case "bullish": return "BULLISH";
@@ -79,7 +67,7 @@ export default function MarketSentiment({
     return "Extreme Fear";
   };
 
-  if (loading && !sentiment) {
+  if (loading || !sentiment) {
     return (
       <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
@@ -88,7 +76,7 @@ export default function MarketSentiment({
     );
   }
 
-  if (error && !sentiment) {
+  if (error) {
     return (
       <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
         <p className="text-xs text-red-600 dark:text-red-400">Failed to load market sentiment</p>
@@ -96,7 +84,22 @@ export default function MarketSentiment({
     );
   }
 
-  const { overall } = sentiment || { overall: { score: 0, trend: "neutral" as const, updatedAt: "" } };
+  const { overall } = sentiment;
+
+  const score = overall.score ?? 0;
+  const trend = overall.trend ?? "neutral";
+
+  const getSentimentColor = (score: number, trend: string) => {
+    if (trend === "bullish" || score > 0.3) return "text-green-500";
+    if (trend === "bearish" || score < -0.3) return "text-red-500";
+    return "text-amber-500";
+  };
+
+  const getSentimentBg = (score: number, trend: string) => {
+    if (trend === "bullish" || score > 0.3) return "bg-green-500/10 border-green-500/20";
+    if (trend === "bearish" || score < -0.3) return "bg-red-500/10 border-red-500/20";
+    return "bg-amber-500/10 border-amber-500/20";
+  };
 
   return (
     <motion.div
@@ -115,46 +118,29 @@ export default function MarketSentiment({
         </span>
       </div>
 
-      {/* Overall Sentiment */}
       <div className="flex items-center gap-6 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mb-4">
         <div className="flex-1">
           <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Overall Market</div>
           <div className="flex items-baseline gap-3">
             <motion.div
-              key={overall.score}
+              key={score}
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
-              className={`text-4xl font-bold ${getSentimentColor(overall.score, overall.trend)}`}
+              className={`text-4xl font-bold ${getSentimentColor(score, trend)}`}
             >
-              {Math.round(overall.score * 100)}
+              {Math.round(score * 100)}
             </motion.div>
-            <div className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSentimentBg(overall.score, overall.trend).split(' ')[0]}`}>
-              {getSentimentLabel(overall.trend)}
+            <div className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSentimentBg(score, trend).split(' ')[0]}`}>
+              {getSentimentLabel(trend)}
             </div>
           </div>
-          <div className="text-sm text-gray-500 mt-2">{getFearGreedLabel(overall.score)}</div>
+          <div className="text-sm text-gray-500 mt-2">{getFearGreedLabel(score)}</div>
         </div>
 
-        {/* Gauge */}
         <div className="relative w-32 h-32">
           <svg viewBox="0 0 100 50" className="w-full h-full">
-            {/* Background arc */}
-            <path
-              d="M 10 50 A 40 40 0 0 1 90 50"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="8"
-              className="text-gray-300 dark:text-gray-600"
-            />
-            {/* Colored segments */}
-            <path
-              d="M 10 50 A 40 40 0 0 1 90 50"
-              fill="none"
-              stroke="url(#gradient)"
-              strokeWidth="8"
-              strokeDasharray={`${((overall.score + 1) / 2) * 125.66} 125.66`}
-              strokeLinecap="round"
-            />
+            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" strokeWidth="8" className="text-gray-300 dark:text-gray-600" />
+            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="url(#gradient)" strokeWidth="8" strokeDasharray={`${((score + 1) / 2) * 125.66} 125.66`} strokeLinecap="round" />
             <defs>
               <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor="#ef4444" />
@@ -162,22 +148,12 @@ export default function MarketSentiment({
                 <stop offset="100%" stopColor="#22c55e" />
               </linearGradient>
             </defs>
-            {/* Indicator needle */}
-            <line
-              x1="50"
-              y1="50"
-              x2={50 + 40 * Math.cos(Math.PI - (overall.score + 1) * Math.PI / 2)}
-              y2={50 - 40 * Math.sin(Math.PI - (overall.score + 1) * Math.PI / 2)}
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-gray-900 dark:text-white"
-            />
+            <line x1="50" y1="50" x2={50 + 40 * Math.cos(Math.PI - (score + 1) * Math.PI / 2)} y2={50 - 40 * Math.sin(Math.PI - (score + 1) * Math.PI / 2)} stroke="currentColor" strokeWidth="2" className="text-gray-900 dark:text-white" />
             <circle cx="50" cy="50" r="4" className="fill-gray-900 dark:fill-white" />
           </svg>
         </div>
       </div>
 
-      {/* Crypto & Stock sub-sentiments (placeholder for future expansion) */}
       {sentiment.symbols && sentiment.symbols.length > 0 && (
         <div className="space-y-2">
           <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">By Asset</div>

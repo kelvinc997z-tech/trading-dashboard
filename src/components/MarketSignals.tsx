@@ -13,8 +13,6 @@ interface MarketSignal {
   sl: number;
   confidence: number;
   reasoning: string;
-  currentPrice?: number;
-  change?: number;
 }
 
 interface MarketSignalsProps {
@@ -38,7 +36,7 @@ export default function MarketSignals({
       }
       const data = await res.json();
 
-      // Filter to top signals by confidence (descending)
+      // Filter to top signals by confidence (descending), exclude neutral
       const filtered = data
         .filter((s: MarketSignal) => s.signal !== 'neutral')
         .sort((a: MarketSignal, b: MarketSignal) => b.confidence - a.confidence)
@@ -60,22 +58,6 @@ export default function MarketSignals({
     return () => clearInterval(interval);
   }, [refreshInterval, limit]);
 
-  const getSignalColor = (signal: string) => {
-    switch (signal) {
-      case "buy": return "bg-green-500";
-      case "sell": return "bg-red-500";
-      default: return "bg-gray-500";
-    }
-  };
-
-  const getSignalText = (signal: string) => {
-    switch (signal) {
-      case "buy": return "BUY";
-      case "sell": return "SELL";
-      default: return "NEUTRAL";
-    }
-  };
-
   if (loading && signals.length === 0) {
     return (
       <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -92,6 +74,22 @@ export default function MarketSignals({
       </div>
     );
   }
+
+  const getSignalColor = (signal: string) => {
+    switch (signal) {
+      case "buy": return "bg-green-500";
+      case "sell": return "bg-red-500";
+      default: return "bg-gray-500";
+    }
+  };
+
+  const getSignalText = (signal: string) => {
+    switch (signal) {
+      case "buy": return "BUY";
+      case "sell": return "SELL";
+      default: return "NEUTRAL";
+    }
+  };
 
   return (
     <motion.div
