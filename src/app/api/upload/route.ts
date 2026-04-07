@@ -10,6 +10,7 @@ import { supabaseAdmin, STORAGE_BUCKET, StorageFile } from '@/lib/supabase';
 // POST handler (upload)
 export async function POST(request: NextRequest) {
   try {
+    const admin = supabaseAdmin!;
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const type = (formData.get('type') as string) || 'screenshot';
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       ? `${type}/${referenceId || 'general'}/${timestamp}-${safeFilename}`
       : `${timestamp}-${safeFilename}`;
 
-    const { data, error } = await supabaseAdmin.storage
+    const { data, error } = await admin.storage
       .from(STORAGE_BUCKET)
       .upload(path, file, {
         cacheControl: '3600',
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    const { data: urlData } = supabaseAdmin.storage
+    const { data: urlData } = admin.storage
       .from(STORAGE_BUCKET)
       .getPublicUrl(path);
 
@@ -78,11 +79,12 @@ export async function POST(request: NextRequest) {
 // GET handler (list files)
 export async function GET(request: NextRequest) {
   try {
+    const admin = supabaseAdmin!;
     const { searchParams } = new URL(request.url);
     const prefix = searchParams.get('prefix') || '';
     const limit = parseInt(searchParams.get('limit') || '100');
 
-    const { data: files, error } = await supabaseAdmin.storage
+    const { data: files, error } = await admin.storage
       .from(STORAGE_BUCKET)
       .list(prefix, { limit, sortBy: { column: 'created_at', order: 'desc' } });
 
@@ -113,6 +115,7 @@ export async function GET(request: NextRequest) {
 // DELETE handler (delete file)
 export async function DELETE(request: NextRequest) {
   try {
+    const admin = supabaseAdmin!;
     const { searchParams } = new URL(request.url);
     const path = searchParams.get('path');
 
@@ -123,7 +126,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { error } = await supabaseAdmin.storage
+    const { error } = await admin.storage
       .from(STORAGE_BUCKET)
       .remove([path]);
 

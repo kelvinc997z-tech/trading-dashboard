@@ -1,5 +1,7 @@
 import { supabaseAdmin, STORAGE_BUCKET, StorageFile } from './supabase';
 
+const admin = supabaseAdmin!;
+
 /**
  * Advanced Storage Operations for Trading Dashboard
  */
@@ -9,7 +11,7 @@ export const storageAdmin = {
    * Delete file by path
    */
   async deleteByPath(path: string): Promise<boolean> {
-    const { error } = await supabaseAdmin.storage
+    const { error } = await admin.storage
       .from(STORAGE_BUCKET)
       .remove([path]);
 
@@ -24,7 +26,7 @@ export const storageAdmin = {
    * Delete all files in a folder (by referenceId)
    */
   async deleteByPrefix(prefix: string): Promise<string[]> {
-    const { data: files, error } = await supabaseAdmin.storage
+    const { data: files, error } = await admin.storage
       .from(STORAGE_BUCKET)
       .list(prefix, { limit: 100 });
 
@@ -35,7 +37,7 @@ export const storageAdmin = {
 
     const paths = files.map((f: StorageFile) => f.name);
     if (paths.length > 0) {
-      const { error: deleteError } = await supabaseAdmin.storage
+      const { error: deleteError } = await admin.storage
         .from(STORAGE_BUCKET)
         .remove(paths);
 
@@ -51,7 +53,7 @@ export const storageAdmin = {
    * Get file metadata by path
    */
   async getFile(path: string) {
-    const { data, error } = await supabaseAdmin.storage
+    const { data, error } = await admin.storage
       .from(STORAGE_BUCKET)
       .download(path);
 
@@ -64,14 +66,14 @@ export const storageAdmin = {
    */
   async move(oldPath: string, newPath: string): Promise<boolean> {
     // Download
-    const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+    const { data: fileData, error: downloadError } = await admin.storage
       .from(STORAGE_BUCKET)
       .download(oldPath);
 
     if (downloadError) return false;
 
     // Upload to new location
-    const { error: uploadError } = await supabaseAdmin.storage
+    const { error: uploadError } = await admin.storage
       .from(STORAGE_BUCKET)
       .upload(newPath, fileData, { upsert: false });
 
@@ -89,17 +91,19 @@ export const storageAdmin = {
    * Get bucket info (size, file count)
    */
   async getBucketInfo() {
-    const { data: files, error } = await supabaseAdmin.storage
+    const { data: files, error } = await admin.storage
       .from(STORAGE_BUCKET)
       .list('', { limit: 1000 });
 
     if (error) return null;
 
-    const totalSize = files.reduce((acc: number, f: StorageFile) => acc + (f.metadata?.size || 0), 0);
-    const fileCount = files.length;
+    const totalSize = files.reduce((acc: number, file: StorageFile) => {
+      const size = file.metadata?.size || 0;
+      return acc + (size instanceof Date ? 0 : Number(size) || 0);
+    }, 0);
 
     return {
-      fileCount,
+      fileCount: files.length,
       totalSize,
       totalSizeMB: totalSize / (1024 * 1024)
     };
@@ -109,7 +113,7 @@ export const storageAdmin = {
    * Generate signed URL (for private files)
    */
   async getSignedUrl(path: string, expiresIn: number = 3600): Promise<string | null> {
-    const { data, error } = await supabaseAdmin.storage
+    const { data, error } = await admin.storage
       .from(STORAGE_BUCKET)
       .createSignedUrl(path, expiresIn);
 
@@ -117,7 +121,7 @@ export const storageAdmin = {
       console.error('Signed URL error:', error);
       return null;
     }
-    return data.signedUrl;
+    return data?.signedUrl || null;
   }
 };
 

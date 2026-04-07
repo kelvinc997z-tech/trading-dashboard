@@ -31,21 +31,30 @@ export interface UploadResult {
 }
 
 /**
- * Client untuk akses client-side (gunakan di komponen React)
- * Hanya dengan anon key - RLS policy di Supabase harus di-setup
+ * Client untuk akses client-side (gunakan di API routes saja)
+ * Tidak digunakan di komponen client – semua akses ke Supabase harus via API routes
  */
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+let supabase: SupabaseClient | null = null;
+let supabaseAdmin: SupabaseClient | null = null;
 
-/**
- * Client untuk akses server-side (gunakan di API routes)
- * Dengan service role key, bypass RLS policies
- */
-export const supabaseAdmin: SupabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+if (typeof window === 'undefined') {
+  // Server-side only initialization
+  supabase = createClient(supabaseUrl, supabaseAnonKey);
+  supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+} else {
+  // Client-side: provide null to prevent accidental usage
+  supabase = null;
+  supabaseAdmin = null;
+  console.warn('Supabase client accessed on client side – this should not happen. Use API routes instead.');
+}
+
+// Now export non-null assertion; if accessed on client, will throw if used
+export { supabase, supabaseAdmin };
 
 // Storage helper functions
 export const storage = {
@@ -56,7 +65,7 @@ export const storage = {
    * @param useAdmin - Gunakan admin client (bypass RLS)
    */
   async upload(file: File, path: string, useAdmin: boolean = true): Promise<UploadResult> {
-    const client = useAdmin ? supabaseAdmin : supabase;
+    const client = (useAdmin ? supabaseAdmin : supabase)!;
     const fileExt = file.name.split('.').pop();
     const fileName = `${path}.${fileExt}`;
 
@@ -81,7 +90,7 @@ export const storage = {
    * @param path - Path file di bucket
    */
   getPublicUrl(path: string): string {
-    const { data } = supabaseAdmin.storage
+    const { data } = (supabaseAdmin!).storage
       .from(STORAGE_BUCKET)
       .getPublicUrl(path);
 
@@ -92,7 +101,7 @@ export const storage = {
    * List semua file di bucket (server-side only)
    */
   async list(path: string = ''): Promise<StorageFile[]> {
-    const { data, error } = await supabaseAdmin.storage
+    const { data, error } = await (supabaseAdmin!).storage
       .from(STORAGE_BUCKET)
       .list(path, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
@@ -104,7 +113,7 @@ export const storage = {
    * Delete file dari bucket
    */
   async delete(path: string): Promise<void> {
-    const { error } = await supabaseAdmin.storage
+    const { error } = await (supabaseAdmin!).storage
       .from(STORAGE_BUCKET)
       .remove([path]);
 
