@@ -511,7 +511,7 @@ export default function Dashboard() {
       {/* Multiple Pair Charts - Separate Categories */}
       {activeTab === "charts" && (
         <>
-          {/* Crypto Section */}
+          {/* Crypto Charts */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -546,15 +546,8 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-          </motion.div>
 
-          {/* Crypto Charts */}
-          {SHOW_CRYPTO_CHARTS && <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="mb-8"
-          >
+            {SHOW_CRYPTO_CHARTS && (
             <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {CRYPTO_PAIRS.map((pair, idx) => (
                 <motion.div
@@ -602,6 +595,7 @@ export default function Dashboard() {
                 </motion.div>
               ))}
             </div>
+            )}
           </motion.div>
 
           {/* US Stocks Charts } */}
