@@ -29,7 +29,8 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
       setError(null);
       const res = await fetch(`/api/massive/ohlc?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}&limit=200`);
       if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
+        const errText = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errText}`);
       }
       const json = await res.json();
       if (json.error || !json.data || json.data.length === 0) {
@@ -46,8 +47,8 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
 
   useEffect(() => {
     fetchData();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    // Refresh every 5 minutes (300000 ms) to avoid rate limiting
+    const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
@@ -63,11 +64,17 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
     return (
       <div className="h-64 flex items-center justify-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg p-4">
         <div className="text-center">
-          <p className="text-red-600 dark:text-red-400 font-medium">Massive API Error</p>
+          <p className="text-red-600 dark:text-red-400 font-medium">Data unavailable</p>
           <p className="text-xs text-red-500 dark:text-red-400 mt-1">{error}</p>
-          <p className="text-xs text-red-500 dark:text-red-400 mt-1">
-            Ensure MASSIVE_API_KEY is set and symbol is supported.
-          </p>
+          {error.includes('429') || error.includes('rate') ? (
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+              API rate limit exceeded. Data will refresh automatically when available.
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              Check MASSIVE_API_KEY and symbol.
+            </p>
+          )}
         </div>
       </div>
     );
