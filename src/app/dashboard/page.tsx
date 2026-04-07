@@ -534,14 +534,14 @@ export default function Dashboard() {
             
             {/* Live Crypto Price Ticker */}
             <div className="mb-4">
-              <CryptoPriceTicker symbols={['BTC', 'ETH', 'SOL', 'XRP', 'DOGE']} refreshInterval={30000} />
+              <CryptoPriceTicker symbols={['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'XAUT']} refreshInterval={30000} />
             </div>
 
             {/* Crypto Price Cards */}
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Crypto Prices</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {['BTC', 'ETH', 'SOL', 'XRP', 'DOGE'].map(symbol => (
+                {['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'XAUT'].map(symbol => (
                   <CryptoPriceCard key={symbol} symbol={symbol} refreshInterval={30000} />
                 ))}
               </div>
