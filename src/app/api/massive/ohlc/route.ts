@@ -1,53 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchStockOHLC } from "@/lib/massive";
+import { fetchStockOHLC, convertStockToDatabaseFormat } from "@/lib/massive";
 
 // GET /api/massive/ohlc?symbol=AAPL&timeframe=1h&limit=200
-// Fetch OHLC data directly from Massive API (no database)
+// Try multiple symbol formats and timeframes to get data
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const symbol = searchParams.get("symbol")?.toUpperCase();
-  const timeframe = searchParams.get("timeframe") || "1h";
+  const rawSymbol = searchParams.get("symbol")?.toUpperCase();
+  const timeframe = searchParams.get("timeframe") || "1d"; // default to 1d for stocks
   const limit = parseInt(searchParams.get("limit") || "200");
 
-  if (!symbol) {
+  if (!rawSymbol) {
     return NextResponse.json({ error: "Symbol required" }, { status: 400 });
   }
 
   try {
-    // Fetch directly from Massive API
-    const rawData = await fetchStockOHLC(symbol, timeframe, limit);
+    // Try different symbol formats that Massive might accept
+    const symbolVariants = [
+      rawSymbol,
+      `${rawSymbol}.US`,
+      `NASDAQ:${rawSymbol}`,
+      `NYSE:${rawSymbol}`,
+      `${rawSymbol}.XNAS`,
+      `${rawSymbol}.XNYS`,
+    ];
 
-    if (!rawData || !rawData.c || rawData.c.length === 0) {
-      return NextResponse.json(
-        { error: `No data returned from Massive for ${symbol}` },
-        { status: 404 }
-      );
+    let lastError: Error | null = null;
+
+    for (const symbol of symbolVariants) {
+      console.log(`[Massive] Trying symbol=${symbol}, timeframe=${timeframe}`);
+      const rawData = await fetchStockOHLC(symbol, timeframe, limit);
+      
+      if (rawData && rawData.c && rawData.c.length > 0) {
+        console.log(`[Massive] Success with symbol=${symbol}, returned ${rawData.c.length} candles`);
+        const data = convertStockToDatabaseFormat(rawData, symbol, timeframe);
+        return NextResponse.json({ data, symbol, timeframe });
+      }
     }
 
-    // Transform to chart format
-    // Massive format: { c: [close], o: [open], h: [high], l: [low], t: [timestamps], v: [volume] }
-    const closes = rawData.c;
-    const opens = rawData.o;
-    const highs = rawData.h;
-    const lows = rawData.l;
-    const timestamps = rawData.t;
-    const volumes = rawData.v;
-
-    const data = timestamps.map((t: number, i: number) => ({
-      timestamp: new Date(t).toISOString(),
-      open: opens[i],
-      high: highs[i],
-      low: lows[i],
-      close: closes[i],
-      volume: volumes?.[i],
-    }));
-
-    return NextResponse.json({ data, symbol, timeframe });
-  } catch (error: any) {
-    console.error(`[Massive] Error fetching OHLC for ${symbol}:`, error);
+    // If we get here, all attempts failed
+    console.warn(`[Massive] All symbol formats failed for ${rawSymbol}`);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch from Massive API" },
-      { status: 500 }
+      { error: `No data returned from Massive for ${rawSymbol}. Check MASSIVE_API_KEY and symbol format.` },
+      { status: 404 }
     );
+  } catch (error: any) {
+    console.error(`[Massive] Error for ${rawSymbol}:`, error);
+    return NextResponse.json({ error: error.message || "Massive API error" }, { status: 500 });
   }
 }
