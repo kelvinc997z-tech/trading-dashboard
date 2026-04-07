@@ -7,6 +7,16 @@
 import { fetchYahooFinanceCandles, isCryptoSymbol, convertToYahooInterval } from "./yahoo-finance";
 import { OHLCData } from "./quant-ai/data-collector";
 
+// Lazy import Massive to avoid unnecessary loading
+let massiveModule: { fetchStockOHLC: any; convertStockToDatabaseFormat: any } | null = null;
+
+async function getMassive() {
+  if (!massiveModule) {
+    massiveModule = await import('./massive');
+  }
+  return massiveModule;
+}
+
 export interface OHLCResponse {
   symbol: string;
   timeframe: string;
