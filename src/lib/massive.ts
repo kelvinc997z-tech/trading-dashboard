@@ -20,7 +20,9 @@ interface MassiveCandleResponse {
   v?: number[];
 }
 
-// Generate symbol variants to try
+// FALLBACK HARDCODED KEY - use only if env var missing
+const FALLBACK_MASSIVE_KEY = "EOxPULzhbFSBLBGzxI4yN5TnLtiplHwp";
+
 function getSymbolVariants(rawSymbol: string): string[] {
   const variants = new Set<string>();
   variants.add(rawSymbol);
@@ -34,21 +36,20 @@ function getSymbolVariants(rawSymbol: string): string[] {
   return Array.from(variants);
 }
 
-// Fetch OHLC data from Massive API with retries
 export async function fetchStockOHLC(
   symbol: string,
   timeframe: string = "1d",
   limit: number = 200
 ): Promise<MassiveCandleResponse | null> {
-  const apiKey = process.env.MASSIVE_API_KEY;
-
+  // Get API key from env or fallback
+  let apiKey = process.env.MASSIVE_API_KEY;
   if (!apiKey) {
-    console.error(`[Massive] ❌ API key not set`);
-    return null;
+    apiKey = FALLBACK_MASSIVE_KEY;
+    console.log(`[Massive] ⚠️ Using FALLBACK API key (env not set)`);
   }
 
   const symbolVariants = getSymbolVariants(symbol);
-  console.log(`[Massive] 🔄 Trying ${symbolVariants.length} symbol formats for ${symbol}`);
+  console.log(`[Massive] 🔄 Trying ${symbolVariants.length} symbol formats for ${symbol} with key: ${apiKey.slice(0,8)}...`);
 
   for (const sym of symbolVariants) {
     for (const endpoint of ENDPOINT_VARIANTS) {
@@ -70,26 +71,21 @@ export async function fetchStockOHLC(
         console.log(`[Massive] 📡 Response ${res.status} ${res.statusText}`);
 
         if (!res.ok) {
-          // Log error body if possible
           try {
             const errorBody = await res.text();
             if (errorBody) console.log(`[Massive] 🚨 Error body: ${errorBody.slice(0, 200)}`);
-          } catch (e) {
-            // ignore
-          }
-          continue; // try next variant
+          } catch (e) {}
+          continue;
         }
 
         const data: any = await res.json();
         console.log(`[Massive] ✅ Success with symbol=${sym}, endpoint=${endpoint}. Response keys:`, Object.keys(data));
 
-        // Check data structure
         if (!data || !Array.isArray(data.c) || data.c.length === 0) {
           console.warn(`[Massive] ⚠️ Empty or invalid data structure for ${sym}`);
           continue;
         }
 
-        // Success!
         return {
           symbol: sym,
           timeframe,
