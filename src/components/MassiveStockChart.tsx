@@ -22,6 +22,7 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
   const [data, setData] = useState<OHLCData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [source, setSource] = useState<string>("");
 
   const fetchData = useCallback(async () => {
     try {
@@ -34,9 +35,18 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
       }
       const json = await res.json();
       if (json.error || !json.data || json.data.length === 0) {
-        throw new Error(json.error || "No data returned from Massive");
+        throw new Error(json.error || "No data returned");
       }
-      setData(json.data);
+      // Validate data: filter out NaN/Infinity values
+      const validData = json.data.filter((d: any) => {
+        const close = Number(d.close);
+        return isFinite(close) && close > 0;
+      });
+      if (validData.length === 0) {
+        throw new Error("All price data is invalid");
+      }
+      setData(validData);
+      setSource(json.source || "unknown");
     } catch (err: any) {
       console.error(`[MassiveStockChart] ${symbol}:`, err.message);
       setError(err.message);
@@ -72,7 +82,7 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
             </p>
           ) : (
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              Check MASSIVE_API_KEY and symbol.
+              Check symbol or network connection.
             </p>
           )}
         </div>
@@ -83,7 +93,7 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
   if (data.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <p className="text-sm text-gray-600 dark:text-gray-400">No data available from Massive</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">No data available for {symbol}</p>
       </div>
     );
   }
@@ -147,6 +157,10 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
           />
         </LineChart>
       </ResponsiveContainer>
+      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between">
+        <span>Data source: Yahoo Finance {source === 'massive' ? '(fallback)' : ''}</span>
+        <span>Last updated: {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+      </div>
     </div>
   );
 }

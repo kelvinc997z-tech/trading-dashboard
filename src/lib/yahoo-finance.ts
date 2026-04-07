@@ -108,15 +108,36 @@ export async function fetchYahooFinanceCandles(
         throw new Error('Invalid data structure from Yahoo Finance');
       }
 
-      // Map to our standard format
-      return timestamp.map((ts, i) => ({
-        timestamp: ts * 1000, // Convert seconds to milliseconds
-        open: quotes.open[i] || 0,
-        high: quotes.high[i] || 0,
-        low: quotes.low[i] || 0,
-        close: quotes.close[i] || 0,
-        volume: quotes.volume[i] || 0,
-      }));
+      // Map to our standard format, filtering out null values
+      const candles: YahooFinanceCandle[] = [];
+      for (let i = 0; i < timestamp.length; i++) {
+        const t = timestamp[i] * 1000;
+        const open = quotes.open[i] ?? null;
+        const high = quotes.high[i] ?? null;
+        const low = quotes.low[i] ?? null;
+        const close = quotes.close[i] ?? null;
+        const volume = quotes.volume[i] ?? null;
+        
+        // Skip if all are null
+        if (open === null && high === null && low === null && close === null && volume === null) {
+          continue;
+        }
+        
+        candles.push({
+          timestamp: t,
+          open: open || 0,
+          high: high || 0,
+          low: low || 0,
+          close: close || 0,
+          volume: volume || 0,
+        });
+      }
+      
+      if (candles.length === 0) {
+        throw new Error('All candle data is null');
+      }
+      
+      return candles;
     } catch (error: any) {
       lastError = error;
       console.log(`[YahooFinance] Attempt failed for ${sym}: ${error.message}`);
