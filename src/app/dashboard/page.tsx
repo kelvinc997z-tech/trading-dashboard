@@ -9,6 +9,7 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import BinanceLiveChart from "@/components/BinanceLiveChart";
 import RealTimeChart from "@/components/RealTimeChart";
 import AdvancedChart from "@/components/AdvancedChart";
+import MassiveStockChart from "@/components/MassiveStockChart";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
@@ -73,12 +74,6 @@ const US_STOCKS = [
   { symbol: "GOOGL", name: "Alphabet Inc." },
   { symbol: "TSM", name: "Taiwan Semiconductor Manufacturing" },
 ];
-
-// Helper: convert symbol to Binance base symbol (without USDT suffix)
-function getBinanceBaseSymbol(symbol: string): string {
-  if (symbol === "XAUT") return "XAU"; // Binance uses XAUUSDT for gold
-  return symbol; // BTC -> BTC, ETH -> ETH, KAS -> KAS, etc.
-}
 
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -563,7 +558,7 @@ export default function Dashboard() {
                         <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-40 sm:h-48">
-                          <BinanceLiveChart symbol={getBinanceBaseSymbol(pair.symbol)} interval={timeframe} />
+                          <BinanceLiveChart symbol={pair.symbol} interval={timeframe} />
                         </div>
                       )}
                     </div>
@@ -632,7 +627,7 @@ export default function Dashboard() {
                         <div className="h-40 sm:h-48 skeleton rounded-lg" />
                       ) : (
                         <div className="h-40 sm:h-48">
-                          <TradingViewWidget symbol={pair.symbol} interval={timeframe} height={160} />
+                          <MassiveStockChart symbol={pair.symbol} timeframe={timeframe} height={160} />
                         </div>
                       )}
                     </div>

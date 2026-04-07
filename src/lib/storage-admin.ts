@@ -1,4 +1,4 @@
-import { supabaseAdmin, STORAGE_BUCKET } from './supabase';
+import { supabaseAdmin, STORAGE_BUCKET, StorageFile } from './supabase';
 
 /**
  * Advanced Storage Operations for Trading Dashboard
@@ -33,7 +33,7 @@ export const storageAdmin = {
       return [];
     }
 
-    const paths = files.map(f => f.name);
+    const paths = files.map((f: StorageFile) => f.name);
     if (paths.length > 0) {
       const { error: deleteError } = await supabaseAdmin.storage
         .from(STORAGE_BUCKET)
@@ -95,7 +95,7 @@ export const storageAdmin = {
 
     if (error) return null;
 
-    const totalSize = files.reduce((acc, f) => acc + (f.metadata?.size || 0), 0);
+    const totalSize = files.reduce((acc: number, f: StorageFile) => acc + (f.metadata?.size || 0), 0);
     const fileCount = files.length;
 
     return {

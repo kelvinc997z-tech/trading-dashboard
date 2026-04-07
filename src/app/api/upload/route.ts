@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin, STORAGE_BUCKET } from '@/lib/supabase';
+import { supabaseAdmin, STORAGE_BUCKET, StorageFile } from '@/lib/supabase';
 
 /**
  * POST /api/upload - Upload file
@@ -90,9 +90,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      files: (files || []).map(f => ({
+      files: (files || []).map((f: StorageFile) => ({
         name: f.name,
-        path: f.id,
+        path: f.id || f.name,
         size: f.metadata?.size || 0,
         created_at: f.created_at,
         // last_modified may not exist in all Supabase versions - use fallback
