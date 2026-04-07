@@ -91,7 +91,7 @@ export async function fetchOHLC(
   console.log(`[DataProvider] Fetching ${symbol} (crypto:${isCrypto}) from Yahoo: range=${yahooRange}, interval=${yahooInterval}`);
   
   try {
-    const candles = await fetchYahooFinanceCandles(normalizedSymbol, yahooRange, yahooInterval);
+    const candles = await fetchYahooFinanceCandles(normalizedSymbol, yahooRange, yahooInterval, isCrypto);
     
     // Apply limit (Yahoo might return more than requested)
     const limitedData = candles.slice(0, limit);

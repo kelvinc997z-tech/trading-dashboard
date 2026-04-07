@@ -40,51 +40,68 @@ export interface YahooFinanceResponse {
 }
 
 /**
+ * Check if symbol is cryptocurrency
+ */
+export function isCryptoSymbol(symbol: string): boolean {
+  const upper = symbol.toUpperCase();
+  // Crypto symbols that Yahoo Finance uses -USD suffix
+  const cryptoSymbols = [
+    'BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX', 'DOT', 'MATIC', 'LINK',
+    'UNI', 'SHIB', 'LTC', 'ATOM', 'VET', 'FIL', 'THETA', 'XLM', 'TRX', 'EOS',
+    'AAVE', 'MKR', 'COMP', 'YFI', 'SNX', 'GRT', 'ENJ', 'MANA', 'SAND', 'AXS',
+    'FLOW', 'CHZ', 'IOTA', 'NEAR', 'ALGO', 'FTM', 'ONE', 'CAKE', 'BNB', 'XMR',
+    'ZEC', 'DASH', 'KSM', 'DOT', 'ICP', 'WAVES', 'HNT', 'HIVE', 'STMX', 'ANKR',
+    'AAVE', 'MKR', 'CRV', 'CVX', 'PEPE', 'FLOKI', 'BONK', 'WIF', 'BOME', 'NOT'
+  ];
+  
+  return cryptoSymbols.includes(upper) || upper.endsWith('-USD') || upper.endsWith('-USDT');
+}
+
+/**
  * Fetch chart data from Yahoo Finance
- * Supports both US stocks (AAPL, MSFT) and crypto (BTC-USD, ETH-USD)
- * @param symbol - Symbol (e.g., AAPL, BTC-USD, ETH-USD)
- * @param range - Time range: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
- * @param interval - Candle interval: 1m, 2m, 5m, 15m, 30m, 60m, 1d, 1wk, 1mo
+ * For crypto, symbol should be like BTC-USD. For stocks, try common formats.
+ * @param symbol - Symbol (already formatted for crypto: BTC-USD; for stocks may try variants)
+ * @param isCrypto - If true, only use symbol as provided (expects -USD suffix)
  */
 export async function fetchYahooFinanceCandles(
   symbol: string,
   range: string = '5d',
-  interval: string = '1h'
+  interval: string = '1h',
+  isCrypto?: boolean
 ): Promise<YahooFinanceCandle[]> {
-  // Ensure symbol format
   let formattedSymbol = symbol.toUpperCase();
-  if (!formattedSymbol.includes('-') && !formattedSymbol.includes('.')) {
-    // Default to -USD for crypto, but keep as is for stocks
-    // We'll try both if needed
-    formattedSymbol = formattedSymbol;
+
+  // If crypto, ensure -USD suffix and skip variants
+  if (isCrypto) {
+    if (!formattedSymbol.includes('-')) {
+      formattedSymbol = `${formattedSymbol}-USD`;
+    }
+  } else {
+    // For stocks, try both plain and with .US suffix if not already present
+    if (!formattedSymbol.includes('.') && !formattedSymbol.includes('-')) {
+      formattedSymbol = `${formattedSymbol}.US`;
+    }
   }
 
-  // Try different symbol formats
-  const symbolVariants = [
-    formattedSymbol,
-    formattedSymbol.includes('-') ? formattedSymbol : `${formattedSymbol}-USD`,
-    formattedSymbol.includes('.') ? formattedSymbol : `${formattedSymbol}.US`,
-  ];
+  const url = `https://query2.finance.yahoo.com/v8/finance/chart/${formattedSymbol}?range=${range}&interval=${interval}`;
 
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/json',
+    'Accept-Language': 'en-US,en;q=0.9',
+  };
+
+  // Retry logic with exponential backoff
   let lastError: Error | null = null;
-
-  for (const sym of symbolVariants) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const url = `https://query2.finance.yahoo.com/v8/finance/chart/${sym}?range=${range}&interval=${interval}`;
+      const res = await fetch(url, { headers, next: { revalidate: 300 } });
       
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'application/json',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-        next: { revalidate: 300 }, // cache 5 minutes
-      });
-
       if (!res.ok) {
         if (res.status === 429) {
-          // Rate limited, wait and retry
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          const waitMs = Math.min(1000 * Math.pow(2, attempt), 10000);
+          console.log(`[YahooFinance] Rate limited, waiting ${waitMs}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitMs));
           continue;
         }
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -140,30 +157,12 @@ export async function fetchYahooFinanceCandles(
       return candles;
     } catch (error: any) {
       lastError = error;
-      console.log(`[YahooFinance] Attempt failed for ${sym}: ${error.message}`);
-      continue;
+      console.log(`[YahooFinance] Attempt failed for ${formattedSymbol}: ${error.message}`);
+      if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
     }
   }
 
-  throw new Error(lastError?.message || `Failed to fetch data for ${symbol}`);
-}
-
-/**
- * Check if symbol is cryptocurrency
- */
-export function isCryptoSymbol(symbol: string): boolean {
-  const upper = symbol.toUpperCase();
-  // Crypto symbols that Yahoo Finance uses -USD suffix
-  const cryptoSymbols = [
-    'BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX', 'DOT', 'MATIC', 'LINK',
-    'UNI', 'SHIB', 'LTC', 'ATOM', 'VET', 'FIL', 'THETA', 'XLM', 'TRX', 'EOS',
-    'AAVE', 'MKR', 'COMP', 'YFI', 'SNX', 'GRT', 'ENJ', 'MANA', 'SAND', 'AXS',
-    'FLOW', 'CHZ', 'IOTA', 'NEAR', 'ALGO', 'FTM', 'ONE', 'CAKE', 'BNB', 'XMR',
-    'ZEC', 'DASH', 'KSM', 'DOT', 'ICP', 'WAVES', 'HNT', 'HIVE', 'STMX', 'ANKR',
-    'AAVE', 'MKR', 'CRV', 'CVX', 'PEPE', 'FLOKI', 'BONK', 'WIF', 'BOME', 'NOT'
-  ];
-  
-  return cryptoSymbols.includes(upper) || upper.endsWith('-USD') || upper.endsWith('-USDT');
+  throw new Error(lastError?.message || `Failed to fetch data for ${formattedSymbol}`);
 }
 
 /**
@@ -178,24 +177,22 @@ export function convertToYahooInterval(timeframe: string): string {
   
   if (unit === 'm') {
     if (num <= 1) return '1m';
-    if (num <= 2) return '2m';
-    if (num <= 5) return '5m';
-    if (num <= 15) return '15m';
-    if (num <= 30) return '30m';
-    return '60m';
-  }
-  if (unit === 'h') {
+    else if (num <= 2) return '2m';
+    else if (num <= 5) return '5m';
+    else if (num <= 15) return '15m';
+    else if (num <= 30) return '30m';
+    else return '60m';
+  } else if (unit === 'h') {
     if (num <= 1) return '60m';
-    if (num <= 4) return '4h';
-    return '1d';
-  }
-  if (unit === 'd') {
+    else if (num <= 4) return '4h';
+    else return '1d';
+  } else if (unit === 'd') {
     if (num === 1) return '1d';
-    if (num <= 7) return '1wk';
+    else if (num <= 7) return '1wk';
+    else return '1mo';
+  } else if (unit === 'w') {
+    return '1wk';
+  } else {
     return '1mo';
   }
-  if (unit === 'w') return '1wk';
-  if (unit === 'M') return '1mo';
-  
-  return '1h';
 }

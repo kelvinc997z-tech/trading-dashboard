@@ -12,6 +12,7 @@ import AdvancedChart from "@/components/AdvancedChart";
 import MassiveStockChart from "@/components/MassiveStockChart";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import CryptoPriceTicker from "@/components/CryptoPriceTicker";
+import SignalCard from "@/components/SignalCard";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
@@ -532,7 +533,12 @@ export default function Dashboard() {
             <div className="mb-4">
               <CryptoPriceTicker symbols={['BTC', 'ETH', 'SOL', 'XRP']} refreshInterval={30000} />
             </div>
-            
+
+            {/* Trading Signal for BTC */}
+            <div className="mb-4">
+              <SignalCard symbol="BTC" timeframe="1h" refreshInterval={300000} />
+            </div>
+
             <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {CRYPTO_PAIRS.map((pair, idx) => (
                 <motion.div
