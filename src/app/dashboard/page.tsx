@@ -15,6 +15,7 @@ import CryptoPriceTicker from "@/components/CryptoPriceTicker";
 import CryptoPriceCard from "@/components/CryptoPriceCard";
 import StockTicker from "@/components/StockTicker";
 import MarketSignals from "@/components/MarketSignals";
+import NewsUpdate from "@/components/NewsUpdate";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
@@ -395,31 +396,6 @@ export default function Dashboard() {
       {/* Stats Cards - Futuristic */}
       <div className="grid gap-4 md:gap-6 grid-cols-2 md:grid-cols-4 mb-6">
         <StatCard
-          label="Open Positions"
-          value={openTradesCount}
-          sublabel="Active trades"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          }
-          gradient="blue"
-          trend={{ value: "+2.4%", up: true }}
-        />
-        <StatCard
-          label="Today's P&L"
-          value={realizedToday.toFixed(2)}
-          sublabel="Net profit"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-          gradient="emerald"
-          positive={realizedToday >= 0}
-          trend={{ value: realizedToday >= 0 ? "+4.2%" : "-1.8%", up: realizedToday >= 0 }}
-        />
-        <StatCard
           label="AI Confidence"
           value="87%"
           sublabel="Signal accuracy"
@@ -442,6 +418,12 @@ export default function Dashboard() {
           }
           gradient="emerald"
         />
+      </div>
+
+      {/* News Update */}
+      <div className="mb-6">
+        <NewsUpdate limit={5} refreshInterval={300000} />
+      </div>
       </div>
 
       {/* Dashboard Tabs - Simplified */}
