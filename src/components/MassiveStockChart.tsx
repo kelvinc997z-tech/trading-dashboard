@@ -1,7 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import TradingViewWidget from "@/components/TradingViewWidget";
+import { useEffect, useState, useCallback } from "react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import WatchlistButton from "@/components/watchlist/WatchlistButton";
+
+interface OHLCData {
+  timestamp: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
 
 interface MassiveStockChartProps {
   symbol: string;
@@ -10,37 +19,39 @@ interface MassiveStockChartProps {
 }
 
 export default function MassiveStockChart({ symbol, timeframe = "1h", height = 400 }: MassiveStockChartProps) {
-  const [hasData, setHasData] = useState<boolean | null>(null);
+  const [data, setData] = useState<OHLCData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch(`/api/massive/ohlc?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}&limit=200`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      if (json.error || !json.data || json.data.length === 0) {
+        throw new Error(json.error || "No data returned from Massive");
+      }
+      setData(json.data);
+    } catch (err: any) {
+      console.error(`[MassiveStockChart] ${symbol}:`, err.message);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [symbol, timeframe]);
 
   useEffect(() => {
-    // Quick check: if we can fetch from Massive, try once. If fails, immediately fallback.
-    const checkMassive = async () => {
-      try {
-        // Try with simple symbol (as-is) and 1d timeframe (more likely to have data)
-        const res = await fetch(`/api/massive/ohlc?symbol=${encodeURIComponent(symbol)}&timeframe=1d&limit=10`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.data && json.data.length > 0) {
-            setHasData(true);
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn(`[MassiveStockChart] Check failed for ${symbol}:`, e);
-      }
-      setHasData(false);
-    };
+    fetchData();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
-    checkMassive();
-  }, [symbol]);
-
-  if (hasData === false) {
-    // Fallback directly to TradingViewWidget for guaranteed display
-    return <TradingViewWidget symbol={symbol} interval={timeframe} height={height} />;
-  }
-
-  if (hasData === null) {
-    // Loading state while checking
+  if (loading) {
     return (
       <div className="h-64 flex items-center justify-center">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
@@ -48,17 +59,87 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
     );
   }
 
-  // If hasData is true, we'll fetch and display data from Massive
-  // For simplicity, just render placeholder since we know data exists
+  if (error) {
+    return (
+      <div className="h-64 flex items-center justify-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg p-4">
+        <div className="text-center">
+          <p className="text-red-600 dark:text-red-400 font-medium">Massive API Error</p>
+          <p className="text-xs text-red-500 dark:text-red-400 mt-1">{error}</p>
+          <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+            Ensure MASSIVE_API_KEY is set and symbol is supported.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <p className="text-sm text-gray-600 dark:text-gray-400">No data available from Massive</p>
+      </div>
+    );
+  }
+
+  // Calculate change stats
+  const latest = data[data.length - 1];
+  const prev = data[data.length - 2] || latest;
+  const change = latest.close - prev.close;
+  const changePercent = (change / prev.close) * 100;
+  const isPositive = change >= 0;
+
+  // Transform for Recharts line chart
+  const chartData = data.map(d => ({
+    time: new Date(d.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    close: d.close,
+  }));
+
   return (
     <div>
-      <div className="text-center mb-2">
-        <span className="font-bold">{symbol}</span>
-        <span className="ml-2 text-green-500">(+0.00%)</span>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{symbol}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            ${latest.close.toFixed(2)}
+            <span className={`ml-2 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+              ({isPositive ? '+' : ''}{changePercent.toFixed(2)}%)
+            </span>
+          </p>
+        </div>
+        <WatchlistButton symbol={symbol} size={24} />
       </div>
-      <div className="h-48 flex items-center justify-center text-gray-500">
-        (US Stock data from Massive API)
-      </div>
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-300 dark:stroke-gray-600" />
+          <XAxis 
+            dataKey="time" 
+            tick={{ fontSize: 12 }}
+            className="text-gray-600 dark:text-gray-300"
+          />
+          <YAxis 
+            domain={['auto', 'auto']}
+            tick={{ fontSize: 12 }}
+            className="text-gray-600 dark:text-gray-300"
+          />
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: 'var(--tooltip-bg, white)',
+              border: '1px solid var(--tooltip-border, #e5e7eb)',
+              borderRadius: '0.5rem',
+              color: 'var(--tooltip-color, #111827)'
+            }}
+            formatter={(value: number, name: string) => [value.toFixed(2), name.toUpperCase()]}
+          />
+          <Line 
+            type="monotone" 
+            dataKey="close" 
+            stroke={isPositive ? "#16a34a" : "#dc2626"} 
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 }
