@@ -1,127 +1,92 @@
-/**
- * Massive.com API Client
- * Fetches US stock data (candlestick, quotes, fundamentals)
- */
+// Utility functions for Massive API
 
-const MASSIVE_BASE = "https://api.massive.com/v1"; // Adjust if different
+const MASSIVE_BASE_URL = "https://api.massive.com/v1";
 
-export function getMassiveHeaders() {
-  const apiKey = process.env.MASSIVE_API_KEY;
-  if (!apiKey) {
-    throw new Error("MASSIVE_API_KEY is not set");
-  }
-  return {
-    "Authorization": `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-  };
+interface MassiveCandleResponse {
+  symbol: string;
+  timeframe: string;
+  t: number[];  // timestamps in ms
+  o: number[];  // opens
+  h: number[];  // highs
+  l: number[];  // lows
+  c: number[];  // closes
+  v?: number[]; // volumes (optional)
 }
 
-// Fetch stock OHLC data
+// Fetch OHLC data from Massive API
 export async function fetchStockOHLC(
   symbol: string,
-  timeframe: string = "1h",
-  count: number = 200
-): Promise<any | null> {
+  timeframe: string = "1d",
+  limit: number = 200
+): Promise<MassiveCandleResponse | null> {
+  const apiKey = process.env.MASSIVE_API_KEY;
+  
+  if (!apiKey) {
+    console.log(`[Massive] API key not set, skipping ${symbol}`);
+    return null;
+  }
+
+  console.log(`[Massive] Fetching ${symbol} with timeframe=${timeframe}, limit=${limit}`);
+  
+  // Try candles endpoint first
+  const url = new URL(`${MASSIVE_BASE_URL}/stocks/candles`);
+  url.searchParams.append("symbol", symbol);
+  url.searchParams.append("interval", timeframe);
+  url.searchParams.append("limit", limit.toString());
+
   try {
-    const apiKey = process.env.MASSIVE_API_KEY;
-    if (!apiKey) {
-      console.log(`[Massive] API key not set, skipping ${symbol}`);
-      return null;
-    }
-    // Convert timeframe to Massive format (if needed)
-    const interval = convertTimeframe(timeframe);
+    console.log(`[Massive] Request URL: ${url.toString()}`);
     
-    const params = new URLSearchParams({
-      symbol: symbol.toUpperCase(),
-      interval,
-      limit: count.toString(),
+    const res = await fetch(url.toString(), {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
     });
 
-    const res = await fetch(`${MASSIVE_BASE}/stocks/candles?${params}`, {
-      headers: getMassiveHeaders(),
-      next: { revalidate: 3600 }, // cache 1 hour
-    });
-
+    console.log(`[Massive] Response status: ${res.status} ${res.statusText}`);
+    
     if (!res.ok) {
-      console.warn(`[Massive] Error ${symbol}: ${res.status} ${res.statusText}`);
+      if (res.status === 401 || res.status === 403) {
+        console.error(`[Massive] API key invalid or insufficient permissions`);
+      } else if (res.status === 404) {
+        console.warn(`[Massive] Symbol ${symbol} not found or endpoint not supported`);
+      } else {
+        console.error(`[Massive] HTTP ${res.status}: ${res.statusText}`);
+      }
       return null;
     }
 
-    return await res.json();
-  } catch (error) {
-    console.error(`[Massive] Fetch error for ${symbol}:`, error);
+    const data: any = await res.json();
+    console.log(`[Massive] Response keys:`, Object.keys(data));
+    
+    // Validate response structure
+    if (!data || !Array.isArray(data.c) || data.c.length === 0) {
+      console.warn(`[Massive] Empty or invalid response for ${symbol}:`, data);
+      return null;
+    }
+
+    return data as MassiveCandleResponse;
+  } catch (error: any) {
+    console.error(`[Massive] Fetch exception for ${symbol}:`, error.message);
     return null;
   }
 }
 
-// Fetch latest quote (real-time price)
-export async function fetchStockQuote(symbol: string): Promise<any | null> {
-  try {
-    const apiKey = process.env.MASSIVE_API_KEY;
-    if (!apiKey) {
-      console.log(`[Massive] API key not set, skipping quote for ${symbol}`);
-      return null;
-    }
-    const res = await fetch(`${MASSIVE_BASE}/stocks/quote?symbol=${symbol.toUpperCase()}`, {
-      headers: getMassiveHeaders(),
-      next: { revalidate: 60 }, // cache 1 minute
-    });
-
-    if (!res.ok) {
-      console.warn(`[Massive] Quote error ${symbol}: ${res.status} ${res.statusText}`);
-      return null;
-    }
-
-    return await res.json();
-  } catch (error) {
-    console.error(`[Massive] Quote fetch error for ${symbol}:`, error);
-    return null;
-  }
-}
-
-// Helper: convert timeframe to Massive interval format
-function convertTimeframe(timeframe: string): string {
-  const map: Record<string, string> = {
-    "1m": "1min",
-    "5m": "5min",
-    "15m": "15min",
-    "30m": "30min",
-    "1h": "1hour",
-    "4h": "4hour",
-    "1d": "1day",
-    "1w": "1week",
-    "1mo": "1month",
-  };
-  return map[timeframe] || "1hour";
-}
-
-// Convert Massive OHLC response to our OHLCData format
+// Convert Massive response to database-compatible format
 export function convertStockToDatabaseFormat(
-  massiveData: any,
+  raw: MassiveCandleResponse,
   symbol: string,
   timeframe: string
-): any[] {
-  // Adjust based on actual Massive API response structure
-  // Assuming similar to Finnhub: { c: [], h: [], l: [], o: [], v: [], t: [] }
-  if (!massiveData || !massiveData.c || massiveData.c.length === 0) {
-    return [];
-  }
-
-  const { c, h, l, o, v, t } = massiveData;
-  const data = [];
-
-  for (let i = 0; i < c.length; i++) {
-    data.push({
-      symbol: symbol.toUpperCase(),
-      timeframe,
-      timestamp: new Date(t[i] * 1000), // Massive might return seconds or ms
-      open: o[i],
-      high: h[i],
-      low: l[i],
-      close: c[i],
-      volume: v[i],
-    });
-  }
-
-  return data;
+): Array<{ timestamp: string; open: number; high: number; low: number; close: number; volume?: number }> {
+  const { t, o, h, l, c, v } = raw;
+  
+  return t.map((timestamp, index) => ({
+    timestamp: new Date(timestamp).toISOString(),
+    open: Number(o[index]),
+    high: Number(h[index]),
+    low: Number(l[index]),
+    close: Number(c[index]),
+    volume: v ? Number(v[index]) : undefined,
+  }));
 }
