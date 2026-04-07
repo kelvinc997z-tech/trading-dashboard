@@ -78,7 +78,7 @@ const US_STOCKS = [
 ];
 
 // Set to true to show crypto charts
-const SHOW_CRYPTO = false;
+const SHOW_CRYPTO_CHARTS = false;
 
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -511,8 +511,8 @@ export default function Dashboard() {
       {/* Multiple Pair Charts - Separate Categories */}
       {activeTab === "charts" && (
         <>
-          {/* Crypto Charts */}
-          {SHOW_CRYPTO && <motion.div
+          {/* Crypto Section */}
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
@@ -546,7 +546,15 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
+          </motion.div>
 
+          {/* Crypto Charts */}
+          {SHOW_CRYPTO_CHARTS && <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-8"
+          >
             <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {CRYPTO_PAIRS.map((pair, idx) => (
                 <motion.div
@@ -594,7 +602,7 @@ export default function Dashboard() {
                 </motion.div>
               ))}
             </div>
-          </motion.div>}
+          </motion.div>}}
 
           {/* US Stocks Charts } */}
           <motion.div
