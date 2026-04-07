@@ -9,6 +9,7 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import BinanceLiveChart from "@/components/BinanceLiveChart";
 import RealTimeChart from "@/components/RealTimeChart";
 import AdvancedChart from "@/components/AdvancedChart";
+import TradingViewWidget from "@/components/TradingViewWidget";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import CorrelationMatrix from "@/components/CorrelationMatrix";

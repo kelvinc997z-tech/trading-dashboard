@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     for (const symbol of filteredSymbols) {
       try {
         const rawData = await fetchStockOHLC(symbol, "1h", 200);
-        if (!rawData.c?.length) {
+        if (!rawData || !rawData.c || rawData.c.length === 0) {
           results.push({ symbol, status: "no_data" });
           continue;
         }
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const rawData = await fetchStockOHLC(symbol.toUpperCase(), "1h", 1);
-    const latest = rawData.c?.[0] ? { timestamp: rawData.t[0], close: rawData.c[0] } : null;
+    const latest = rawData && rawData.c?.[0] ? { timestamp: rawData.t[0], close: rawData.c[0] } : null;
     return NextResponse.json({ 
       configured: !!process.env.MASSIVE_API_KEY, 
       symbol: symbol.toUpperCase(), 
