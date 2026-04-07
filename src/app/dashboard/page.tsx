@@ -23,6 +23,8 @@ import ConfidenceBar from "@/components/ConfidenceBar";
 import StockTicker from "@/components/StockTicker";
 import MarketSignals from "@/components/MarketSignals";
 import NewsUpdate from "@/components/NewsUpdate";
+import TechnicalAnalysis from "@/components/TechnicalAnalysis";
+import MarketSentiment from "@/components/MarketSentiment";
 
 interface DbTrade {
   id: string;
@@ -583,6 +585,57 @@ export default function Dashboard() {
             </div>
           </motion.div>
 }
+
+          {/* Stock Ticker */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-4"
+          >
+            <StockTicker refreshInterval={30000} />
+          </motion.div>
+
+          {/* Market Signals */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6"
+          >
+            <MarketSignals limit={5} refreshInterval={60000} />
+          </motion.div>
+
+          {/* Real-time Technical Analysis */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6"
+          >
+            <TechnicalAnalysis refreshInterval={60000} />
+          </motion.div>
+
+          {/* News Update */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6"
+          >
+            <NewsUpdate limit={5} refreshInterval={300000} />
+          </motion.div>
+
+          {/* Market Sentiment */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6"
+          >
+            <MarketSentiment refreshInterval={3600000} />
+          </motion.div>
+
 
           {/* US Stocks Charts */}
           <motion.div

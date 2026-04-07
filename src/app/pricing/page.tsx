@@ -108,7 +108,7 @@ export default function PricingPage() {
       const res = await fetch("/api/payment/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: selectedPlan, billingPeriod }),
+        body: JSON.stringify({ plan: selectedPlan, billingPeriod, method: "whatsapp" }),
       });
       if (!res.ok) throw new Error("Failed to create request");
       const { requestId, whatsappMessage } = await res.json();
@@ -120,6 +120,38 @@ export default function PricingPage() {
     } catch (e) {
       alert("Failed to process request");
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendDokuUpgrade = async () => {
+    if (currentPlan.id === "free") {
+      alert("Free plan is already active. No upgrade needed!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/payment/doku", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          planId: currentPlan.id,
+          amount: billingPeriod === "monthly" ? currentPlan.monthlyPrice : currentPlan.yearlyPrice,
+          userEmail: "user@example.com", // replace with actual user email from session
+          userName: "Customer" // replace with actual user name
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to create Doku invoice");
+      }
+      const { invoiceUrl } = await res.json();
+
+      // Redirect to Doku payment page
+      window.location.href = invoiceUrl;
+    } catch (e: any) {
+      alert("Failed to process Doku payment: " + e.message);
       setLoading(false);
     }
   };
@@ -255,13 +287,22 @@ export default function PricingPage() {
                   }
                 </p>
               </div>
-              <button
-                onClick={sendWhatsAppUpgrade}
-                disabled={loading}
-                className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-semibold transition shadow-lg disabled:opacity-50"
-              >
-                {loading ? "Processing..." : "Upgrade Now via WhatsApp"}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={sendWhatsAppUpgrade}
+                  disabled={loading}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-semibold transition shadow-lg disabled:opacity-50"
+                >
+                  {loading ? "Processing..." : "Pay via WhatsApp"}
+                </button>
+                <button
+                  onClick={sendDokuUpgrade}
+                  disabled={loading}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold transition shadow-lg disabled:opacity-50"
+                >
+                  {loading ? "Processing..." : "Pay with Doku"}
+                </button>
+              </div>
             </div>
           </div>
         )}
