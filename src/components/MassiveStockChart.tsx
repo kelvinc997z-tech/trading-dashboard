@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import WatchlistButton from "@/components/watchlist/WatchlistButton";
+import { isCryptoSymbol } from "@/lib/yahoo-finance";
 
 interface OHLCData {
   timestamp: string;
@@ -121,6 +122,10 @@ export default function MassiveStockChart({ symbol, timeframe = "1h", height = 4
             <span className={`ml-2 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
               ({isPositive ? '+' : ''}{changePercent.toFixed(2)}%)
             </span>
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Source: {source === 'yahoo' ? 'Yahoo Finance' : source === 'binance' ? 'Binance' : 'Massive'} •
+            {' '}{isCryptoSymbol(symbol) ? 'Crypto' : 'US Stock'}
           </p>
         </div>
         <WatchlistButton symbol={symbol} size={24} />
