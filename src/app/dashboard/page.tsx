@@ -602,7 +602,7 @@ export default function Dashboard() {
                 </motion.div>
               ))}
             </div>
-          </motion.div>}}
+          </motion.div>
 
           {/* US Stocks Charts } */}
           <motion.div
