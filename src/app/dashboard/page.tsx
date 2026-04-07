@@ -12,6 +12,7 @@ import AdvancedChart from "@/components/AdvancedChart";
 import MassiveStockChart from "@/components/MassiveStockChart";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import CryptoPriceTicker from "@/components/CryptoPriceTicker";
+import CryptoPriceCard from "@/components/CryptoPriceCard";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
@@ -531,6 +532,16 @@ export default function Dashboard() {
             {/* Live Crypto Price Ticker */}
             <div className="mb-4">
               <CryptoPriceTicker symbols={['BTC', 'ETH', 'SOL', 'XRP', 'DOGE']} refreshInterval={30000} />
+            </div>
+
+            {/* Crypto Price Cards */}
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Crypto Prices</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {['BTC', 'ETH', 'SOL', 'XRP', 'DOGE'].map(symbol => (
+                  <CryptoPriceCard key={symbol} symbol={symbol} refreshInterval={30000} />
+                ))}
+              </div>
             </div>
 
             <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
