@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { fetchCoinglassOHLC, fetchCoinglassSpotOHLC } from "@/lib/coinglass";
-import { fetchCoinGeckoOHLC, convertCoinGeckoToDatabaseFormat } from "@/lib/coingecko";
+import { fetchCoinGeckoOHLC } from "@/lib/coingecko";
 import { db } from "@/lib/db";
 import { saveOHLCData } from "@/lib/quant-ai/data-collector";
 

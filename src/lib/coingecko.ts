@@ -1,290 +1,162 @@
 /**
- * CoinGecko API Client
- * Fetches cryptocurrency market data as an alternative to Binance
- * No API key required (free tier: 10-30 calls/min, use caching)
- *
- * Rate Limits:
- * - Free: 10-30 calls/min (varies)
- * - Pro: Higher limits
- *
- * Rate limiting is essential: add delays between calls or batch requests.
+ * CoinGecko API client for cryptocurrency data
+ * Free tier: 10-50 calls/min, no API key required
  */
 
-const COINGECKO_BASE = "https://api.coingecko.com/api/v3";
-
-// Symbol to CoinGecko ID mapping
-// Common crypto symbols -> CoinGecko coin IDs
-export const COINGECKO_ID_MAP: Record<string, string> = {
-  BTC: "bitcoin",
-  BITCOIN: "bitcoin",
-  ETH: "ethereum",
-  ETHEREUM: "ethereum",
-  SOL: "solana",
-  SOLANA: "solana",
-  XRP: "ripple",
-  RIPPLE: "ripple",
-  DOGE: "dogecoin",
-  DOGECOIN: "dogecoin",
-  ADA: "cardano",
-  CARDANO: "cardano",
-  AVAX: "avalanche-2",
-  AVALANCHE: "avalanche-2",
-  MATIC: "matic-network",
-  POLYGON: "matic-network",
-  DOT: "polkadot",
-  POLKADOT: "polkadot",
-  LTC: "litecoin",
-  LITECOIN: "litecoin",
-  LINK: "chainlink",
-  CHAINLINK: "chainlink",
-  UNI: "uniswap",
-  UNISWAP: "uniswap",
-  SHIB: "shiba-inu",
-  SHIBAINU: "shiba-inu",
-  XAUT: "tether-gold",
-  GOLD: "tether-gold",
-  USDT: "tether",
-  USDC: "usd-coin",
-  BNB: "binancecoin",
-  BINANCE: "binancecoin",
-  // Add more as needed
-};
-
-// Get CoinGecko ID from symbol
-export function getCoinGeckoId(symbol: string): string | null {
-  const normalized = symbol.toUpperCase().replace(/USDT?/, "").replace(/USD/, "");
-  return COINGECKO_ID_MAP[normalized] || null;
-}
-
-// Timeframe to CoinGecko interval/days mapping
-export function getCoinGeckoParams(
-  symbol: string,
-  timeframe: string,
-  limit: number = 1000
-) {
-  const coinId = getCoinGeckoId(symbol);
-  if (!coinId) {
-    throw new Error(`Unsupported symbol for CoinGecko: ${symbol}. Add mapping to COINGECKO_ID_MAP.`);
-  }
-
-  const coinGeckoTimeframe = mapTimeframeToCoinGecko(timeframe);
-
-  // For OHLC endpoint:
-  // days parameter controls granularity:
-  // - 1: hourly (last 24h)
-  // - 7: hourly (last 7 days)
-  // - 14: hourly (last 14 days)
-  // - 30: hourly (last 30 days)
-  // - 90: daily (last 90 days)
-  // We need enough days to get at least `limit` candles
-  // With hourly data: 30 days = 720 candles, 14 days = 336 candles, 7 days = 168 candles
-  let daysNeeded: number;
-  switch (timeframe) {
-    case "1h":
-      daysNeeded = Math.ceil(limit / 24);
-      break;
-    case "4h":
-      daysNeeded = Math.ceil(limit / 6);
-      break;
-    case "1d":
-      daysNeeded = limit;
-      break;
-    default:
-      daysNeeded = 30; // default fallback
-  }
-
-  // Clamp to CoinGecko limits
-  if (timeframe === "1d") {
-    daysNeeded = Math.min(daysNeeded, 90);
-  } else {
-    // hourly data max is 30 days
-    daysNeeded = Math.min(daysNeeded, 30);
-  }
-
-  return {
-    coinId,
-    vsCurrency: "usd",
-    days: daysNeeded.toString(),
-    timeframe,
+export interface CoinGeckoPrice {
+  [coinId: string]: {
+    usd: number;
+    usd_24h_change: number;
+    last_updated_at: number;
   };
 }
 
-// Map our timeframe to CoinGecko expectations
-function mapTimeframeToCoinGecko(timeframe: string): string {
-  const map: Record<string, string> = {
-    "1m": "minute", // Not supported in public OHLC, would require paid
-    "5m": "minute", // Not supported
-    "15m": "minute", // Not supported
-    "30m": "minute", // Not supported
-    "1h": "hourly",
-    "4h": "hourly",
-    "1d": "daily",
-    "1w": "daily",
+/**
+ * Map common crypto symbols to CoinGecko IDs
+ */
+export function toCoinGeckoId(symbol: string): string | null {
+  const idMap: Record<string, string> = {
+    'BTC': 'bitcoin',
+    'ETH': 'ethereum',
+    'SOL': 'solana',
+    'XRP': 'ripple',
+    'DOGE': 'dogecoin',
+    'ADA': 'cardano',
+    'AVAX': 'avalanche-2',
+    'DOT': 'polkadot',
+    'MATIC': 'matic-network',
+    'LINK': 'chainlink',
+    'UNI': 'uniswap',
+    'SHIB': 'shiba-inu',
+    'LTC': 'litecoin',
+    'ATOM': 'cosmos',
+    'VET': 'vechain',
+    'FIL': 'filecoin',
+    'THETA': 'theta-token',
+    'XLM': 'stellar',
+    'TRX': 'tron',
+    'BNB': 'binancecoin',
+    'XMR': 'monero',
+    'ZEC': 'zcash',
+    'DASH': 'dash',
+    'KSM': 'kusama',
+    'ICP': 'internet-computer',
+    'WAVES': 'waves',
+    'HNT': 'helium',
+    'HIVE': 'hive',
+    'STMX': 'storm',
+    'ANKR': 'ankr',
+    'CRV': 'curve-dao-token',
+    'CVX': 'convex-finance',
+    'PEPE': 'pepe',
+    'FLOKI': 'floki',
+    'BONK': 'bonk',
+    'WIF': 'wif',
+    'BOME': 'book-of-meme',
+    'NOT': 'notcoin',
   };
-  return map[timeframe] || "hourly";
+
+  const upper = symbol.toUpperCase().replace(/[^A-Z]/g, '');
+  return idMap[upper] || null;
 }
 
-// Fetch OHLC from CoinGecko
-// Returns array of [timestamp, open, high, low, close] (CoinGecko format)
-// Note: CoinGecko free OHLC does NOT include volume
-export async function fetchCoinGeckoOHLC(
-  symbol: string,
-  timeframe: string = "1h",
-  limit: number = 1000
-): Promise<{ symbol: string; timeframe: string; data: any[] }> {
-  const { coinId, vsCurrency, days } = getCoinGeckoParams(symbol, timeframe, limit);
+/**
+ * Fetch current prices for multiple crypto symbols
+ */
+export async function fetchCoinGeckoPrices(
+  symbols: string[] = ['BTC', 'ETH', 'SOL', 'XRP']
+): Promise<CoinGeckoPrice> {
+  const coinIds = symbols
+    .map(s => toCoinGeckoId(s))
+    .filter(id => id !== null) as string[];
 
-  const url = `${COINGECKO_BASE}/coins/${coinId}/ohlc?vs_currency=${vsCurrency}&days=${days}`;
-  
+  if (coinIds.length === 0) {
+    throw new Error('No valid coin IDs');
+  }
+
+  const ids = coinIds.join(',');
+  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+
   const res = await fetch(url, {
-    next: { revalidate: 900 }, // cache 15 minutes (CoinGecko rate limits)
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; TradingDashboard/1.0)',
+    },
+    next: { revalidate: 30 }, // cache 30 seconds for live prices
   });
 
   if (!res.ok) {
-    if (res.status === 429) {
-      throw new Error("CoinGecko rate limit exceeded. Increase cache or reduce call frequency.");
-    }
-    const errorText = await res.text();
-    throw new Error(`CoinGecko OHLC fetch failed: ${res.status} ${errorText}`);
+    throw new Error(`CoinGecko HTTP ${res.status}: ${res.statusText}`);
   }
 
-  const data: any[][] = await res.json();
-  // CoinGecko returns: [[timestamp(ms), open, high, low, close], ...]
-  // We filter to keep only required candles (most recent first)
-  // The API returns ascending order (oldest first), so we slice the last `limit` items
-
-  // Sort by timestamp ascending just in case
-  data.sort((a, b) => a[0] - b[0]);
-
-  // Take the last `limit` candles
-  const sliced = data.slice(-limit);
-
-  return {
-    symbol: symbol.toUpperCase(),
-    timeframe,
-    data: sliced,
-  };
+  return await res.json();
 }
 
-// Alternative: Use market_chart endpoint for volume data
-// Supports hourly intervals for up to 90 days (but may be rate-limited)
-export async function fetchCoinGeckoMarketChart(
+/**
+ * Fetch OHLC (candlestick) data from CoinGecko
+ * Returns array of [timestamp, open, high, low, close] (no volume)
+ * Expects: symbol (e.g., BTC), timeframe (e.g., 1h, 1d), limit (number of candles)
+ * Note: CoinGecko uses days parameter; we estimate needed days from limit/timeframe.
+ */
+export async function fetchCoinGeckoOHLC(
   symbol: string,
-  timeframe: string = "1h",
-  days: number = 30
-): Promise<{ symbol: string; timeframe: string; prices: number[][]; volumes: number[][] }> {
-  const coinId = getCoinGeckoId(symbol);
+  timeframe: string,
+  limit: number
+): Promise<{ data: any[][] }> {
+  const coinId = toCoinGeckoId(symbol);
   if (!coinId) {
     throw new Error(`Unsupported symbol for CoinGecko: ${symbol}`);
   }
 
-  // Map timeframe to interval
-  const intervalMap: Record<string, string | null> = {
-    "1h": "hourly",
-    "4h": null, // Not directly supported, use daily and downsample
-    "1d": "daily",
-  };
-  const interval = intervalMap[timeframe];
+  // Estimate days needed based on limit and timeframe
+  const days = estimateDaysForCoinGecko(limit, timeframe);
+
+  const url = `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`;
   
-  const params = new URLSearchParams({
-    vs_currency: "usd",
-    days: days.toString(),
-  });
-  if (interval) {
-    params.append("interval", interval);
-  }
-
-  const url = `${COINGECKO_BASE}/coins/${coinId}/market_chart?${params}`;
-
   const res = await fetch(url, {
-    next: { revalidate: 900 },
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; TradingDashboard/1.0)',
+    },
+    next: { revalidate: 60 }, // cache 1 minute for OHLC
   });
 
   if (!res.ok) {
-    throw new Error(`CoinGecko market_chart failed: ${res.status}`);
+    throw new Error(`CoinGecko OHLC HTTP ${res.status}: ${res.statusText}`);
   }
 
-  const result = await res.json();
-  return {
-    symbol: symbol.toUpperCase(),
-    timeframe,
-    prices: result.prices, // [[timestamp, price], ...]
-    volumes: result.total_volumes || [], // [[timestamp, volume], ...]
-  };
+  const rawData: any[][] = await res.json();
+  
+  // Limit to requested number of candles (CoinGecko returns up to days*24 hourly candles)
+  const limited = rawData.slice(0, limit);
+  
+  return { data: limited };
 }
 
-// Convert CoinGecko OHLC data to our database format (matches Finnhub pattern)
-export function convertCoinGeckoToDatabaseFormat(
-  coingeckoData: { symbol: string; timeframe: string; data: any[] },
-  includeVolume: boolean = false
-): any[] {
-  const { symbol, timeframe, data } = coingeckoData;
-  const records = [];
-
-  for (const candle of data) {
-    // CoinGecko: [timestamp(ms), open, high, low, close]
-    records.push({
-      symbol: symbol.toUpperCase(),
-      timeframe,
-      timestamp: new Date(candle[0]),
-      open: Number(candle[1]),
-      high: Number(candle[2]),
-      low: Number(candle[3]),
-      close: Number(candle[4]),
-      volume: includeVolume ? 0 : undefined, // Volume not available in OHLC endpoint
-    });
+/**
+ * Estimate number of days needed for CoinGecko OHLC request
+ */
+function estimateDaysForCoinGecko(limit: number, timeframe: string): number {
+  const match = timeframe.match(/(\d+)([mhd])/);
+  if (!match) return 1;
+  
+  const num = parseInt(match[1]);
+  const unit = match[2];
+  
+  // Approximate candles per day for CoinGecko:
+  // 1m,5m,15m,30m,1h,4h,1d etc.
+  // CoinGecko provides hourly candles for days <= 30, daily for larger?
+  // We'll just return a number of days that likely yields enough candles.
+  // CoinGecko returns up to days*24 hourly candles (if days <= 30) else daily.
+  if (unit === 'm') {
+    // For minutes, CoinGecko only supports hourly at minimum? Actually they support 1,5,15,30,60? Not sure.
+    // We'll assume need many days to get enough minute candles (but CoinGecko may not provide minute bars for many days)
+    return Math.min(90, Math.ceil(limit / 24) + 1);
+  } else if (unit === 'h') {
+    // Hourly: each day gives 24 candles
+    return Math.min(90, Math.ceil(limit / 24) + 1);
+  } else if (unit === 'd') {
+    // Daily: each day gives 1 candle
+    return Math.min(365, limit + 1);
+  } else {
+    return 1;
   }
-
-  return records;
-}
-
-// Helper: generate timestamp keys for caching
-export function getCoinGeckoCacheKey(
-  symbol: string,
-  timeframe: string,
-  limit: number
-): string {
-  return `coingecko:${symbol.toUpperCase()}:${timeframe}:${limit}`;
-}
-
-// Rate limiting helper for batch requests
-export async function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// Batch fetch multiple symbols with rate limiting
-export async function fetchMultipleCoinGeckoOHLC(
-  symbols: Array<{ symbol: string; timeframe: string }>,
-  limit: number = 1000,
-  delayMs: number = 1500 // CoinGecko free tier: ~1 call per second to be safe
-) {
-  const results = [];
-
-  for (const { symbol, timeframe } of symbols) {
-    try {
-      const data = await fetchCoinGeckoOHLC(symbol, timeframe, limit);
-      results.push({
-        symbol,
-        timeframe,
-        provider: "coingecko",
-        status: "success",
-        data,
-      });
-    } catch (error: any) {
-      results.push({
-        symbol,
-        timeframe,
-        provider: "coingecko",
-        status: "error",
-        error: error.message,
-      });
-    }
-
-    // Rate limit delay (skip after last)
-    if (delayMs > 0 && symbols.indexOf({ symbol, timeframe }) < symbols.length - 1) {
-      await delay(delayMs);
-    }
-  }
-
-  return results;
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { saveOHLCData } from "@/lib/quant-ai/data-collector";
-import { fetchCoinGeckoOHLC, convertCoinGeckoToDatabaseFormat } from "@/lib/coingecko";
+import { fetchCoinGeckoOHLC } from "@/lib/coingecko";
 
 // POST /api/cron/fetch-ohlc
 // Cron job to fetch OHLC data with provider fallback (Binance -> CoinGecko)
@@ -97,7 +97,17 @@ export async function POST(request: NextRequest) {
     if ((preferredProvider === "auto" && !providerUsed) || preferredProvider === "coingecko") {
       try {
         const cgData = await fetchCoinGeckoOHLC(symbol, timeframe, limit);
-        const ohlcRecords = convertCoinGeckoToDatabaseFormat(cgData, false);
+        // Map to OHLC records for database
+        const ohlcRecords = cgData.data.map((candle: any[]) => ({
+          symbol: symbol.toUpperCase(),
+          timeframe,
+          timestamp: new Date(candle[0]),
+          open: Number(candle[1]),
+          high: Number(candle[2]),
+          low: Number(candle[3]),
+          close: Number(candle[4]),
+          volume: 0, // CoinGecko OHLC does not provide volume
+        }));
 
         if (ohlcRecords.length === 0) {
           results.push({ symbol, timeframe, provider: "coingecko", status: "no_data" });
