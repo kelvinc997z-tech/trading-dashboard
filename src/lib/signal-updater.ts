@@ -27,7 +27,7 @@ export interface LiveSignal {
 /**
  * Fetch latest OHLC data (8h timeframe) from Coinglass or Yahoo Finance fallback
  */
-async function fetchLatestOHLC(symbol: string): Promise<any[]> {
+async function fetchLatestOHLC(symbol: string, config?: { yahooSymbol?: string }): Promise<any[]> {
   const coinglassSymbol = getCoinglassSymbol(symbol);
   // Try Coinglass first (8h)
   const coinglassData = await fetchCoinglassOHLC(coinglassSymbol, "8h", 50);
@@ -38,15 +38,10 @@ async function fetchLatestOHLC(symbol: string): Promise<any[]> {
   // Fallback to Yahoo Finance (1h candles, take last 8 = ~8h)
   console.log(`[SignalUpdater] Coinglass failed for ${symbol}, trying Yahoo Finance...`);
   try {
-    const isCrypto = isCryptoSymbol(symbol);
-    // Yahoo format: for crypto use "BTC-USD", for stocks use symbol directly
-    const yahooSymbol = isCrypto ? `${symbol}-USD` : symbol;
-    // Fetch last 8 1h candles (range "8h" might not be supported, use "1d" with interval "1h" → many candles)
-    const yahooData = await fetchYahooFinanceCandles(yahooSymbol, "1d", "1h", isCrypto);
-    // Yahoo returns array of YahooFinanceCandle {timestamp, open, high, low, close, volume}
-    // Convert to our format: [time, open, high, low, close, volume][], timestamp in ms
+    const yahooSymbol = config?.yahooSymbol || (isCryptoSymbol(symbol) ? `${symbol}-USD` : symbol);
+    const yahooData = await fetchYahooFinanceCandles(yahooSymbol, "1d", "1h", isCryptoSymbol(symbol));
     const formatted = yahooData.slice(-8).map(c => [
-      c.timestamp * 1000, // convert seconds to ms
+      c.timestamp * 1000,
       c.open,
       c.high,
       c.low,
@@ -221,10 +216,10 @@ const SYMBOLS = [
   { symbol: "SOL", name: "Solana", emoji: "◎" },
   { symbol: "XRP", name: "Ripple", emoji: "✕" },
   { symbol: "DOGE", name: "Dogecoin", emoji: "Ð" },
-  { symbol: "XAUT", name: "Gold XAUT", emoji: "🪙" },
+  { symbol: "XAUT", name: "Gold XAUT", emoji: "🪙", yahooSymbol: "XAUT-USD" },
   // Removed forex pairs (EUR/USD, USD/JPY, GBP/USD)
-  { symbol: "WTI", name: "Oil WTI", emoji: "🛢" },
-  { symbol: "XAG", name: "Silver", emoji: "🥈" },
+  { symbol: "WTI", name: "Oil WTI", emoji: "🛢", yahooSymbol: "CL=F" }, // Yahoo Finance WTI futures
+  { symbol: "XAG", name: "Silver", emoji: "🥈", yahooSymbol: "SLV" }, // SLV ETF
 ];
 
 /**
@@ -235,7 +230,7 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
 
   for (const pair of SYMBOLS) {
     try {
-      const ohlcData = await fetchLatestOHLC(pair.symbol);
+      const ohlcData = await fetchLatestOHLC(pair.symbol, { yahooSymbol: pair.yahooSymbol });
       console.log(`[SignalUpdater] Fetched ${ohlcData?.length || 0} OHLC candles for ${pair.symbol}`);
 
       if (ohlcData.length > 0) {
