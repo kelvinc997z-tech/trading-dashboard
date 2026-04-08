@@ -458,6 +458,8 @@ function generateSimulatedData(symbol: string, timeframe: string): OHLCData[] {
     const randomWalk = (Math.random() - 0.5) * basePrice * 0.02;
     const close = basePrice + randomWalk;
     data.push({
+      symbol,
+      timeframe,
       timestamp,
       open: close * (1 + (Math.random() - 0.5) * 0.01),
       high: close * (1 + Math.random() * 0.015),
