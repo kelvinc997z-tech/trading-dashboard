@@ -4,13 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 const DOKU_MERCHANT_CODE = process.env.DOKU_MERCHANT_CODE;
 const DOKU_API_KEY = process.env.DOKU_API_KEY;
 const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY;
-const DOKU_BASE_URL = process.env.DOKU_BASE_URL || 'https://api-sandbox.doku.com'; // Use sandbox by default
-
-interface DokuInvoiceResponse {
-  invoiceUrl: string;
-  invoiceNumber: string;
-  orderId: string;
-}
+const DOKU_BASE_URL = process.env.DOKU_BASE_URL || 'https://api-sandbox.doku.com';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,79 +17,89 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate credentials
-    if (!DOKU_API_KEY || !DOKU_SECRET_KEY) {
-      const missing = [
-        DOKU_MERCHANT_CODE ? undefined : 'DOKU_MERCHANT_CODE',
-        DOKU_API_KEY ? undefined : 'DOKU_API_KEY',
-        DOKU_SECRET_KEY ? undefined : 'DOKU_SECRET_KEY'
-      ].filter(Boolean);
+    if (!DOKU_MERCHANT_CODE || !DOKU_API_KEY || !DOKU_SECRET_KEY) {
       return NextResponse.json(
-        { error: `Doku payment not configured. Missing environment variables: ${missing.join(', ')}` },
+        { error: "Doku payment not configured. Missing DOKU_MERCHANT_CODE, DOKU_API_KEY, or DOKU_SECRET_KEY environment variables." },
         { status: 503 }
       );
     }
 
-    const orderId = `TRD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const orderId = `TRD-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     const amountDecimal = parseFloat(amount).toFixed(2);
 
-    // Prepare Doku invoice request
-    const invoiceData = {
-      merchantCode: DOKU_MERCHANT_CODE,
-      apiKey: DOKU_API_KEY,
-      orderId,
-      amount: amountDecimal,
-      // Optional: item description
-      itemDescriptions: [
-        {
-          name: `Trading Signal ${planId.toUpperCase()} Plan`,
-          price: amountDecimal,
-          quantity: 1
-        }
-      ],
-      // Customer info
-      customer: {
+    // Doku v1 Invoices API
+    const payload = {
+      request: {
+        merchantCode: DOKU_MERCHANT_CODE,
+        amount: amountDecimal,
+        orderId,
+        itemDescription: `Trading Signal ${planId.toUpperCase()} Plan`,
+        email: userEmail,
         name: userName || "Customer",
-        email: userEmail
-      },
-      // Expiry: 24 hours from now
-      expiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      // Payment methods: all
-      channel: {
-        paymentMethods: ["CREDIT_CARD", "BANK_TRANSFER", "E_WALLET", "QRIS"]
+        expiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
       }
     };
 
-    // Call Doku API to create invoice
-    const res = await fetch(`${DOKU_BASE_URL}/v1/invoices`, {
+    console.log('[Doku] Creating invoice:', {
+      orderId,
+      amount: amountDecimal,
+      merchantCode: DOKU_MERCHANT_CODE,
+      baseUrl: DOKU_BASE_URL
+    });
+
+    const res = await fetch(`${DOKU_BASE_URL}/v1/invoices/issue`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${DOKU_SECRET_KEY}`
+        "Authorization": `Bearer ${DOKU_SECRET_KEY}`,
+        "Accept": "application/json",
       },
-      body: JSON.stringify(invoiceData)
+      body: JSON.stringify(payload),
+      next: { revalidate: 0 },
     });
 
+    const responseText = await res.text();
+    console.log('[Doku] API Response:', { status: res.status, body: responseText });
+
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch {
+      responseData = { raw: responseText };
+    }
+
     if (!res.ok) {
-      const errorText = await res.text();
-      console.error("[Doku] Create invoice failed:", res.status, errorText);
       return NextResponse.json(
-        { error: "Failed to create Doku invoice", details: errorText },
+        {
+          error: "Failed to create Doku invoice",
+          status: res.status,
+          details: responseData,
+        },
         { status: 500 }
       );
     }
 
-    const data = await res.json();
+    // Parse successful response
+    const invoiceUrl = responseData?.data?.invoiceUrl || responseData?.invoiceUrl;
+    const invoiceNumber = responseData?.data?.invoiceNumber || responseData?.invoiceNumber;
+
+    if (!invoiceUrl) {
+      console.error('[Doku] Invalid response format:', responseData);
+      return NextResponse.json(
+        { error: "Invalid Doku response: missing invoice URL", details: responseData },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      invoiceUrl: data.invoiceUrl,
-      invoiceNumber: data.invoiceNumber,
-      orderId
+      invoiceUrl,
+      invoiceNumber,
+      orderId,
     });
 
   } catch (err: any) {
-    console.error("[Doku Payment]", err.message);
+    console.error('[Doku Payment Error]:', err);
     return NextResponse.json(
       { error: "Internal server error", details: err.message },
       { status: 500 }
