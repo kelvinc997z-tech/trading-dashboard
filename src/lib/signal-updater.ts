@@ -216,7 +216,7 @@ const SYMBOLS = [
   { symbol: "SOL", name: "Solana", emoji: "◎" },
   { symbol: "XRP", name: "Ripple", emoji: "✕" },
   { symbol: "DOGE", name: "Dogecoin", emoji: "Ð" },
-  { symbol: "XAUT", name: "Gold XAUT", emoji: "🪙", yahooSymbol: "XAUT-USD" },
+  { symbol: "XAUT", name: "Gold", emoji: "🪙", yahooSymbol: "GC=F" }, // Gold futures
   // Removed forex pairs (EUR/USD, USD/JPY, GBP/USD)
   { symbol: "WTI", name: "Oil WTI", emoji: "🛢", yahooSymbol: "CL=F" }, // Yahoo Finance WTI futures
   { symbol: "XAG", name: "Silver", emoji: "🥈", yahooSymbol: "SLV" }, // SLV ETF
