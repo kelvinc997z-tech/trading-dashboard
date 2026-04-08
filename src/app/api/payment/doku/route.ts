@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Doku Payment Configuration
-const DOKU_MERCHANT_CODE = process.env.DOKU_MERCHANT_CODE || "";
-const DOKU_API_KEY = process.env.DOKU_API_KEY || "";
-const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY || "";
-const DOKU_BASE_URL = process.env.DOKU_BASE_URL || "https://api.doku.com";
+const DOKU_MERCHANT_CODE = process.env.DOKU_MERCHANT_CODE;
+const DOKU_API_KEY = process.env.DOKU_API_KEY;
+const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY;
+const DOKU_BASE_URL = process.env.DOKU_BASE_URL || 'https://api-sandbox.doku.com'; // Use sandbox by default
 
 interface DokuInvoiceResponse {
   invoiceUrl: string;
@@ -25,8 +25,13 @@ export async function POST(request: NextRequest) {
 
     // Validate credentials
     if (!DOKU_API_KEY || !DOKU_SECRET_KEY) {
+      const missing = [
+        DOKU_MERCHANT_CODE ? undefined : 'DOKU_MERCHANT_CODE',
+        DOKU_API_KEY ? undefined : 'DOKU_API_KEY',
+        DOKU_SECRET_KEY ? undefined : 'DOKU_SECRET_KEY'
+      ].filter(Boolean);
       return NextResponse.json(
-        { error: "Doku payment not configured on server" },
+        { error: `Doku payment not configured. Missing environment variables: ${missing.join(', ')}` },
         { status: 503 }
       );
     }
