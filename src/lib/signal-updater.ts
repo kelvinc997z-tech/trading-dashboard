@@ -7,6 +7,7 @@
 import { db } from "@/lib/db";
 import { fetchCoinglassOHLC } from "./coinglass";
 import { generateSimulatedData } from "./market-outlook";
+import { fetchYahooFinanceCandles, isCryptoSymbol } from "./yahoo-finance";
 
 export interface LiveSignal {
   symbol: string;
@@ -24,14 +25,53 @@ export interface LiveSignal {
 }
 
 /**
- * Fetch latest OHLC data (8h timeframe) from Coinglass
+ * Fetch latest OHLC data (8h timeframe) from Coinglass or Yahoo Finance fallback
  */
 async function fetchLatestOHLC(symbol: string): Promise<any[]> {
   const coinglassSymbol = getCoinglassSymbol(symbol);
-  // Fetch last 50 candles of 8h data for analysis
-  const ohlcData = await fetchCoinglassOHLC(coinglassSymbol, "8h", 50);
-  return ohlcData?.data || [];
-}
+  // Try Coinglass first (8h)
+  const coinglassData = await fetchCoinglassOHLC(coinglassSymbol, "8h", 50);
+  if (coinglassData?.data && coinglassData.data.length > 0) {
+    return coinglassData.data;
+  }
+
+  // Fallback to Yahoo Finance (1h candles, take last 8 = ~8h)
+  console.log(`[SignalUpdater] Coinglass failed for ${symbol}, trying Yahoo Finance...`);
+  try {
+    const isCrypto = isCryptoSymbol(symbol);
+    // Yahoo format: for crypto use "BTC-USD", for stocks use symbol directly
+    const yahooSymbol = isCrypto ? `${symbol}-USD` : symbol;
+    // Fetch last 8 1h candles (range "8h" might not be supported, use "1d" with interval "1h" → many candles)
+    const yahooData = await fetchYahooFinanceCandles(yahooSymbol, "1d", "1h", isCrypto);
+    // Yahoo returns array of YahooFinanceCandle {timestamp, open, high, low, close, volume}
+    // Convert to our format: [time, open, high, low, close, volume][], timestamp in ms
+    const formatted = yahooData.slice(-8).map(c => [
+      c.timestamp * 1000, // convert seconds to ms
+      c.open,
+      c.high,
+      c.low,
+      c.close,
+      c.volume,
+    ]);
+    if (formatted.length > 0) {
+      return formatted;
+    }
+  } catch (yahooError: any) {
+    console.error(`[SignalUpdater] Yahoo Finance error for ${symbol}:`, yahooError.message);
+  }
+
+  // Final fallback: simulated data
+  console.warn(`[SignalUpdater] All sources failed for ${symbol}, using simulated data`);
+  const simulated = generateSimulatedData(symbol, "8h");
+  return simulated.map(d => [
+    d.timestamp.getTime(),
+    d.open,
+    d.high,
+    d.low,
+    d.close,
+    d.volume,
+  ]);
+}}
 
 /**
  * Map our symbols to Coinglass format
