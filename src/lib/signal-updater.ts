@@ -198,6 +198,7 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
   for (const pair of SYMBOLS) {
     try {
       const ohlcData = await fetchLatestOHLC(pair.symbol);
+      console.log(`[SignalUpdater] Fetched ${ohlcData?.length || 0} OHLC candles for ${pair.symbol}`);
 
       if (ohlcData.length > 0) {
         // Transform Coinglass format to our format
@@ -214,40 +215,45 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
         results.push(signal);
 
         // Save to DB
-        await db.marketSignal.upsert({
-          where: {
-            symbol_timeframe_generatedAt: {
-              symbol: pair.symbol,
-              timeframe: "8h",
-              generatedAt: new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8))), // Round to last 8h boundary
+        try {
+          await db.marketSignal.upsert({
+            where: {
+              symbol_timeframe_generatedAt: {
+                symbol: pair.symbol,
+                timeframe: "8h",
+                generatedAt: new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8))),
+              },
             },
-          },
-          update: {
-            name: signal.name,
-            emoji: signal.emoji,
-            signal: signal.signal,
-            entry: signal.entry,
-            tp: signal.tp,
-            sl: signal.sl,
-            confidence: signal.confidence,
-            reasoning: signal.reasoning,
-            updatedAt: new Date(),
-          },
-          create: {
-            symbol: signal.symbol,
-            name: signal.name,
-            emoji: signal.emoji,
-            signal: signal.signal,
-            entry: signal.entry,
-            tp: signal.tp,
-            sl: signal.sl,
-            confidence: signal.confidence,
-            reasoning: signal.reasoning,
-            timeframe: "8h",
-            generatedAt: new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8))),
-            updatedAt: new Date(),
-          },
-        });
+            update: {
+              name: signal.name,
+              emoji: signal.emoji,
+              signal: signal.signal,
+              entry: signal.entry,
+              tp: signal.tp,
+              sl: signal.sl,
+              confidence: signal.confidence,
+              reasoning: signal.reasoning,
+              updatedAt: new Date(),
+            },
+            create: {
+              symbol: signal.symbol,
+              name: signal.name,
+              emoji: signal.emoji,
+              signal: signal.signal,
+              entry: signal.entry,
+              tp: signal.tp,
+              sl: signal.sl,
+              confidence: signal.confidence,
+              reasoning: signal.reasoning,
+              timeframe: "8h",
+              generatedAt: new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8))),
+              updatedAt: new Date(),
+            },
+          });
+          console.log(`[SignalUpdater] Saved signal for ${pair.symbol}`);
+        } catch (dbError: any) {
+          console.error(`[SignalUpdater] DB error for ${pair.symbol}:`, dbError.message, dbError);
+        }
       } else {
         // Fallback: use simulated data if Coinglass returns no data
         console.warn(`No OHLC data from Coinglass for ${pair.symbol}, using fallback simulated data`);
@@ -308,13 +314,29 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
 
   console.log(`Generated ${results.length} market signals at ${new Date().toISOString()}`);
 
-  // Return fresh signals from DB to include id, updatedAt
-  const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
-  const savedSignals = await db.marketSignal.findMany({
-    where: { generatedAt: { gte: eightHoursAgo } },
-    orderBy: { generatedAt: "desc" },
-  });
-  return savedSignals;
+  // Try to fetch from DB; if fails or empty, return in-memory results
+  try {
+    const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
+    const savedSignals = await db.marketSignal.findMany({
+      where: { generatedAt: { gte: eightHoursAgo } },
+      orderBy: { generatedAt: "desc" },
+    });
+    if (savedSignals.length > 0) {
+      return savedSignals;
+    }
+  } catch (dbError: any) {
+    console.error('[SignalUpdater] DB fetch error, using in-memory results:', dbError.message);
+  }
+
+  // Fallback: return in-memory results (convert to DB-like shape)
+  const roundedTime = new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8)));
+  return results.map(s => ({
+    ...s,
+    id: crypto.randomUUID(),
+    timeframe: s.timeframe || "8h",
+    generatedAt: s.generatedAt || roundedTime,
+    updatedAt: new Date(),
+  }));
 }
 
 /**
