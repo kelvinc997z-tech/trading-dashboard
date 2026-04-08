@@ -1,32 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Crown, Check, CreditCard, Smartphone } from "lucide-react";
+import { Crown, Check, MessageCircle } from "lucide-react";
 
 export default function PaymentPage() {
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [waitingForWhatsApp, setWaitingForWhatsApp] = useState(false);
   const router = useRouter();
 
-  const handlePayment = async () => {
-    setProcessing(true);
-    try {
-      const res = await fetch("/api/upgrade", { method: "POST" });
-      if (res.ok) {
-        setSuccess(true);
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 2000);
-      } else {
-        alert("Payment failed. Please try again.");
-        setProcessing(false);
-      }
-    } catch (err) {
-      alert("Network error. Please try again.");
-      setProcessing(false);
+  useEffect(() => {
+    // Try to get user email from session or localStorage
+    const email = localStorage.getItem("user_email");
+    if (email) {
+      setUserEmail(email);
     }
+  }, []);
+
+  const handleWhatsAppPayment = () => {
+    setProcessing(true);
+    setWaitingForWhatsApp(true);
+    
+    const message = userEmail 
+      ? `Hi, I want to upgrade to Pro Account. My registered email: ${userEmail}`
+      : "Hi, I want to upgrade to Pro Account. Please provide my registered email.";
+    
+    const waUrl = `https://wa.me/6281367351643?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, "_blank");
+    
+    // Show waiting message
+    setTimeout(() => {
+      setProcessing(false);
+    }, 2000);
   };
 
   if (success) {
@@ -36,11 +44,41 @@ export default function PaymentPage() {
           <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-green-500" />
           </div>
-          <h1 className="text-3xl font-bold mb-4">Payment Successful!</h1>
+          <h1 className="text-3xl font-bold mb-4">Payment Request Sent!</h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Your Pro Account has been activated. Redirecting to dashboard...
+            We've received your WhatsApp request. We'll process your upgrade shortly.
           </p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (waitingForWhatsApp) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="max-w-lg w-full mx-auto p-8 text-center">
+          <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-6">
+            <MessageCircle className="w-10 h-10 text-green-600" />
+          </div>
+          <h1 className="text-3xl font-bold mb-4">Open WhatsApp</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Please complete your payment request in the WhatsApp window that just opened.
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Once you've sent the message, we'll upgrade your account within 24 hours.
+          </p>
+          <button
+            onClick={() => setWaitingForWhatsApp(false)}
+            className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+          >
+            Back to Payment
+          </button>
         </div>
       </div>
     );
@@ -97,34 +135,71 @@ export default function PaymentPage() {
 
           {/* Payment Method */}
           <div className="rounded-lg border bg-white dark:bg-gray-800 p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:border-primary transition">
-                <input type="radio" name="payment" value="card" className="text-primary" defaultChecked />
-                <CreditCard className="w-5 h-5" />
-                <div>
-                  <p className="font-medium">Credit/Debit Card</p>
-                  <p className="text-sm text-gray-500">Visa, Mastercard, Mandiri, BCA</p>
-                </div>
-              </label>
-              <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:border-primary transition">
-                <input type="radio" name="payment" value="ewallet" className="text-primary" />
-                <Smartphone className="w-5 h-5" />
-                <div>
-                  <p className="font-medium">E-Wallet</p>
-                  <p className="text-sm text-gray-500">GoPay, OVO, Dana, LinkAja</p>
-                </div>
-              </label>
-              <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:border-primary transition">
-                <input type="radio" name="payment" value="crypto" className="text-primary" />
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
-                </svg>
-                <div>
-                  <p className="font-medium">Cryptocurrency</p>
-                  <p className="text-sm text-gray-500">USDT, BTC, ETH</p>
-                </div>
-              </label>
+            <h2 className="text-xl font-semibold mb-4">Payment via WhatsApp</h2>
+            
+            {userEmail ? (
+              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  Email detected: <strong>{userEmail}</strong>
+                </p>
+              </div>
+            ) : (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Your Email (optional)</label>
+                <input
+                  type="email"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  placeholder="Enter your registered email"
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Including your email helps us process faster.
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Click the button below to send your payment request via WhatsApp to our admin.
+              </p>
+
+              <button
+                onClick={handleWhatsAppPayment}
+                disabled={processing}
+                className="w-full bg-green-500 hover:bg-green-600 text-white px-6 py-4 rounded-lg font-bold text-lg shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-3"
+              >
+                {processing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Opening WhatsApp...
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="w-6 h-6" />
+                    Chat to Pay via WhatsApp
+                  </>
+                )}
+              </button>
+
+              <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <h4 className="font-medium text-yellow-800 dark:text-yellow-400 text-sm mb-2">
+                  How it works:
+                </h4>
+                <ol className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1 list-decimal list-inside">
+                  <li>Click the button above to open WhatsApp</li>
+                  <li>Send the pre-filled message</li>
+                  <li>We'll reply with bank details or crypto address</li>
+                  <li>After payment, we'll upgrade your account within 24 hours</li>
+                </ol>
+              </div>
+            </div>
+
+            {/* Other payment methods (disabled for now) */}
+            <div className="mt-6 pt-6 border-t">
+              <p className="text-sm text-gray-500 text-center">
+                Other payment methods (Doku, cards, e-wallets) coming soon.
+              </p>
             </div>
           </div>
         </div>
@@ -149,30 +224,6 @@ export default function PaymentPage() {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* CTA */}
-        <div className="text-center">
-          <button
-            onClick={handlePayment}
-            disabled={processing}
-            className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-12 py-4 rounded-lg font-bold text-lg shadow-lg hover:from-yellow-500 hover:to-orange-600 transition disabled:opacity-50 flex items-center gap-3 mx-auto"
-          >
-            {processing ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                Processing...
-              </>
-            ) : (
-              <>
-                <Crown className="w-6 h-6" />
-                Pay IDR 450.000 - Upgrade Now
-              </>
-            )}
-          </button>
-          <p className="text-sm text-gray-500 mt-4">
-            7-day free trial. No hidden fees. Cancel anytime.
-          </p>
         </div>
       </div>
     </div>
