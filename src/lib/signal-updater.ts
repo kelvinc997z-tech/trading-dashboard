@@ -71,7 +71,7 @@ async function fetchLatestOHLC(symbol: string): Promise<any[]> {
     d.close,
     d.volume,
   ]);
-}}
+}
 
 /**
  * Map our symbols to Coinglass format
