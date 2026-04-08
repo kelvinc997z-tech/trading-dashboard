@@ -448,7 +448,7 @@ async function fetchYahooStockData(symbol: string, config: any): Promise<OHLCDat
   return generateSimulatedData(symbol, config.timeframe);
 }
 
-function generateSimulatedData(symbol: string, timeframe: string): OHLCData[] {
+export function generateSimulatedData(symbol: string, timeframe: string): OHLCData[] {
   const now = Date.now();
   const data: OHLCData[] = [];
   const basePrice = symbol === "BTC" ? 63000 : symbol === "ETH" ? 3200 : symbol === "SOL" ? 148 : symbol === "NVDA" ? 830 : 150;
