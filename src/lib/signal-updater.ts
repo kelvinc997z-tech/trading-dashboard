@@ -6,6 +6,7 @@
 
 import { db } from "@/lib/db";
 import { fetchCoinglassOHLC } from "./coinglass";
+import { generateSimulatedData } from "./market-outlook";
 
 export interface LiveSignal {
   symbol: string;
@@ -248,7 +249,57 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
           },
         });
       } else {
-        console.warn(`No OHLC data for ${pair.symbol}`);
+        // Fallback: use simulated data if Coinglass returns no data
+        console.warn(`No OHLC data from Coinglass for ${pair.symbol}, using fallback simulated data`);
+        const simulatedOHLC = generateSimulatedData(pair.symbol, "8h");
+        // Transform OHLCData[] to expected format {time:string, ...}
+        const transformedSimulated = simulatedOHLC.map(d => ({
+          time: d.timestamp.toISOString(),
+          open: d.open,
+          high: d.high,
+          low: d.low,
+          close: d.close,
+          volume: d.volume,
+        }));
+        const fallbackSignal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformedSimulated);
+        results.push(fallbackSignal);
+
+        // Save fallback to DB
+        const roundedTime = new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8)));
+        await db.marketSignal.upsert({
+          where: {
+            symbol_timeframe_generatedAt: {
+              symbol: pair.symbol,
+              timeframe: "8h",
+              generatedAt: roundedTime,
+            },
+          },
+          update: {
+            name: fallbackSignal.name,
+            emoji: fallbackSignal.emoji,
+            signal: fallbackSignal.signal,
+            entry: fallbackSignal.entry,
+            tp: fallbackSignal.tp,
+            sl: fallbackSignal.sl,
+            confidence: fallbackSignal.confidence,
+            reasoning: fallbackSignal.reasoning,
+            updatedAt: new Date(),
+          },
+          create: {
+            symbol: fallbackSignal.symbol,
+            name: fallbackSignal.name,
+            emoji: fallbackSignal.emoji,
+            signal: fallbackSignal.signal,
+            entry: fallbackSignal.entry,
+            tp: fallbackSignal.tp,
+            sl: fallbackSignal.sl,
+            confidence: fallbackSignal.confidence,
+            reasoning: fallbackSignal.reasoning,
+            timeframe: "8h",
+            generatedAt: roundedTime,
+            updatedAt: new Date(),
+          },
+        });
       }
     } catch (error) {
       console.error(`Error generating signal for ${pair.symbol}:`, error);
