@@ -24,7 +24,7 @@ interface MarketSignalsProps {
 
 export default function MarketSignals({
   limit = 5,
-  refreshInterval = 8 * 60 * 60 * 1000 // 8 hours
+  refreshInterval = 6 * 60 * 60 * 1000 // 6 hours
 }: MarketSignalsProps) {
   const [signals, setSignals] = useState<MarketSignal[]>([]);
   const [loading, setLoading] = useState(true);
