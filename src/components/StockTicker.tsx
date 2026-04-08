@@ -38,25 +38,20 @@ export default function StockTicker({
       const results = await Promise.all(
         symbols.map(async ({ symbol, name }) => {
           try {
-            // Determine if crypto or stock
-            const crypto = isCryptoSymbol(symbol);
-            // Yahoo Finance: crypto uses -USD, stocks use .US
-            const formattedSymbol = crypto ? `${symbol.toUpperCase()}-USD` : `${symbol.toUpperCase()}.US`;
+            // Use dedicated API that handles Yahoo Finance formatting
+            const res = await fetch(`/api/yahoo-quote?symbol=${encodeURIComponent(symbol)}`);
+            if (!res.ok) return null;
+            const data = await res.json();
 
-            const candles = await fetchYahooFinanceCandles(formattedSymbol, '5d', '1h', crypto);
-            if (!candles || candles.length === 0) return null;
+            if (!data.price || data.price === 0) return null;
 
-            const current = candles[candles.length - 1];
-            const previous = candles.length > 1 ? candles[candles.length - 2] : current;
-
-            const price = current.close;
-            const change = current.close - previous.close;
-            const changePercent = (change / previous.close) * 100;
+            const change = data.change || 0;
+            const changePercent = data.changePercent || 0;
 
             return {
               symbol: symbol.toUpperCase(),
               name,
-              price,
+              price: data.price,
               change,
               changePercent,
               lastUpdated: Date.now(),

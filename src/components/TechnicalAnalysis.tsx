@@ -37,7 +37,7 @@ interface TechnicalAnalysisProps {
   refreshInterval?: number; // ms
 }
 
-// Calculate RSI
+// Simple RSI calculation
 function calculateRSI(prices: number[], period: number = 14): number {
   if (prices.length < period + 1) return 50;
 
@@ -60,21 +60,13 @@ function calculateRSI(prices: number[], period: number = 14): number {
   return Math.round(rsi * 100) / 100;
 }
 
-// Calculate SMA
+// SMA
 function calculateSMA(prices: number[], period: number): number {
-  if (prices.length < period) return prices[prices.length - 1];
   const slice = prices.slice(-period);
   return slice.reduce((sum, p) => sum + p, 0) / period;
 }
 
-// Calculate MACD (simplified)
-function calculateMACD(prices: number[]): number {
-  if (prices.length < 26) return 0;
-  const ema12 = calculateEMA(prices, 12);
-  const ema26 = calculateEMA(prices, 26);
-  return ema12 - ema26;
-}
-
+// EMA
 function calculateEMA(prices: number[], period: number): number {
   if (prices.length < period) return prices[prices.length - 1];
   const slice = prices.slice(-period);
@@ -86,29 +78,32 @@ function calculateEMA(prices: number[], period: number): number {
   return ema;
 }
 
-// Enhance candles with technical indicators
+// MACD
+function calculateMACD(prices: number[]): number {
+  if (prices.length < 26) return 0;
+  const ema12 = calculateEMA(prices, 12);
+  const ema26 = calculateEMA(prices, 26);
+  return ema12 - ema26;
+}
+
+// Add indicators to candles
 function calculateIndicators(candles: CandleData[]): (CandleData & { rsi: number; sma20: number; sma50: number; sma200: number; macd: number })[] {
   const closes = candles.map(c => c.close);
-
+  
   return candles.map((candle, idx) => {
     if (idx < 1) {
-      return {
-        ...candle,
-        rsi: 50,
-        sma20: candle.close,
-        sma50: candle.close,
-        sma200: candle.close,
-        macd: 0,
-      };
+      return { ...candle, rsi: 50, sma20: candle.close, sma50: candle.close, sma200: candle.close, macd: 0 };
     }
-
+    
+    const closeSlice = closes.slice(0, idx + 1);
+    
     return {
       ...candle,
-      rsi: calculateRSI(closes.slice(0, idx + 1)),
-      sma20: calculateSMA(closes.slice(0, idx + 1), 20),
-      sma50: calculateSMA(closes.slice(0, idx + 1), 50),
-      sma200: calculateSMA(closes.slice(0, idx + 1), 200),
-      macd: calculateMACD(closes.slice(0, idx + 1)),
+      rsi: calculateRSI(closeSlice),
+      sma20: calculateSMA(closeSlice, 20),
+      sma50: calculateSMA(closeSlice, 50),
+      sma200: calculateSMA(closeSlice, 200),
+      macd: calculateMACD(closeSlice),
     };
   });
 }
@@ -121,7 +116,6 @@ export default function TechnicalAnalysis({
 
   const fetchAllPairData = async () => {
     try {
-      // Get all symbols we need
       const cryptoSymbols = ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'XAUT'];
       const stockSymbols = ['AAPL', 'AMD', 'NVDA', 'MSFT', 'GOOGL', 'TSM'];
       const allSymbols = [...cryptoSymbols, ...stockSymbols];
@@ -130,21 +124,15 @@ export default function TechnicalAnalysis({
         allSymbols.map(async (symbol) => {
           try {
             const isCrypto = isCryptoSymbol(symbol);
-            // Use our Yahoo Finance proxy API
-            const res = await fetch(`/api/yahoo-finance?symbol=${encodeURIComponent(symbol)}&range=30d&interval=1h`);
-            if (!res.ok) {
-              throw new Error(`HTTP ${res.status}`);
+            
+            // Fetch candles from our Yahoo Finance proxy
+            const candlesRes = await fetch(`/api/yahoo-finance?symbol=${encodeURIComponent(symbol)}&range=7d&interval=1h`);
+            if (!candlesRes.ok) {
+              throw new Error(`HTTP ${candlesRes.status}`);
             }
-            const data = await res.json();
-            const candles: CandleData[] = data.candles?.map((c: any) => ({
-              timestamp: c.timestamp,
-              open: c.open,
-              high: c.high,
-              low: c.low,
-              close: c.close,
-              volume: c.volume,
-            })).filter((c: CandleData) => c.close > 0) || [];
-
+            const candlesData = await candlesRes.json();
+            const candles: CandleData[] = candlesData.candles || [];
+            
             if (candles.length < 50) {
               console.warn(`[TechnicalAnalysis] Insufficient data for ${symbol} (got ${candles.length} candles)`);
               return null;
@@ -157,7 +145,7 @@ export default function TechnicalAnalysis({
             const change = latest.close - prev.close;
             const changePercent = (change / prev.close) * 100;
 
-            // Determine trend based on momentum and recent candles
+            // Trend detection
             const recent = candlesWithIndicators.slice(-5);
             const upCandles = recent.filter(c => c.close > c.open).length;
             const rsiTrend = latest.rsi > 50 ? 'bullish' : 'bearish';
