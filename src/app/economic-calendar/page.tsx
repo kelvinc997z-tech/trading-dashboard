@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Calendar, Filter, Clock, TrendingUp, AlertCircle } from "lucide-react";
 
@@ -93,30 +93,22 @@ export default function EconomicCalendarPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const currencies = useMemo(() => 
-    [...new Set(events.map((e) => e.currency))].sort(),
-    [events]
-  );
+  const currencies = [...new Set(events.map((e) => e.currency))].sort();
 
-  const filteredEvents = useMemo(() => 
-    events.filter((e) => {
-      if (filterCurrency !== "all" && e.currency !== filterCurrency) return false;
-      if (filterImpact !== "all" && e.impact !== filterImpact) return false;
-      return true;
-    }),
-    [events, filterCurrency, filterImpact]
-  );
+  const filteredEvents = events.filter((e) => {
+    if (filterCurrency !== "all" && e.currency !== filterCurrency) return false;
+    if (filterImpact !== "all" && e.impact !== filterImpact) return false;
+    return true;
+  });
 
   // Group events by date
-  const groupedEvents = useMemo<GroupedEvents>(() => {
-    return filteredEvents.reduce((acc, event) => {
-      if (!acc[event.date]) {
-        acc[event.date] = [];
-      }
-      acc[event.date].push(event);
-      return acc;
-    }, {} as GroupedEvents);
-  }, [filteredEvents]);
+  const groupedEvents = filteredEvents.reduce((acc, event) => {
+    if (!acc[event.date]) {
+      acc[event.date] = [];
+    }
+    acc[event.date].push(event);
+    return acc;
+  }, {} as GroupedEvents);
 
   const impactBadge = (impact: string) => {
     const styles = {

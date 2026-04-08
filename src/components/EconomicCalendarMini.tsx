@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Calendar, Clock, AlertCircle, Filter } from "lucide-react";
 
 interface EventItem {
@@ -84,15 +84,10 @@ export default function EconomicCalendarMini() {
   }, []);
 
   // Filter to today's events only (local date)
-  const todayEvents = useMemo(() => {
-    const today = new Date().toLocaleDateString("en-GB");
-    return events.filter(e => e.date === today);
-  }, [events]);
+  const today = new Date().toLocaleDateString("en-GB");
+  const todayEvents = events.filter(e => e.date === today);
 
-  const filteredEvents = useMemo(() => {
-    if (filterImpact === "all") return todayEvents;
-    return todayEvents.filter(e => e.impact === filterImpact);
-  }, [todayEvents, filterImpact]);
+  const filteredEvents = filterImpact === "all" ? todayEvents : todayEvents.filter(e => e.impact === filterImpact);
 
   const impactBadge = (impact?: string) => {
     const styles = {
