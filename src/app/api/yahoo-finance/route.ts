@@ -25,11 +25,17 @@ export async function GET(request: NextRequest) {
   }
 
   // Format symbol for Yahoo Finance
-  const formattedSymbol = symbol.toUpperCase().includes('.US') || symbol.toUpperCase().includes('-USD')
-    ? symbol.toUpperCase()
-    : symbol.includes('-') || symbol.toUpperCase().endsWith('USD')
-      ? `${symbol.toUpperCase()}-USD`
-      : `${symbol.toUpperCase()}.US`;
+  // For crypto: use SYMBOL-USD (e.g., BTC-USD)
+  // For stocks: use SYMBOL (e.g., AAPL) - no suffix needed
+  const upperSymbol = symbol.toUpperCase();
+  let formattedSymbol: string;
+  if (upperSymbol.includes('-') || ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'XAUT', 'KAS'].includes(upperSymbol)) {
+    // Crypto: add -USD if not present
+    formattedSymbol = upperSymbol.endsWith('-USD') ? upperSymbol : `${upperSymbol}-USD`;
+  } else {
+    // Stocks: just the symbol (AAPL, NVDA, etc.)
+    formattedSymbol = upperSymbol;
+  }
 
   const url = `https://query2.finance.yahoo.com/v8/finance/chart/${formattedSymbol}?range=${range}&interval=${interval}`;
 
