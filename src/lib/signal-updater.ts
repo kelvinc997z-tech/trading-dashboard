@@ -130,12 +130,12 @@ function generateSignalFromOHLC(
   let signal: "buy" | "sell" | "neutral" = "neutral";
   let reasoning = "";
 
-  if (percentChange > 1.0) {
+  if (percentChange > 0.5) {
     signal = "buy";
-    reasoning = `Strong bullish momentum (${percentChange.toFixed(2)}% 8h gain)`;
-  } else if (percentChange < -1.0) {
+    reasoning = `Bullish momentum (${percentChange.toFixed(2)}% 8h gain)`;
+  } else if (percentChange < -0.5) {
     signal = "sell";
-    reasoning = `Strong bearish momentum (${percentChange.toFixed(2)}% 8h loss)`;
+    reasoning = `Bearish momentum (${percentChange.toFixed(2)}% 8h loss)`;
   } else {
     signal = "neutral";
     reasoning = `Consolidation (${percentChange.toFixed(2)}% 8h change)`;
