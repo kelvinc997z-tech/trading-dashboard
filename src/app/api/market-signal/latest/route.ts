@@ -1,29 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-// Cache signals in memory for 7 hours (less than 8h cron interval)
-let cachedSignals: any[] | null = null;
-let cacheTimestamp: number | null = null;
-const CACHE_TTL = 7 * 60 * 60 * 1000; // 7 hours
+const MIN_GENERATE_INTERVAL_MS =
+  parseInt(process.env.GENERATE_INTERVAL_MINUTES || "30") * 60 * 1000;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const forceRefresh = searchParams.get("refresh") === "true";
 
   try {
-    // Check in-memory cache first
-    if (!forceRefresh && cachedSignals && cacheTimestamp && (Date.now() - cacheTimestamp) < CACHE_TTL) {
-      return NextResponse.json({
-        success: true,
-        count: cachedSignals.length,
-        timeframe: "8h",
-        lastUpdated: cachedSignals[0]?.generatedAt || null,
-        signals: cachedSignals,
-        cached: true,
-      });
-    }
-
-    // Check DB for recent signals (< 8 hours)
+    // Check in-memory cache first (if implemented)
+    // Then check DB for recent signals (< 8 hours)
     const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
 
     let signals = await db.marketSignal.findMany({
@@ -37,15 +24,30 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // If no recent signals, generate fresh
+    // If forceRefresh or no recent signals, consider generating fresh
     if (signals.length === 0 || forceRefresh) {
-      const { generateAndSaveMarketSignals } = await import("@/lib/signal-updater");
-      signals = await generateAndSaveMarketSignals();
-    }
+      // Rate limit check before generating
+      const lastSignal = await db.marketSignal.findFirst({
+        orderBy: { generatedAt: "desc" },
+      });
 
-    // Update cache
-    cachedSignals = signals;
-    cacheTimestamp = Date.now();
+      const shouldGenerate =
+        signals.length === 0 ||
+        !lastSignal ||
+        Date.now() - new Date(lastSignal.generatedAt).getTime() >=
+          MIN_GENERATE_INTERVAL_MS;
+
+      if (shouldGenerate) {
+        const { generateAndSaveMarketSignals } = await import(
+          "@/lib/signal-updater"
+        );
+        signals = await generateAndSaveMarketSignals();
+      } else {
+        // Rate limited: keep existing signals (may be empty if none)
+        // Already have signals from DB query above
+        console.log("[MarketSignal] Generation skipped due to rate limit");
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -53,7 +55,6 @@ export async function GET(request: NextRequest) {
       timeframe: "8h",
       lastUpdated: signals[0]?.generatedAt || null,
       signals,
-      cached: false,
     });
   } catch (error) {
     console.error("Failed to fetch market signals:", error);
