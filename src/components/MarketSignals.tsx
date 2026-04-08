@@ -13,6 +13,8 @@ interface MarketSignal {
   sl: number;
   confidence: number;
   reasoning: string;
+  timeframe?: string;
+  generatedAt?: string;
 }
 
 interface MarketSignalsProps {
@@ -22,7 +24,7 @@ interface MarketSignalsProps {
 
 export default function MarketSignals({
   limit = 5,
-  refreshInterval = 60000 // 1 minute
+  refreshInterval = 8 * 60 * 60 * 1000 // 8 hours
 }: MarketSignalsProps) {
   const [signals, setSignals] = useState<MarketSignal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,14 +32,14 @@ export default function MarketSignals({
 
   const fetchSignals = async () => {
     try {
-      const res = await fetch('/api/market-outlook?format=list');
+      const res = await fetch('/api/market-signal/latest');
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
       const data = await res.json();
 
       // Filter to top signals by confidence (descending), exclude neutral
-      const filtered = data
+      const filtered = data.signals
         .filter((s: MarketSignal) => s.signal !== 'neutral')
         .sort((a: MarketSignal, b: MarketSignal) => b.confidence - a.confidence)
         .slice(0, limit);
