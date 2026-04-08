@@ -191,7 +191,7 @@ const SYMBOLS = [
 /**
  * Generate signals for all symbols and save to DB
  */
-export async function generateAndSaveMarketSignals() {
+export async function generateAndSaveMarketSignals(): Promise<any[]> {
   const results: LiveSignal[] = [];
 
   for (const pair of SYMBOLS) {
@@ -256,7 +256,14 @@ export async function generateAndSaveMarketSignals() {
   }
 
   console.log(`Generated ${results.length} market signals at ${new Date().toISOString()}`);
-  return results;
+
+  // Return fresh signals from DB to include id, updatedAt
+  const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
+  const savedSignals = await db.marketSignal.findMany({
+    where: { generatedAt: { gte: eightHoursAgo } },
+    orderBy: { generatedAt: "desc" },
+  });
+  return savedSignals;
 }
 
 /**
