@@ -3,6 +3,16 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { fetchYahooFinanceCandles, isCryptoSymbol } from "@/lib/yahoo-finance";
+
+interface CandleData {
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
 
 interface PairData {
   symbol: string;
@@ -11,11 +21,101 @@ interface PairData {
   currentPrice: number;
   change: number;
   changePercent: number;
+  trend: 'bullish' | 'bearish' | 'neutral';
+  indicators: {
+    rsi: number;
+    sma20: number;
+    sma50: number;
+    sma200: number;
+    macd: number;
+    volume: number;
+  };
   sparklineData: Array<{ time: string; price: number }>;
 }
 
 interface TechnicalAnalysisProps {
   refreshInterval?: number; // ms
+}
+
+// Calculate RSI
+function calculateRSI(prices: number[], period: number = 14): number {
+  if (prices.length < period + 1) return 50;
+
+  let gains = 0;
+  let losses = 0;
+
+  for (let i = prices.length - period; i < prices.length; i++) {
+    const change = prices[i] - prices[i - 1];
+    if (change > 0) gains += change;
+    else losses -= change;
+  }
+
+  const avgGain = gains / period;
+  const avgLoss = losses / period;
+
+  if (avgLoss === 0) return 100;
+
+  const rs = avgGain / avgLoss;
+  const rsi = 100 - (100 / (1 + rs));
+  return Math.round(rsi * 100) / 100;
+}
+
+// Calculate SMA
+function calculateSMA(prices: number[], period: number): number {
+  if (prices.length < period) return prices[prices.length - 1];
+  const slice = prices.slice(-period);
+  return slice.reduce((sum, p) => sum + p, 0) / period;
+}
+
+// Calculate MACD (simplified)
+function calculateMACD(prices: number[]): number {
+  if (prices.length < 26) return 0;
+  const ema12 = calculateEMA(prices, 12);
+  const ema26 = calculateEMA(prices, 26);
+  return ema12 - ema26;
+}
+
+function calculateEMA(prices: number[], period: number): number {
+  if (prices.length < period) return prices[prices.length - 1];
+  const slice = prices.slice(-period);
+  const multiplier = 2 / (period + 1);
+  let ema = slice[0];
+  for (let i = 1; i < slice.length; i++) {
+    ema = (slice[i] - ema) * multiplier + ema;
+  }
+  return ema;
+}
+
+// Enhance candles with technical indicators
+function calculateIndicators(candles: CandleData[]): (CandleData & { rsi: number; sma20: number; sma50: number; sma200: number; macd: number })[] {
+  if (candles.length < 200) {
+    // Pad with synthetic data for calculation
+    return candles.map(c => ({ ...c, rsi: 50, sma20: c.close, sma50: c.close, sma200: c.close, macd: 0 }));
+  }
+
+  const closes = candles.map(c => c.close);
+
+  return candles.map((candle, idx) => {
+    if (idx < 199) {
+      return {
+        ...candle,
+        rsi: calculateRSI(closes.slice(0, idx + 1)),
+        sma20: calculateSMA(closes.slice(0, idx + 1), 20),
+        sma50: calculateSMA(closes.slice(0, idx + 1), 50),
+        sma200: calculateSMA(closes.slice(0, idx + 1), 200),
+        macd: calculateMACD(closes.slice(0, idx + 1)),
+      };
+    }
+
+    return {
+      ...candle,
+      rsi: calculateRSI(closes.slice(0, idx + 1)),
+      sma20: calculateSMA(closes, 20),
+      sma50: calculateSMA(closes, 50),
+      sma200: calculateSMA(closes, 200),
+      macd: calculateMACD(closes),
+    };
+  });
 }
 
 export default function TechnicalAnalysis({
@@ -34,38 +134,50 @@ export default function TechnicalAnalysis({
       const results = await Promise.all(
         allSymbols.map(async (symbol) => {
           try {
-            const res = await fetch(`/api/market-data?symbol=${symbol}&timeframe=1h&limit=24`);
-            if (!res.ok) return null;
-            const data = await res.json();
+            const isCrypto = isCryptoSymbol(symbol);
+            // Yahoo Finance: crypto uses -USD, stocks use .US
+            const formattedSymbol = isCrypto ? `${symbol.toUpperCase()}-USD` : `${symbol.toUpperCase()}.US`;
 
-            const current = data.current?.price ?? data.current?.close ?? null;
-            if (current === null) return null;
-
-            const history = data.history || [];
-            let change = 0;
-            let changePercent = 0;
-            if (history.length >= 2) {
-              const prev = history[0]?.close ?? history[history.length - 2]?.close;
-              if (prev) {
-                change = current - prev;
-                changePercent = (change / prev) * 100;
-              }
+            // Fetch 30 days of hourly data for indicator calculations
+            const candles = await fetchYahooFinanceCandles(formattedSymbol, '30d', '1h', isCrypto);
+            if (!candles || candles.length < 50) {
+              console.warn(`[TechnicalAnalysis] Insufficient data for ${symbol} (got ${candles?.length || 0} candles)`);
+              return null;
             }
 
-            // Create sparkline data (last 24 points)
-            const sparklineData = history.slice(-24).map((h: any, idx: number) => ({
-              time: new Date(h.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-              price: h.close,
-            }));
+            const candlesWithIndicators = calculateIndicators(candles);
+            const latest = candlesWithIndicators[candlesWithIndicators.length - 1];
+            const prev = candlesWithIndicators[candlesWithIndicators.length - 2];
+
+            const change = latest.close - prev.close;
+            const changePercent = (change / prev.close) * 100;
+
+            // Determine trend based on momentum and recent candles
+            const recent = candlesWithIndicators.slice(-5);
+            const upCandles = recent.filter(c => c.close > c.open).length;
+            const rsiTrend = latest.rsi > 50 ? 'bullish' : 'bearish';
+            const trend: 'bullish' | 'bearish' | 'neutral' = upCandles >= 3 && rsiTrend === 'bullish' ? 'bullish' : upCandles <= 2 || rsiTrend === 'bearish' ? 'bearish' : 'neutral';
 
             return {
               symbol,
-              name: symbol, // Could be improved with proper names
-              type: cryptoSymbols.includes(symbol) ? 'crypto' : 'stock',
-              currentPrice: current,
+              name: symbol,
+              type: isCrypto ? 'crypto' : 'stock',
+              currentPrice: latest.close,
               change,
               changePercent,
-              sparklineData,
+              trend,
+              indicators: {
+                rsi: latest.rsi,
+                sma20: latest.sma20,
+                sma50: latest.sma50,
+                sma200: latest.sma200,
+                macd: latest.macd,
+                volume: latest.volume,
+              },
+              sparklineData: candlesWithIndicators.slice(-24).map(d => ({
+                time: new Date(d.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                price: d.close,
+              })),
             };
           } catch (e) {
             console.error(`[TechnicalAnalysis] Error fetching ${symbol}:`, e);
@@ -168,12 +280,28 @@ export default function TechnicalAnalysis({
                 </ResponsiveContainer>
               </div>
 
-              {/* Simple RSI indication (placeholder) */}
-              <div className="flex items-center justify-between mt-2 text-xs">
-                <span className="text-gray-500">Trend</span>
-                <span className={`font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                  {isPositive ? 'Bullish' : 'Bearish'}
-                </span>
+              {/* Technical indicators summary */}
+              <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-2 rounded">
+                  <div className="text-gray-500">RSI</div>
+                  <div className={`font-semibold ${pair.indicators.rsi > 70 ? 'text-red-600' : pair.indicators.rsi < 30 ? 'text-green-600' : 'text-gray-700 dark:text-gray-300'}`}>
+                    {pair.indicators.rsi.toFixed(1)}
+                  </div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-2 rounded">
+                  <div className="text-gray-500">Trend</div>
+                  <div className={`font-semibold ${pair.trend === 'bullish' ? 'text-green-600' : pair.trend === 'bearish' ? 'text-red-600' : 'text-gray-600'}`}>
+                    {pair.trend.toUpperCase()}
+                  </div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-2 rounded">
+                  <div className="text-gray-500">SMA20</div>
+                  <div className="font-mono text-gray-700 dark:text-gray-300">{formatPrice(pair.indicators.sma20)}</div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-2 rounded">
+                  <div className="text-gray-500">SMA50</div>
+                  <div className="font-mono text-gray-700 dark:text-gray-300">{formatPrice(pair.indicators.sma50)}</div>
+                </div>
               </div>
             </motion.div>
           );
