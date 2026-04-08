@@ -23,24 +23,23 @@ export default function CryptoPriceTicker({
 
   const fetchPrices = async () => {
     try {
-      // Fetch all symbols in parallel from our backend API
+      // Fetch all symbols in parallel from dedicated crypto quote API (real-time Binance)
       const promises = symbols.map(symbol =>
-        fetch(`/api/market-data?symbol=${encodeURIComponent(symbol)}&timeframe=1h`)
+        fetch(`/api/crypto-quote?symbol=${encodeURIComponent(symbol)}`)
           .then(res => res.ok ? res.json() : null)
           .catch(() => null)
       );
       const results = await Promise.all(promises);
 
       const newPrices: CryptoPriceData[] = results
-        .map((data, idx) => {
-          if (!data || !data.current) return null;
-          return {
-            symbol: symbols[idx],
-            price: data.current.price,
-            change24h: data.current.changePercent || 0,
-          };
+        .filter((data): data is { symbol: string; price: number; changePercent: number } => {
+          return data && typeof data.price === 'number' && typeof data.changePercent === 'number';
         })
-        .filter((p): p is CryptoPriceData => p !== null);
+        .map(data => ({
+          symbol: data.symbol,
+          price: data.price,
+          change24h: data.changePercent,
+        }));
 
       setPrices(newPrices);
       setError(null);

@@ -33,42 +33,29 @@ export default function StockTicker({
 
   const fetchPrices = async () => {
     try {
-      const results = await Promise.all(
-        symbols.map(async ({ symbol, name }) => {
-          try {
-            const res = await fetch(`/api/market-data?symbol=${symbol}&timeframe=1h`);
-            if (!res.ok) return null;
-            const data = await res.json();
+      // Fetch all symbols in parallel from Massive stock quote API (real-time)
+      const promises = symbols.map(async ({ symbol, name }) => {
+        try {
+          const res = await fetch(`/api/stock-quote?symbol=${encodeURIComponent(symbol)}`);
+          if (!res.ok) return null;
+          const data = await res.json();
 
-            const current = data.current?.price ?? data.current?.close ?? null;
-            if (current === null) return null;
+          if (!data.price) return null;
 
-            // Get previous close from history if available
-            const history = data.history || [];
-            let change = 0;
-            let changePercent = 0;
-            if (history.length >= 2) {
-              const prev = history[history.length - 2]?.close ?? history[0]?.close;
-              if (prev) {
-                change = current - prev;
-                changePercent = (change / prev) * 100;
-              }
-            }
-
-            return {
-              symbol: symbol.toUpperCase(),
-              name,
-              price: current,
-              change,
-              changePercent,
-              lastUpdated: Date.now(),
-            };
-          } catch (e) {
-            console.error(`[StockTicker] Error fetching ${symbol}:`, e);
-            return null;
-          }
-        })
-      );
+          return {
+            symbol: symbol.toUpperCase(),
+            name,
+            price: data.price,
+            change: data.change || 0,
+            changePercent: data.changePercent || 0,
+            lastUpdated: Date.now(),
+          };
+        } catch (e) {
+          console.error(`[StockTicker] Error fetching ${symbol}:`, e);
+          return null;
+        }
+      });
+      const results = await Promise.all(promises);
 
       const validResults = results.filter((r): r is StockPriceData => r !== null);
       setPrices(validResults);
