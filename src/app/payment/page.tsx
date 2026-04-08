@@ -6,10 +6,7 @@ import Link from "next/link";
 import { Crown, Check, MessageCircle } from "lucide-react";
 
 export default function PaymentPage() {
-  const [processing, setProcessing] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
-  const [waitingForWhatsApp, setWaitingForWhatsApp] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -20,24 +17,16 @@ export default function PaymentPage() {
     }
   }, []);
 
-  const handleWhatsAppPayment = () => {
-    setProcessing(true);
-    setWaitingForWhatsApp(true);
-    
-    const message = userEmail 
-      ? `Hi, I want to upgrade to Pro Account. My registered email: ${userEmail}`
-      : "Hi, I want to upgrade to Pro Account. Please provide my registered email.";
-    
-    const waUrl = `https://wa.me/6281367351643?text=${encodeURIComponent(message)}`;
-    window.open(waUrl, "_blank");
-    
-    // Show waiting message
-    setTimeout(() => {
-      setProcessing(false);
-    }, 2000);
+  const getWhatsAppMessage = () => {
+    if (userEmail) {
+      return `Hi, I want to upgrade to Pro Account. My registered email: ${userEmail}`;
+    }
+    return "Hi, I want to upgrade to Pro Account. Please provide my registered email.";
   };
 
-  if (success) {
+  const whatsappUrl = `https://wa.me/6281367351643?text=${encodeURIComponent(getWhatsAppMessage())}`;
+
+  if (false) { // Keep success state for future use
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="max-w-lg w-full mx-auto p-8 text-center">
@@ -53,31 +42,6 @@ export default function PaymentPage() {
             className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition"
           >
             Go to Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (waitingForWhatsApp) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="max-w-lg w-full mx-auto p-8 text-center">
-          <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-6">
-            <MessageCircle className="w-10 h-10 text-green-600" />
-          </div>
-          <h1 className="text-3xl font-bold mb-4">Open WhatsApp</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Please complete your payment request in the WhatsApp window that just opened.
-          </p>
-          <p className="text-sm text-gray-500 mb-6">
-            Once you've sent the message, we'll upgrade your account within 24 hours.
-          </p>
-          <button
-            onClick={() => setWaitingForWhatsApp(false)}
-            className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-          >
-            Back to Payment
           </button>
         </div>
       </div>
@@ -136,25 +100,11 @@ export default function PaymentPage() {
           {/* Payment Method */}
           <div className="rounded-lg border bg-white dark:bg-gray-800 p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Payment via WhatsApp</h2>
-            
-            {userEmail ? (
+
+            {userEmail && (
               <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                 <p className="text-sm text-green-700 dark:text-green-400">
                   Email detected: <strong>{userEmail}</strong>
-                </p>
-              </div>
-            ) : (
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Your Email (optional)</label>
-                <input
-                  type="email"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  placeholder="Enter your registered email"
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Including your email helps us process faster.
                 </p>
               </div>
             )}
@@ -164,23 +114,15 @@ export default function PaymentPage() {
                 Click the button below to send your payment request via WhatsApp to our admin.
               </p>
 
-              <button
-                onClick={handleWhatsAppPayment}
-                disabled={processing}
-                className="w-full bg-green-500 hover:bg-green-600 text-white px-6 py-4 rounded-lg font-bold text-lg shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-3"
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-green-500 hover:bg-green-600 text-white px-6 py-4 rounded-lg font-bold text-lg shadow-lg transition flex items-center justify-center gap-3"
               >
-                {processing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Opening WhatsApp...
-                  </>
-                ) : (
-                  <>
-                    <MessageCircle className="w-6 h-6" />
-                    Chat to Pay via WhatsApp
-                  </>
-                )}
-              </button>
+                <MessageCircle className="w-6 h-6" />
+                Chat to Pay via WhatsApp
+              </a>
 
               <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                 <h4 className="font-medium text-yellow-800 dark:text-yellow-400 text-sm mb-2">
@@ -193,6 +135,22 @@ export default function PaymentPage() {
                   <li>After payment, we'll upgrade your account within 24 hours</li>
                 </ol>
               </div>
+
+              {!userEmail && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium mb-2">Your Email (optional but helpful)</label>
+                  <input
+                    type="email"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                    placeholder="Enter your registered email"
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Including your email helps us process faster.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Other payment methods (disabled for now) */}
