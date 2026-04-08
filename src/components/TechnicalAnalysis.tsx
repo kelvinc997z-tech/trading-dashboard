@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
-import { fetchYahooFinanceCandles, isCryptoSymbol } from "@/lib/yahoo-finance";
+import { isCryptoSymbol } from "@/lib/yahoo-finance";
 
 interface CandleData {
   timestamp: number;
@@ -88,32 +88,27 @@ function calculateEMA(prices: number[], period: number): number {
 
 // Enhance candles with technical indicators
 function calculateIndicators(candles: CandleData[]): (CandleData & { rsi: number; sma20: number; sma50: number; sma200: number; macd: number })[] {
-  if (candles.length < 200) {
-    // Pad with synthetic data for calculation
-    return candles.map(c => ({ ...c, rsi: 50, sma20: c.close, sma50: c.close, sma200: c.close, macd: 0 }));
-  }
-
   const closes = candles.map(c => c.close);
 
   return candles.map((candle, idx) => {
-    if (idx < 199) {
+    if (idx < 1) {
       return {
         ...candle,
-        rsi: calculateRSI(closes.slice(0, idx + 1)),
-        sma20: calculateSMA(closes.slice(0, idx + 1), 20),
-        sma50: calculateSMA(closes.slice(0, idx + 1), 50),
-        sma200: calculateSMA(closes.slice(0, idx + 1), 200),
-        macd: calculateMACD(closes.slice(0, idx + 1)),
+        rsi: 50,
+        sma20: candle.close,
+        sma50: candle.close,
+        sma200: candle.close,
+        macd: 0,
       };
     }
 
     return {
       ...candle,
       rsi: calculateRSI(closes.slice(0, idx + 1)),
-      sma20: calculateSMA(closes, 20),
-      sma50: calculateSMA(closes, 50),
-      sma200: calculateSMA(closes, 200),
-      macd: calculateMACD(closes),
+      sma20: calculateSMA(closes.slice(0, idx + 1), 20),
+      sma50: calculateSMA(closes.slice(0, idx + 1), 50),
+      sma200: calculateSMA(closes.slice(0, idx + 1), 200),
+      macd: calculateMACD(closes.slice(0, idx + 1)),
     };
   });
 }
@@ -135,13 +130,23 @@ export default function TechnicalAnalysis({
         allSymbols.map(async (symbol) => {
           try {
             const isCrypto = isCryptoSymbol(symbol);
-            // Yahoo Finance: crypto uses -USD, stocks use .US
-            const formattedSymbol = isCrypto ? `${symbol.toUpperCase()}-USD` : `${symbol.toUpperCase()}.US`;
+            // Use our Yahoo Finance proxy API
+            const res = await fetch(`/api/yahoo-finance?symbol=${encodeURIComponent(symbol)}&range=30d&interval=1h`);
+            if (!res.ok) {
+              throw new Error(`HTTP ${res.status}`);
+            }
+            const data = await res.json();
+            const candles: CandleData[] = data.candles?.map((c: any) => ({
+              timestamp: c.timestamp,
+              open: c.open,
+              high: c.high,
+              low: c.low,
+              close: c.close,
+              volume: c.volume,
+            })).filter((c: CandleData) => c.close > 0) || [];
 
-            // Fetch 30 days of hourly data for indicator calculations
-            const candles = await fetchYahooFinanceCandles(formattedSymbol, '30d', '1h', isCrypto);
-            if (!candles || candles.length < 50) {
-              console.warn(`[TechnicalAnalysis] Insufficient data for ${symbol} (got ${candles?.length || 0} candles)`);
+            if (candles.length < 50) {
+              console.warn(`[TechnicalAnalysis] Insufficient data for ${symbol} (got ${candles.length} candles)`);
               return null;
             }
 
@@ -156,7 +161,9 @@ export default function TechnicalAnalysis({
             const recent = candlesWithIndicators.slice(-5);
             const upCandles = recent.filter(c => c.close > c.open).length;
             const rsiTrend = latest.rsi > 50 ? 'bullish' : 'bearish';
-            const trend: 'bullish' | 'bearish' | 'neutral' = upCandles >= 3 && rsiTrend === 'bullish' ? 'bullish' : upCandles <= 2 || rsiTrend === 'bearish' ? 'bearish' : 'neutral';
+            const trend: 'bullish' | 'bearish' | 'neutral' = 
+              upCandles >= 3 && rsiTrend === 'bullish' ? 'bullish' : 
+              upCandles <= 2 || rsiTrend === 'bearish' ? 'bearish' : 'neutral';
 
             return {
               symbol,
@@ -216,6 +223,16 @@ export default function TechnicalAnalysis({
     );
   }
 
+  if (pairs.length === 0) {
+    return (
+      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <p className="text-sm text-yellow-600 dark:text-yellow-400">
+          No technical analysis data available. Yahoo Finance API might be rate-limited or unavailable.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -229,7 +246,7 @@ export default function TechnicalAnalysis({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 11l4-4 4 4 6-6" />
         </svg>
         <span className="text-sm font-bold text-gray-900 dark:text-white">Real-time Technical Analysis</span>
-        <span className="text-xs text-gray-500">All Pairs (24h)</span>
+        <span className="text-xs text-gray-500">All Pairs (Yahoo Finance)</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
