@@ -6,6 +6,7 @@ import { WatchlistProvider } from "@/components/watchlist/WatchlistProvider";
 import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 import { ContrastProvider } from "@/components/contrast/ContrastProvider";
 import OnboardingProvider from "@/components/onboarding/OnboardingProvider";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -35,7 +36,9 @@ export default function RootLayout({
           <ContrastProvider>
             <NotificationProvider>
               <WatchlistProvider>
-                <OnboardingProvider>{children}</OnboardingProvider>
+                <OnboardingProvider>
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </OnboardingProvider>
               </WatchlistProvider>
             </NotificationProvider>
           </ContrastProvider>
