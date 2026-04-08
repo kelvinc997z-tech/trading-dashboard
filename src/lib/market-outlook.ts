@@ -150,6 +150,17 @@ const FALLBACK_DATA: Record<string, MarketPair> = {
     confidence: 0.69,
     reasoning: "Industrial demand support, technical breakout (fallback)"
   },
+  "KAS": {
+    symbol: "KAS",
+    name: "Kaspa",
+    emoji: "▲",
+    signal: "neutral",
+    entry: 0.12,
+    tp: 0.125,
+    sl: 0.115,
+    confidence: 0.65,
+    reasoning: "Momentum neutral, awaiting breakout (fallback)"
+  },
 };
 
 /**
@@ -378,6 +389,26 @@ export async function generateRealTimeOutlook(): Promise<MarketOutlook> {
       symbol: "DOGE",
       name: "Dogecoin",
       emoji: "Ð",
+      type: "crypto",
+      config: {
+        timeframe: "1h",
+        limit: 200,
+        ma_periods: { sma20: 20, sma50: 50, ema12: 12, ema26: 26 },
+        atr_period: 14,
+        indicator_config: {
+          rsi_period: 14,
+          rsi_oversold: 30,
+          rsi_overbought: 70,
+          macd_fast: 12,
+          macd_slow: 26,
+          macd_signal: 9,
+        },
+      },
+    },
+    {
+      symbol: "KAS",
+      name: "Kaspa",
+      emoji: "▲",
       type: "crypto",
       config: {
         timeframe: "1h",
