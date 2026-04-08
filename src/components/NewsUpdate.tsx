@@ -117,7 +117,7 @@ export default function NewsUpdate({
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <Link href={item.url} target="_blank" rel="noopener noreferrer">
+                <Link href={item.url || '#'} target="_blank" rel="noopener noreferrer">
                   <h4 className="font-semibold text-gray-900 dark:text-white text-sm leading-snug hover:text-amber-600 dark:hover:text-amber-400 transition-colors line-clamp-2">
                     {item.title}
                   </h4>
