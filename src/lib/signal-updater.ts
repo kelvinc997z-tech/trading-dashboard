@@ -222,9 +222,7 @@ const SYMBOLS = [
   { symbol: "XRP", name: "Ripple", emoji: "✕" },
   { symbol: "DOGE", name: "Dogecoin", emoji: "Ð" },
   { symbol: "XAUT", name: "Gold XAUT", emoji: "🪙" },
-  { symbol: "EUR", name: "EUR/USD", emoji: "💶" },
-  { symbol: "JPY", name: "USD/JPY", emoji: "🇯🇵" },
-  { symbol: "GBP", name: "GBP/USD", emoji: "💷" },
+  // Removed forex pairs (EUR/USD, USD/JPY, GBP/USD)
   { symbol: "WTI", name: "Oil WTI", emoji: "🛢" },
   { symbol: "XAG", name: "Silver", emoji: "🥈" },
 ];
