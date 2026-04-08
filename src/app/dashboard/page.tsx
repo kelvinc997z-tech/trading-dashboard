@@ -12,7 +12,6 @@ import AdvancedChart from "@/components/AdvancedChart";
 import MassiveStockChart from "@/components/MassiveStockChart";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import CryptoPriceTicker from "@/components/CryptoPriceTicker";
-import CryptoPriceCard from "@/components/CryptoPriceCard";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
@@ -419,6 +418,9 @@ export default function Dashboard() {
           }
           gradient="emerald"
         />
+        <div className="md:col-span-2">
+          <MarketSentiment refreshInterval={3600000} />
+        </div>
       </div>
 
       {/* Dashboard Tabs - Simplified */}
@@ -516,16 +518,6 @@ export default function Dashboard() {
             {/* Live Crypto Price Ticker */}
             <div className="mb-4">
               <CryptoPriceTicker symbols={['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'XAUT']} refreshInterval={30000} />
-            </div>
-
-            {/* Crypto Price Cards */}
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Crypto Prices</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'XAUT'].map(symbol => (
-                  <CryptoPriceCard key={symbol} symbol={symbol} refreshInterval={30000} />
-                ))}
-              </div>
             </div>
           </motion.div>
 
@@ -637,74 +629,7 @@ export default function Dashboard() {
           </motion.div>
 
 
-          {/* US Stocks Charts */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.3 }}
-            className="mt-10"
-          >
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
-              <div>
-                <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500">
-                  US Stocks
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Major equity markets with technical analysis
-                </p>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-400 text-sm font-medium border border-blue-500/30 self-start sm:self-auto">
-                {US_STOCKS.length} stocks
-              </span>
-            </div>
-            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-              {US_STOCKS.map((pair, idx) => (
-                <motion.div
-                  key={pair.symbol}
-                  id={`chart-${pair.symbol.toLowerCase()}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + idx * 0.05 }}
-                >
-                  <GlassCard gradient="purple" className="h-full flex flex-col">
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{pair.symbol}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{pair.name}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold border border-blue-500/20">
-                          {timeframe}
-                        </span>
-                        {user?.role === "pro" && (
-                          <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-yellow-500/10 to-orange-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-semibold border border-yellow-500/20">
-                            PRO
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 min-h-[200px] chart-container rounded-xl p-1 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 to-gray-900/50">
-                      {isLoading ? (
-                        <div className="h-40 sm:h-48 skeleton rounded-lg" />
-                      ) : (
-                        <div className="h-40 sm:h-48">
-                          <MassiveStockChart symbol={pair.symbol} timeframe={timeframe} height={160} />
-                        </div>
-                      )}
-                    </div>
 
-                    {/* AI Confidence Bar for Pro users */}
-                    {user?.role === "pro" && (
-                      <div className="mt-4 pt-4 border-t border-gray-700/50">
-                        <ConfidenceBar value={72 + Math.random() * 15} label="AI Signal Strength" size="md" />
-                      </div>
-                    )}
-                  </GlassCard>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
         </>
       )}
 
