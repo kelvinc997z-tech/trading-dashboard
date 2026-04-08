@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchYahooFinanceCandles, isCryptoSymbol } from "@/lib/yahoo-finance";
 
 interface StockPriceData {
   symbol: string;
@@ -33,29 +34,39 @@ export default function StockTicker({
 
   const fetchPrices = async () => {
     try {
-      // Fetch all symbols in parallel from Massive stock quote API (real-time)
-      const promises = symbols.map(async ({ symbol, name }) => {
-        try {
-          const res = await fetch(`/api/stock-quote?symbol=${encodeURIComponent(symbol)}`);
-          if (!res.ok) return null;
-          const data = await res.json();
+      // Fetch all symbols in parallel from Yahoo Finance (real-time)
+      const results = await Promise.all(
+        symbols.map(async ({ symbol, name }) => {
+          try {
+            // Determine if crypto or stock
+            const crypto = isCryptoSymbol(symbol);
+            // Yahoo Finance: crypto uses -USD, stocks use .US
+            const formattedSymbol = crypto ? `${symbol.toUpperCase()}-USD` : `${symbol.toUpperCase()}.US`;
 
-          if (!data.price) return null;
+            const candles = await fetchYahooFinanceCandles(formattedSymbol, '5d', '1h', crypto);
+            if (!candles || candles.length === 0) return null;
 
-          return {
-            symbol: symbol.toUpperCase(),
-            name,
-            price: data.price,
-            change: data.change || 0,
-            changePercent: data.changePercent || 0,
-            lastUpdated: Date.now(),
-          };
-        } catch (e) {
-          console.error(`[StockTicker] Error fetching ${symbol}:`, e);
-          return null;
-        }
-      });
-      const results = await Promise.all(promises);
+            const current = candles[candles.length - 1];
+            const previous = candles.length > 1 ? candles[candles.length - 2] : current;
+
+            const price = current.close;
+            const change = current.close - previous.close;
+            const changePercent = (change / previous.close) * 100;
+
+            return {
+              symbol: symbol.toUpperCase(),
+              name,
+              price,
+              change,
+              changePercent,
+              lastUpdated: Date.now(),
+            };
+          } catch (e) {
+            console.error(`[StockTicker] Error fetching ${symbol}:`, e);
+            return null;
+          }
+        })
+      );
 
       const validResults = results.filter((r): r is StockPriceData => r !== null);
       setPrices(validResults);
