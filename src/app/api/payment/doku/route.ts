@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Doku Payment Configuration
 const DOKU_MERCHANT_CODE = process.env.DOKU_MERCHANT_CODE;
-const DOKU_API_KEY = process.env.DOKU_API_KEY;
 const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY;
-const DOKU_BASE_URL = process.env.DOKU_BASE_URL || 'https://api-sandbox.doku.com';
+const DOKU_BASE_URL = process.env.DOKU_BASE_URL || 'https://api.doku.com';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,9 +15,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!DOKU_MERCHANT_CODE || !DOKU_API_KEY || !DOKU_SECRET_KEY) {
+    if (!DOKU_MERCHANT_CODE || !DOKU_SECRET_KEY) {
+      const missing = [];
+      if (!DOKU_MERCHANT_CODE) missing.push('DOKU_MERCHANT_CODE');
+      if (!DOKU_SECRET_KEY) missing.push('DOKU_SECRET_KEY');
       return NextResponse.json(
-        { error: "Doku payment not configured. Missing DOKU_MERCHANT_CODE, DOKU_API_KEY, or DOKU_SECRET_KEY environment variables." },
+        { error: `Doku payment not configured. Missing: ${missing.join(', ')}` },
         { status: 503 }
       );
     }
@@ -27,16 +28,17 @@ export async function POST(request: NextRequest) {
     const orderId = `TRD-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     const amountDecimal = parseFloat(amount).toFixed(2);
 
-    // Doku v1 Invoices API
     const payload = {
       request: {
         merchantCode: DOKU_MERCHANT_CODE,
         amount: amountDecimal,
         orderId,
-        itemDescription: `Trading Signal ${planId.toUpperCase()} Plan`,
+        itemDescription: `Trading Signal ${planId.toUpperCase()} Plan - ${userEmail}`,
         email: userEmail,
         name: userName || "Customer",
-        expiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+        expiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        returnUrl: "https://trading-dashboard.vercel.app/payment/success",
+        cancelUrl: "https://trading-dashboard.vercel.app/payment/cancel",
       }
     };
 
@@ -44,10 +46,10 @@ export async function POST(request: NextRequest) {
       orderId,
       amount: amountDecimal,
       merchantCode: DOKU_MERCHANT_CODE,
-      baseUrl: DOKU_BASE_URL
+      baseUrl: DOKU_BASE_URL,
     });
 
-    const res = await fetch(`${DOKU_BASE_URL}/v1/invoices/issue`, {
+    const res = await fetch(`${DOKU_BASE_URL}/v1/invoices`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
     });
 
     const responseText = await res.text();
-    console.log('[Doku] API Response:', { status: res.status, body: responseText });
+    console.log('[Doku] Response:', { status: res.status, body: responseText });
 
     let responseData;
     try {
@@ -79,12 +81,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse successful response
-    const invoiceUrl = responseData?.data?.invoiceUrl || responseData?.invoiceUrl;
-    const invoiceNumber = responseData?.data?.invoiceNumber || responseData?.invoiceNumber;
+    const data = responseData?.data || responseData;
+    const invoiceUrl = data?.invoiceUrl || data?.paymentUrl || data?.url;
 
     if (!invoiceUrl) {
-      console.error('[Doku] Invalid response format:', responseData);
+      console.error('[Doku] No invoiceUrl in response:', responseData);
       return NextResponse.json(
         { error: "Invalid Doku response: missing invoice URL", details: responseData },
         { status: 500 }
@@ -94,12 +95,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       invoiceUrl,
-      invoiceNumber,
+      invoiceNumber: data?.invoiceNumber || orderId,
       orderId,
     });
 
   } catch (err: any) {
-    console.error('[Doku Payment Error]:', err);
+    console.error('[Doku Error]:', err.message, err.stack);
     return NextResponse.json(
       { error: "Internal server error", details: err.message },
       { status: 500 }
