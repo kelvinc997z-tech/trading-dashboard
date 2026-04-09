@@ -25,20 +25,13 @@ export interface LiveSignal {
 }
 
 /**
- * Fetch latest OHLC data (8h timeframe) from Coinglass or Yahoo Finance fallback
+ * Fetch latest OHLC data (8h timeframe) from Yahoo Finance (Primary) or Coinglass (Fallback)
  */
 async function fetchLatestOHLC(symbol: string, config?: { yahooSymbol?: string }): Promise<any[]> {
-  const coinglassSymbol = getCoinglassSymbol(symbol);
-  // Try Coinglass first (8h)
-  const coinglassData = await fetchCoinglassOHLC(coinglassSymbol, "8h", 50);
-  if (coinglassData?.data && coinglassData.data.length > 0) {
-    return coinglassData.data;
-  }
-
-  // Fallback to Yahoo Finance (1h candles, take last 8 = ~8h)
-  console.log(`[SignalUpdater] Coinglass failed for ${symbol}, trying Yahoo Finance...`);
+  // Try Yahoo Finance first (1h candles, take last 8 = ~8h)
   try {
     const yahooSymbol = config?.yahooSymbol || (isCryptoSymbol(symbol) ? `${symbol}-USD` : symbol);
+    console.log(`[SignalUpdater] Trying Yahoo Finance for ${symbol} (${yahooSymbol})...`);
     const yahooData = await fetchYahooFinanceCandles(yahooSymbol, "1d", "1h", isCryptoSymbol(symbol));
     const formatted = yahooData.slice(-8).map(c => [
       c.timestamp * 1000,
@@ -53,6 +46,14 @@ async function fetchLatestOHLC(symbol: string, config?: { yahooSymbol?: string }
     }
   } catch (yahooError: any) {
     console.error(`[SignalUpdater] Yahoo Finance error for ${symbol}:`, yahooError.message);
+  }
+
+  // Fallback to Coinglass (8h)
+  console.log(`[SignalUpdater] Yahoo Finance failed for ${symbol}, trying Coinglass...`);
+  const coinglassSymbol = getCoinglassSymbol(symbol);
+  const coinglassData = await fetchCoinglassOHLC(coinglassSymbol, "8h", 50);
+  if (coinglassData?.data && coinglassData.data.length > 0) {
+    return coinglassData.data;
   }
 
   // Final fallback: simulated data
