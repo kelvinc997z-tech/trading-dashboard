@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Check, Zap, Crown, Star } from "lucide-react";
 
-type PlanType = "free" | "lite" | "pro";
+type PlanType = "free" | "pro";
 
 interface Plan {
   id: PlanType;
@@ -19,7 +19,7 @@ interface Plan {
 }
 
 export default function PricingPage() {
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>("lite");
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>("pro");
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
 
@@ -33,51 +33,31 @@ export default function PricingPage() {
       yearlyOriginalPrice: 0,
       icon: <Star className="w-8 h-8" />,
       features: [
-        "1 Active Trade Signal per day",
-        "Basic Market Outlook (3 pairs)",
-        "Economic Calendar Access",
-        "Community Discord Access",
-        "Manual Trade Journaling",
+        "Live Market Charts",
+        "Real-time Financial News",
       ],
-    },
-    {
-      id: "lite",
-      name: "LITE",
-      description: "Perfect for casual traders",
-      monthlyPrice: 175000,
-      yearlyPrice: 1470000, // 30% off (2.1M → 1.47M)
-      yearlyOriginalPrice: 2100000,
-      icon: <Zap className="w-8 h-8" />,
-      features: [
-        "Unlimited Trade Signals",
-        "Full Market Outlook (6 pairs)",
-        "Real-time GOLD XAUT Crypto Signals",
-        "Economic Calendar with Alerts",
-        "Advanced Charting (1 timeframe)",
-        "Email Support",
-        "Export Trade History (CSV)",
-      ],
-      highlighted: true,
     },
     {
       id: "pro",
       name: "PRO",
       description: "For serious traders who want it all",
-      monthlyPrice: 250000,
-      yearlyPrice: 1800000, // 40% off (3M → 1.8M)
-      yearlyOriginalPrice: 3000000,
+      monthlyPrice: 200000,
+      yearlyPrice: 1800000, // Rp 200k * 9 (Save 3 months)
+      yearlyOriginalPrice: 2400000,
       icon: <Crown className="w-8 h-8" />,
       features: [
-        "Everything in LITE",
-        "Advanced Charting (All timeframes)",
+        "Everything in Free",
+        "Unlimited Trade Signals",
+        "Full Market Outlook (All pairs)",
+        "Real-time GOLD, OIL, Silver Signals",
         "AI-Powered Market Predictions",
+        "Performance Analytics Dashboard",
         "Custom Alert Strategies",
         "Priority Support (WhatsApp)",
-        "Performance Analytics Dashboard",
-        "API Access for Bots",
-        "White-label Reports (PDF)",
+        "API & Bot Access",
         "Early Access to New Features",
       ],
+      highlighted: true,
     },
   ];
 
@@ -201,7 +181,7 @@ export default function PricingPage() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
+        <div className="grid md:grid-cols-2 gap-8 mb-16 max-w-4xl mx-auto">
           {plans.map((plan) => (
             <div
               key={plan.id}
@@ -315,12 +295,11 @@ export default function PricingPage() {
           <div className="space-y-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                What's the difference between Free, LITE, and PRO?
+                What's the difference between Free and PRO?
               </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                <strong>Free</strong>: Basic access (1 signal/day, 3-pair outlook). 
-                <strong>LITE</strong>: Unlimited signals, full 6-pair outlook, real-time XAU, advanced charts, CSV export. 
-                <strong>PRO</strong>: AI predictions, custom alerts, API access, priority WhatsApp support, performance analytics, white-label reports.
+                <strong>Free</strong>: Akses ke live chart dan berita keuangan real-time. 
+                <strong>PRO</strong>: Akses penuh ke semua fitur termasuk sinyal trading tak terbatas, outlook pasar lengkap (XAU, Oil, Silver), prediksi AI, dan dukungan prioritas.
               </p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6">

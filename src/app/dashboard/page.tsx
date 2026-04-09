@@ -313,6 +313,8 @@ export default function Dashboard() {
     .filter(t => t.status === "open")
     .reduce((sum, t) => sum + (t.unrealizedPnl || 0), 0);
 
+  const isPro = user?.role === "pro";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-900/95 dark:to-gray-950">
       {/* Header */}
@@ -395,18 +397,20 @@ export default function Dashboard() {
 
       {/* Stats Cards - Futuristic */}
       <div className="grid gap-4 md:gap-6 grid-cols-2 md:grid-cols-4 mb-6">
-        <StatCard
-          label="AI Confidence"
-          value="87%"
-          sublabel="Signal accuracy"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          }
-          gradient="purple"
-          trend={{ value: "+5.3%", up: true }}
-        />
+        {isPro && (
+          <StatCard
+            label="AI Confidence"
+            value="87%"
+            sublabel="Signal accuracy"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            }
+            gradient="purple"
+            trend={{ value: "+5.3%", up: true }}
+          />
+        )}
         <StatCard
           label="System Status"
           value="Online"
@@ -418,7 +422,7 @@ export default function Dashboard() {
           }
           gradient="emerald"
         />
-        <div className="md:col-span-2">
+        <div className={isPro ? "md:col-span-2" : "col-span-1 md:col-span-3"}>
           <MarketSentiment refreshInterval={3600000} />
         </div>
       </div>
@@ -441,27 +445,31 @@ export default function Dashboard() {
                 id: "outlook", 
                 label: "Outlook", 
                 icon: Eye,
-                desc: "Watchlist signals"
+                desc: "Watchlist signals",
+                pro: true
               },
               { 
                 id: "correlation", 
                 label: "Correlation", 
                 icon: BarChart2,
-                desc: "Asset relationships"
+                desc: "Asset relationships",
+                pro: true
               },
               { 
                 id: "performance", 
                 label: "Performance", 
                 icon: PieChart,
-                desc: "Your stats"
+                desc: "Your stats",
+                pro: true
               },
               { 
                 id: "economic", 
                 label: "Economic", 
                 icon: Calendar,
-                desc: "Today's events"
+                desc: "Today's events",
+                pro: true
               },
-            ].map((tab) => (
+            ].filter(tab => !tab.pro || isPro).map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
@@ -589,24 +597,28 @@ export default function Dashboard() {
           </motion.div>
 
           {/* Market Signals */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="mb-6"
-          >
-            <MarketSignals limit={5} refreshInterval={60000} />
-          </motion.div>
+          {isPro && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="mb-6"
+            >
+              <MarketSignals limit={5} refreshInterval={60000} />
+            </motion.div>
+          )}
 
           {/* Real-time Technical Analysis */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="mb-6"
-          >
-            <TechnicalAnalysis refreshInterval={60000} />
-          </motion.div>
+          {isPro && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="mb-6"
+            >
+              <TechnicalAnalysis refreshInterval={60000} />
+            </motion.div>
+          )}
 
           {/* News Update */}
           <motion.div
@@ -658,131 +670,133 @@ export default function Dashboard() {
         </div>
       )}
 
-      <GlassCard gradient="cyan" className="p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-700/50 bg-gradient-to-r from-gray-800/80 to-gray-900/80">
-                {[
-                  "Time", "Pair", "Side", "Size", "Entry", "TP", "SL", "P&L", "AI"
-                ].map((header) => (
-                  <th key={header} className="px-6 py-4 text-left text-xs font-semibold text-cyan-400 uppercase tracking-wider">
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700/50">
-              {trades.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
-                      </svg>
-                      <p className="text-gray-500 dark:text-gray-400">No trades yet</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500">Start trading to see your history here</p>
-                    </div>
-                  </td>
+      {isPro && (
+        <GlassCard gradient="cyan" className="p-0 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-700/50 bg-gradient-to-r from-gray-800/80 to-gray-900/80">
+                  {[
+                    "Time", "Pair", "Side", "Size", "Entry", "TP", "SL", "P&L", "AI"
+                  ].map((header) => (
+                    <th key={header} className="px-6 py-4 text-left text-xs font-semibold text-cyan-400 uppercase tracking-wider">
+                      {header}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                trades.map((trade, idx) => {
-                  const isOpen = trade.status === "open";
-                  const displayPnl = isOpen
-                    ? trade.unrealizedPnl ?? 0
-                    : trade.pnl ?? 0;
-                  const pnlClass = displayPnl >= 0 ? "text-emerald-400" : "text-rose-400";
-                  const pnlBg = displayPnl >= 0 
-                    ? "bg-emerald-500/10 dark:bg-emerald-500/20" 
-                    : "bg-rose-500/10 dark:bg-rose-500/20";
+              </thead>
+              <tbody className="divide-y divide-gray-700/50">
+                {trades.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
+                        </svg>
+                        <p className="text-gray-500 dark:text-gray-400">No trades yet</p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500">Start trading to see your history here</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  trades.map((trade, idx) => {
+                    const isOpen = trade.status === "open";
+                    const displayPnl = isOpen
+                      ? trade.unrealizedPnl ?? 0
+                      : trade.pnl ?? 0;
+                    const pnlClass = displayPnl >= 0 ? "text-emerald-400" : "text-rose-400";
+                    const pnlBg = displayPnl >= 0 
+                      ? "bg-emerald-500/10 dark:bg-emerald-500/20" 
+                      : "bg-rose-500/10 dark:bg-rose-500/20";
 
-                  // AI signal badge color
-                  const aiSignalColor = trade.side === "buy" ? "text-cyan-400" : "text-purple-400";
-                  const aiSignalBg = trade.side === "buy" ? "bg-cyan-500/10 border-cyan-500/20" : "bg-purple-500/10 border-purple-500/20";
+                    // AI signal badge color
+                    const aiSignalColor = trade.side === "buy" ? "text-cyan-400" : "text-purple-400";
+                    const aiSignalBg = trade.side === "buy" ? "bg-cyan-500/10 border-cyan-500/20" : "bg-purple-500/10 border-purple-500/20";
 
-                  return (
-                    <motion.tr
-                      key={trade.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.03 }}
-                      className="hover:bg-gray-800/30 transition-colors group border-b border-gray-800/50 last:border-0"
-                    >
-                      <td className="px-6 py-4 font-medium text-white">
-                        {trade.time}
-                        {isOpen && (
-                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            Open
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-semibold text-white">{trade.pair}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold ${
-                          trade.side === "buy" 
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                            : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                        }`}>
-                          {trade.side === "buy" ? (
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                            </svg>
-                          ) : (
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                          {trade.side.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-mono text-white">
-                        {trade.size.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 font-mono text-white">
-                        {trade.entry.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4">
-                        {trade.takeProfit ? (
-                          <span className={`px-2 py-1 rounded text-xs font-mono font-medium border ${aiSignalBg}`}>
-                            {trade.takeProfit.toFixed(2)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {trade.stopLoss ? (
-                          <span className="px-2 py-1 rounded text-xs font-mono text-orange-400 border border-orange-500/30">
-                            {trade.stopLoss.toFixed(2)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg ${pnlBg} font-mono font-semibold ${pnlClass}`}>
-                          {displayPnl >= 0 ? "+" : ""}{displayPnl.toFixed(2)}
+                    return (
+                      <motion.tr
+                        key={trade.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.03 }}
+                        className="hover:bg-gray-800/30 transition-colors group border-b border-gray-800/50 last:border-0"
+                      >
+                        <td className="px-6 py-4 font-medium text-white">
+                          {trade.time}
                           {isOpen && (
-                            <span className="text-xs opacity-75">(unreal)</span>
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              Open
+                            </span>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {/* AI Prediction badge */}
-                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${aiSignalBg} ${aiSignalColor}`}>
-                          {trade.side === "buy" ? "BULL" : "BEAR"}
-                        </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </GlassCard>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-semibold text-white">{trade.pair}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                            trade.side === "buy" 
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                          }`}>
+                            {trade.side === "buy" ? (
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                            {trade.side.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-mono text-white">
+                          {trade.size.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 font-mono text-white">
+                          {trade.entry.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4">
+                          {trade.takeProfit ? (
+                            <span className={`px-2 py-1 rounded text-xs font-mono font-medium border ${aiSignalBg}`}>
+                              {trade.takeProfit.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {trade.stopLoss ? (
+                            <span className="px-2 py-1 rounded text-xs font-mono text-orange-400 border border-orange-500/30">
+                              {trade.stopLoss.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg ${pnlBg} font-mono font-semibold ${pnlClass}`}>
+                            {displayPnl >= 0 ? "+" : ""}{displayPnl.toFixed(2)}
+                            {isOpen && (
+                              <span className="text-xs opacity-75">(unreal)</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {/* AI Prediction badge */}
+                          <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${aiSignalBg} ${aiSignalColor}`}>
+                            {trade.side === "buy" ? "BULL" : "BEAR"}
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+      )}
 
       {/* Install PWA Prompt */}
       <InstallPWAButton />
