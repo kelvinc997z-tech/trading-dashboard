@@ -73,16 +73,18 @@ export default function MarketSignals({
   // Helper: get gradient based on signal
   const getGradient = (signal?: string) => {
     switch (signal) {
-      case 'buy': return 'from-emerald-500/10 to-cyan-500/10';
-      case 'sell': return 'from-rose-500/10 to-orange-500/10';
+      case 'buy':
+      case 'sell': return 'from-emerald-500/10 to-cyan-500/10';
+      case 'neutral': return 'from-rose-500/10 to-orange-500/10';
       default: return 'from-gray-500/10 to-slate-500/10';
     }
   };
 
   const getBadgeClasses = (signal: string) => {
     switch (signal) {
-      case 'buy': return 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400';
-      case 'sell': return 'bg-rose-500/20 border-rose-500/30 text-rose-400';
+      case 'buy':
+      case 'sell': return 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400';
+      case 'neutral': return 'bg-rose-500/20 border-rose-500/30 text-rose-400';
       default: return 'bg-gray-500/20 border-gray-500/30 text-gray-400';
     }
   };
