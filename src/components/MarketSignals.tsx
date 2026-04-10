@@ -150,7 +150,7 @@ export default function MarketSignals({
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-bold text-gray-900 dark:text-white">{signal.symbol}</span>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${getBadgeClasses(signal.signal)}`}>
-                        {signal.signal.toUpperCase()}
+                        {signal.signal === 'neutral' ? 'NOT ACTIVE' : signal.signal.toUpperCase()}
                       </span>
                     </div>
                     <div className="text-xs text-gray-500 truncate">{signal.name}</div>
