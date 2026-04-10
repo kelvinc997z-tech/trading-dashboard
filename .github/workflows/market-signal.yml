@@ -2,8 +2,8 @@ name: Update Market Signals
 
 on:
   schedule:
-    # Run every 4 hours: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC
-    - cron: "0 */4 * * *"
+    # Run every hour to support 1h intervals for Gold (XAUT)
+    - cron: "0 * * * *"
   workflow_dispatch: # Allow manual trigger
 
 jobs:

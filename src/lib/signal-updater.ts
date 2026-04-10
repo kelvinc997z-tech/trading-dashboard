@@ -212,15 +212,14 @@ function generateSignalFromOHLC(
  * Symbol configuration
  */
 const SYMBOLS = [
-  { symbol: "BTC", name: "Bitcoin", emoji: "₿" },
-  { symbol: "ETH", name: "Ethereum", emoji: "Ξ" },
-  { symbol: "SOL", name: "Solana", emoji: "◎" },
-  { symbol: "XRP", name: "Ripple", emoji: "✕" },
-  { symbol: "DOGE", name: "Dogecoin", emoji: "Ð" },
-  { symbol: "XAUT", name: "Gold", emoji: "🪙", yahooSymbol: "GC=F" }, // Gold futures
-  // Removed forex pairs (EUR/USD, USD/JPY, GBP/USD)
-  { symbol: "WTI", name: "Oil WTI", emoji: "🛢", yahooSymbol: "CL=F" }, // Yahoo Finance WTI futures
-  { symbol: "XAG", name: "Silver", emoji: "🥈", yahooSymbol: "SLV" }, // SLV ETF
+  { symbol: "BTC", name: "Bitcoin", emoji: "₿", interval: 4 },
+  { symbol: "ETH", name: "Ethereum", emoji: "Ξ", interval: 4 },
+  { symbol: "SOL", name: "Solana", emoji: "◎", interval: 4 },
+  { symbol: "XRP", name: "Ripple", emoji: "✕", interval: 4 },
+  { symbol: "DOGE", name: "Dogecoin", emoji: "Ð", interval: 4 },
+  { symbol: "XAUT", name: "Gold", emoji: "🪙", yahooSymbol: "GC=F", interval: 1 }, // Gold futures - 1h
+  { symbol: "WTI", name: "Oil WTI", emoji: "🛢", yahooSymbol: "CL=F", interval: 4 }, // Oil futures - 4h
+  { symbol: "XAG", name: "Silver", emoji: "🥈", yahooSymbol: "SLV", interval: 4 }, // Silver ETF - 4h
 ];
 
 /**
@@ -228,14 +227,22 @@ const SYMBOLS = [
  */
 export async function generateAndSaveMarketSignals(): Promise<any[]> {
   const results: LiveSignal[] = [];
+  const now = new Date();
+  const currentHour = now.getHours();
 
   for (const pair of SYMBOLS) {
     try {
+      // Check if this symbol should run this hour
+      if (currentHour % pair.interval !== 0) {
+        console.log(`[SignalUpdater] Skipping ${pair.symbol} (runs every ${pair.interval}h)`);
+        continue;
+      }
+
       const ohlcData = await fetchLatestOHLC(pair.symbol, { yahooSymbol: pair.yahooSymbol });
       console.log(`[SignalUpdater] Fetched ${ohlcData?.length || 0} OHLC candles for ${pair.symbol}`);
 
       if (ohlcData.length > 0) {
-        // Transform Coinglass format to our format
+        // Transform format
         const transformed = ohlcData.map(candle => ({
           time: new Date(candle[0]).toISOString(),
           open: Number(candle[1]),
@@ -246,7 +253,10 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
         }));
 
         const signal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed);
-        results.push(signal);
+        
+        // Use the specific interval as the timeframe name
+        const timeframeLabel = `${pair.interval}h`;
+        const roundedTime = new Date(new Date().setHours(now.getHours() - (now.getHours() % pair.interval), 0, 0, 0));
 
         // Save to DB
         try {
@@ -254,8 +264,8 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
             where: {
               symbol_timeframe_generatedAt: {
                 symbol: pair.symbol,
-                timeframe: "8h",
-                generatedAt: new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8))),
+                timeframe: timeframeLabel,
+                generatedAt: roundedTime,
               },
             },
             update: {
@@ -279,72 +289,24 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
               sl: signal.sl,
               confidence: signal.confidence,
               reasoning: signal.reasoning,
-              timeframe: "8h",
-              generatedAt: new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8))),
+              timeframe: timeframeLabel,
+              generatedAt: roundedTime,
               updatedAt: new Date(),
             },
           });
-          console.log(`[SignalUpdater] Saved signal for ${pair.symbol}`);
+          results.push({ ...signal, timeframe: timeframeLabel, generatedAt: roundedTime });
+          console.log(`[SignalUpdater] Saved ${timeframeLabel} signal for ${pair.symbol}`);
         } catch (dbError: any) {
-          console.error(`[SignalUpdater] DB error for ${pair.symbol}:`, dbError.message, dbError);
+          console.error(`[SignalUpdater] DB error for ${pair.symbol}:`, dbError.message);
         }
-      } else {
-        // Fallback: use simulated data if Coinglass returns no data
-        console.warn(`No OHLC data from Coinglass for ${pair.symbol}, using fallback simulated data`);
-        const simulatedOHLC = generateSimulatedData(pair.symbol, "8h");
-        // Transform OHLCData[] to expected format {time:string, ...}
-        const transformedSimulated = simulatedOHLC.map(d => ({
-          time: d.timestamp.toISOString(),
-          open: d.open,
-          high: d.high,
-          low: d.low,
-          close: d.close,
-          volume: d.volume,
-        }));
-        const fallbackSignal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformedSimulated);
-        results.push(fallbackSignal);
-
-        // Save fallback to DB
-        const roundedTime = new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8)));
-        await db.marketSignal.upsert({
-          where: {
-            symbol_timeframe_generatedAt: {
-              symbol: pair.symbol,
-              timeframe: "8h",
-              generatedAt: roundedTime,
-            },
-          },
-          update: {
-            name: fallbackSignal.name,
-            emoji: fallbackSignal.emoji,
-            signal: fallbackSignal.signal,
-            entry: fallbackSignal.entry,
-            tp: fallbackSignal.tp,
-            sl: fallbackSignal.sl,
-            confidence: fallbackSignal.confidence,
-            reasoning: fallbackSignal.reasoning,
-            updatedAt: new Date(),
-          },
-          create: {
-            symbol: fallbackSignal.symbol,
-            name: fallbackSignal.name,
-            emoji: fallbackSignal.emoji,
-            signal: fallbackSignal.signal,
-            entry: fallbackSignal.entry,
-            tp: fallbackSignal.tp,
-            sl: fallbackSignal.sl,
-            confidence: fallbackSignal.confidence,
-            reasoning: fallbackSignal.reasoning,
-            timeframe: "8h",
-            generatedAt: roundedTime,
-            updatedAt: new Date(),
-          },
-        });
       }
     } catch (error) {
       console.error(`Error generating signal for ${pair.symbol}:`, error);
     }
   }
+
+  return results;
+}
 
   console.log(`Generated ${results.length} market signals at ${new Date().toISOString()}`);
 
@@ -378,21 +340,45 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
  */
 export async function getLatestMarketSignals(forceRefresh: boolean = false) {
   if (!forceRefresh) {
-    // Check if we have recent signals (< 8 hours old)
-    const latest = await db.marketSignal.findMany({
+    // Fetch latest signals for all symbols
+    const latestSignals = await db.marketSignal.findMany({
+      where: {
+        generatedAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Within last 24h
+        }
+      },
       orderBy: { generatedAt: "desc" },
-      take: 20,
     });
 
-    const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
-    const recentSignals = latest.filter(s => new Date(s.generatedAt) > eightHoursAgo);
+    // Group by symbol and pick the most recent for each
+    const uniqueMap = new Map();
+    latestSignals.forEach(s => {
+      if (!uniqueMap.has(s.symbol)) {
+        uniqueMap.set(s.symbol, s);
+      }
+    });
 
-    if (recentSignals.length > 0) {
-      return recentSignals;
+    if (uniqueMap.size > 0) {
+      return Array.from(uniqueMap.values());
     }
   }
 
-  // Generate fresh signals
-  const signals = await generateAndSaveMarketSignals();
-  return signals;
+  // Generate fresh signals (will only generate those due for current hour)
+  const generated = await generateAndSaveMarketSignals();
+  
+  // Return the combined latest state from DB
+  return db.marketSignal.findMany({
+    where: {
+      generatedAt: {
+        gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+      }
+    },
+    orderBy: { generatedAt: "desc" },
+  }).then(signals => {
+    const map = new Map();
+    signals.forEach(s => {
+      if (!map.has(s.symbol)) map.set(s.symbol, s);
+    });
+    return Array.from(map.values());
+  });
 }
