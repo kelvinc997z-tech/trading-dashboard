@@ -261,10 +261,10 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
           volume: Number(candle[5]),
         }));
 
-        const signal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed, timeframeLabel);
-        
         // Use the specific interval as the timeframe name
         const timeframeLabel = `${pair.interval}h`;
+        const signal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed, timeframeLabel);
+        
         const roundedTime = new Date(new Date().setHours(now.getHours() - (now.getHours() % pair.interval), 0, 0, 0));
 
         // Save to DB
