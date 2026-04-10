@@ -38,13 +38,15 @@ export default function MarketSignals({
       }
       const data = await res.json();
 
-      // Filter to top signals by confidence (descending), exclude neutral
-      const filtered = data.signals
-        .filter((s: MarketSignal) => s.signal !== 'neutral')
-        .sort((a: MarketSignal, b: MarketSignal) => b.confidence - a.confidence)
-        .slice(0, limit);
+      // Filter to top signals by confidence (descending)
+      // Prioritize buy/sell over neutral
+      const sorted = data.signals.sort((a: MarketSignal, b: MarketSignal) => {
+        if (a.signal !== 'neutral' && b.signal === 'neutral') return -1;
+        if (a.signal === 'neutral' && b.signal !== 'neutral') return 1;
+        return b.confidence - a.confidence;
+      });
 
-      setSignals(filtered);
+      setSignals(sorted.slice(0, limit));
       setError(null);
     } catch (err: any) {
       console.error('[MarketSignals]', err.message);
