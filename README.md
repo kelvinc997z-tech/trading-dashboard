@@ -22,6 +22,18 @@
 
 ## 📊 Project Progress
 
+### ✅ Completed (April 2026)
+
+| Milestone | Status | Details |
+|-----------|--------|---------|
+| **Variable Signal Frequency** | ✅ Live | **XAUT (Gold)** signals every 1 hour; others every 4 hours |
+| **Simplified Pricing** | ✅ Deployed | Only 2 tiers: **Free** and **PRO** (Rp 200,000/month) |
+| **Feature Gating** | ✅ Active | PRO users get full dashboard; Free users: Live Charts + News only |
+| **Price Accuracy Fix** | ✅ Applied | WTI Oil and Gold prices synced with Yahoo Finance (1m granularity) |
+| **Signal UI Enhancement** | ✅ Live | **NOT ACTIVE** (Red) for neutral signals; **ACTIVE** (Green) for Buy/Sell |
+| **Backend Integration** | ✅ Optimized | Yahoo Finance prioritized over Coinglass for Futures (CL=F, GC=F) |
+| **Production Deployment** | ✅ Success | [tradingsignal.cloud](https://tradingsignal.cloud) updated with latest changes |
+
 ### ✅ Completed (April 2025)
 
 | Milestone | Status | Details |
@@ -128,6 +140,24 @@ ETH: Entry $2,139  | TP $2,257  (5.5%) | SL $2,088  (2.4%)
 ---
 
 ## 📈 Recent Updates (Changelog)
+
+### **2026-04-10** — Signal Frequency & Pricing Simplification
+
+#### 🚦 Variable Signal Intervals
+- **XAUT (Gold) Update Frequency**: Sinyal Emas kini diperbarui setiap **1 jam** untuk akurasi tinggi.
+- **Other Assets**: BTC, ETH, SOL, WTI, dll tetap diperbarui setiap **4 jam** sekali.
+- **Cron Job Optimization**: Workflow GitHub Action diperbarui ke interval 1 jam (`0 * * * *`).
+
+#### 💰 Pricing & Access Control
+- **Two-Tier Model**: Menghapus paket "LITE". Sekarang hanya ada **Free** dan **PRO** (Rp 200,000/bulan).
+- **Dashboard Restrictions**: 
+  - **Free Tier**: Akses terbatas ke Live Charts dan News saja.
+  - **PRO Tier**: Akses penuh ke Market Signals, Technical Analysis, Trade History, dan Performance Analytics.
+- **Payment Logic**: Update pada `/api/payment` untuk mencerminkan harga baru Rp 200,000.
+
+#### 📊 Data Accuracy & UI
+- **Real-time Price Sync**: Integrasi Yahoo Finance ditingkatkan dengan penarikan data 1 menit (1m) untuk harga *entry* yang lebih akurat (terutama untuk Oil WTI `CL=F`).
+- **Signal Status**: Mengubah label "Neutral" menjadi **NOT ACTIVE** (Warna Merah) dan sinyal Buy/Sell menjadi **ACTIVE** (Warna Hijau).
 
 ### **2026-04-03** — Production Deployment & Major UI/UX Overhaul
 
