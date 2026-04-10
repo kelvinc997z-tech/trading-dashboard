@@ -237,13 +237,13 @@ const SYMBOLS = [
 export async function generateAndSaveMarketSignals(): Promise<any[]> {
   const results: LiveSignal[] = [];
   const now = new Date();
-  const currentHour = now.getHours();
+  const currentHour = now.getUTCHours();
 
   for (const pair of SYMBOLS) {
     try {
-      // Check if this symbol should run this hour
+      // Check if this symbol should run this hour (UTC)
       if (currentHour % pair.interval !== 0) {
-        console.log(`[SignalUpdater] Skipping ${pair.symbol} (runs every ${pair.interval}h)`);
+        console.log(`[SignalUpdater] Skipping ${pair.symbol} (runs every ${pair.interval}h UTC, current hour: ${currentHour})`);
         continue;
       }
 
@@ -265,7 +265,7 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
         const timeframeLabel = `${pair.interval}h`;
         const signal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed, timeframeLabel);
         
-        const roundedTime = new Date(new Date().setHours(now.getHours() - (now.getHours() % pair.interval), 0, 0, 0));
+        const roundedTime = new Date(new Date().setUTCHours(now.getUTCHours() - (now.getUTCHours() % pair.interval), 0, 0, 0));
 
         // Save to DB
         try {
