@@ -33,14 +33,22 @@ async function fetchLatestOHLC(symbol: string, config?: { yahooSymbol?: string }
     const yahooSymbol = config?.yahooSymbol || (isCryptoSymbol(symbol) ? `${symbol}-USD` : symbol);
     console.log(`[SignalUpdater] Trying Yahoo Finance for ${symbol} (${yahooSymbol})...`);
     const yahooData = await fetchYahooFinanceCandles(yahooSymbol, "1d", "1h", isCryptoSymbol(symbol));
-    const formatted = yahooData.slice(-8).map(c => [
-      c.timestamp * 1000,
-      c.open,
-      c.high,
-      c.low,
-      c.close,
-      c.volume,
-    ]);
+    
+    // Also fetch absolute latest price (1m interval) for the most current 'entry' price
+    const latestPriceData = await fetchYahooFinanceCandles(yahooSymbol, "1d", "1m", isCryptoSymbol(symbol)).catch(() => null);
+    const latestPrice = latestPriceData ? latestPriceData[latestPriceData.length - 1].close : null;
+
+    const formatted = yahooData.slice(-8).map((c, i) => {
+      const isLast = i === yahooData.slice(-8).length - 1;
+      return [
+        c.timestamp * 1000,
+        c.open,
+        c.high,
+        c.low,
+        isLast && latestPrice ? latestPrice : c.close, // Use 1m close for the latest candle's close
+        c.volume,
+      ];
+    });
     if (formatted.length > 0) {
       return formatted;
     }
@@ -126,7 +134,8 @@ function generateSignalFromOHLC(
   symbol: string,
   name: string,
   emoji: string,
-  ohlcData: Array<{ time: string; open: number; high: number; low: number; close: number; volume: number }>
+  ohlcData: Array<{ time: string; open: number; high: number; low: number; close: number; volume: number }>,
+  timeframe: string = "8h"
 ): LiveSignal {
   if (!ohlcData || ohlcData.length === 0) {
     return {
@@ -140,8 +149,8 @@ function generateSignalFromOHLC(
       confidence: 0,
       reasoning: "No data available",
       currentPrice: 0,
-      timeframe: "8h",
-      generatedAt: new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8))),
+      timeframe,
+      generatedAt: new Date(),
     };
   }
 
@@ -159,22 +168,22 @@ function generateSignalFromOHLC(
     14
   );
 
-  // Momentum signal (8h gain/loss)
+  // Momentum signal (timeframe-based gain/loss)
   const priceChange = currentPrice - previous.close;
   const percentChange = (priceChange / previous.close) * 100;
 
   let signal: "buy" | "sell" | "neutral" = "neutral";
   let reasoning = "";
 
-  if (percentChange > 0.5) {
+  if (percentChange > 0.3) { // Lowered threshold for 1h/4h
     signal = "buy";
-    reasoning = `Bullish momentum (${percentChange.toFixed(2)}% 8h gain)`;
-  } else if (percentChange < -0.5) {
+    reasoning = `Bullish momentum (${percentChange.toFixed(2)}% ${timeframe} gain)`;
+  } else if (percentChange < -0.3) {
     signal = "sell";
-    reasoning = `Bearish momentum (${percentChange.toFixed(2)}% 8h loss)`;
+    reasoning = `Bearish momentum (${percentChange.toFixed(2)}% ${timeframe} loss)`;
   } else {
     signal = "neutral";
-    reasoning = `Consolidation (${percentChange.toFixed(2)}% 8h change)`;
+    reasoning = `Consolidation (${percentChange.toFixed(2)}% ${timeframe} change)`;
   }
 
   // ATR-based SL/TP (wider for 8h)
@@ -190,7 +199,7 @@ function generateSignalFromOHLC(
   let confidence = 0.4 + Math.min(momentumStrength / 2, 0.3) + (100 - Math.min(atrPercent * 5, 30)) / 100;
   confidence = Math.max(0.1, Math.min(confidence, 0.99));
 
-  reasoning += ` | ATR: ${atr.toFixed(2)} (${atrPercent.toFixed(2)}%)`;
+  reasoning += ` | Source: Yahoo Finance`;
 
   return {
     symbol,
@@ -203,8 +212,8 @@ function generateSignalFromOHLC(
     confidence,
     reasoning,
     currentPrice,
-    timeframe: "8h",
-    generatedAt: new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8))),
+    timeframe,
+    generatedAt: new Date(),
   };
 }
 
@@ -252,7 +261,7 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
           volume: Number(candle[5]),
         }));
 
-        const signal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed);
+        const signal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed, timeframeLabel);
         
         // Use the specific interval as the timeframe name
         const timeframeLabel = `${pair.interval}h`;
@@ -306,33 +315,6 @@ export async function generateAndSaveMarketSignals(): Promise<any[]> {
   }
 
   return results;
-}
-
-  console.log(`Generated ${results.length} market signals at ${new Date().toISOString()}`);
-
-  // Try to fetch from DB; if fails or empty, return in-memory results
-  try {
-    const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
-    const savedSignals = await db.marketSignal.findMany({
-      where: { generatedAt: { gte: eightHoursAgo } },
-      orderBy: { generatedAt: "desc" },
-    });
-    if (savedSignals.length > 0) {
-      return savedSignals;
-    }
-  } catch (dbError: any) {
-    console.error('[SignalUpdater] DB fetch error, using in-memory results:', dbError.message);
-  }
-
-  // Fallback: return in-memory results (convert to DB-like shape)
-  const roundedTime = new Date(new Date().setHours(new Date().getHours() - (new Date().getHours() % 8)));
-  return results.map(s => ({
-    ...s,
-    id: crypto.randomUUID(),
-    timeframe: s.timeframe || "8h",
-    generatedAt: s.generatedAt || roundedTime,
-    updatedAt: new Date(),
-  }));
 }
 
 /**
