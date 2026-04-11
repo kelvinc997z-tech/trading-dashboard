@@ -12,6 +12,7 @@ jobs:
     steps:
       - name: Trigger market signal generation
         run: |
-          curl -X POST ${{ secrets.MARKET_SIGNAL_ENDPOINT }} \
+          curl -v -X POST ${{ secrets.MARKET_SIGNAL_ENDPOINT }} \
             -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             --fail --show-error
