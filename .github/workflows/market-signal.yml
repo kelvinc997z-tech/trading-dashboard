@@ -15,4 +15,4 @@ jobs:
           curl -v -X POST "${{ secrets.MARKET_SIGNAL_ENDPOINT }}" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            --fail --show-error
+            --fail-with-body
