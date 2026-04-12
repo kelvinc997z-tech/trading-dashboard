@@ -39,7 +39,7 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
   ];
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-xl bg-gray-900/90 border-b border-gray-800">
+    <nav className="sticky top-8 z-50 backdrop-blur-xl bg-gray-900/90 border-b border-gray-800">
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           {/* Logo */}

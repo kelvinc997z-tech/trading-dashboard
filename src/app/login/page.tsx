@@ -204,20 +204,37 @@ function LoginForm() {
             </button>
           </div>
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <button
               type="button"
               onClick={() => {
                 const newMode = isLogin ? "signup" : "login";
                 router.push(`/login?mode=${newMode}`);
               }}
-              className="text-sm text-primary hover:text-primary/80"
+              className="text-sm text-primary hover:text-primary/80 block w-full"
               disabled={loading}
             >
               {isLogin
                 ? "Don't have an account? Sign up"
                 : "Already have an account? Sign in"}
             </button>
+            
+            {isLogin && (
+              <div className="flex justify-between px-2">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-gray-500 hover:text-primary transition-colors"
+                >
+                  Forgot password?
+                </Link>
+                <Link
+                  href="/resend-verification"
+                  className="text-xs text-gray-500 hover:text-primary transition-colors"
+                >
+                  Resend verification email
+                </Link>
+              </div>
+            )}
           </div>
         </form>
       </div>
