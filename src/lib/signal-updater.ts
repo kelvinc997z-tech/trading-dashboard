@@ -278,9 +278,10 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
   const tasks = pairsToProcess.map(async (pair) => {
     try {
       const ohlcData = await fetchLatestOHLC(pair.symbol, { yahooSymbol: pair.yahooSymbol });
+      console.log(`[SignalUpdater] Received ${ohlcData?.length || 0} candles for ${pair.symbol}`);
       
       if (!ohlcData || ohlcData.length === 0) {
-        console.warn(`[SignalUpdater] No data for ${pair.symbol}`);
+        console.warn(`[SignalUpdater] No data (even simulated) for ${pair.symbol}`);
         return null;
       }
 
@@ -339,7 +340,7 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
       console.log(`[SignalUpdater] Successfully saved ${pair.symbol}`);
       return { ...signal, timeframe: timeframeLabel, generatedAt: roundedTime };
     } catch (error: any) {
-      console.error(`[SignalUpdater] Error for ${pair.symbol}:`, error.message);
+      console.error(`[SignalUpdater] CRITICAL ERROR for ${pair.symbol}:`, error);
       return null;
     }
   });
