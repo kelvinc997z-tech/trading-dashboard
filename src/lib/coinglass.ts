@@ -46,6 +46,8 @@ export async function fetchCoinglassOHLC(
     '30m': '30m',
     '1h': '1h',
     '4h': '4h',
+    '8h': '8h',
+    '12h': '12h',
     '1d': '1d',
   };
 
