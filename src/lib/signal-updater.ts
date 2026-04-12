@@ -46,6 +46,7 @@ async function fetchLatestOHLC(symbol: string, config?: { yahooSymbol?: string }
     let yahooData: any[] = [];
     if (res1?.ok) {
       const json = await res1.json();
+      console.log(`[SignalUpdater] ${symbol}: Yahoo 1h res ok`);
       const result = json.chart.result?.[0];
       if (result) {
         yahooData = result.timestamp.map((t: number, i: number) => ({
@@ -86,11 +87,12 @@ async function fetchLatestOHLC(symbol: string, config?: { yahooSymbol?: string }
   }
 
   // Fallback to Coinglass (8h) - only if Yahoo fails
-  console.log(`[SignalUpdater] Trying Coinglass fallback for ${symbol}...`);
+  console.log(`[SignalUpdater] ${symbol}: Trying Coinglass fallback...`);
   try {
     const coinglassSymbol = getCoinglassSymbol(symbol);
     const coinglassData = await fetchCoinglassOHLC(coinglassSymbol, "8h", 50);
     if (coinglassData?.data && coinglassData.data.length > 0) {
+      console.log(`[SignalUpdater] ${symbol}: Coinglass fallback success`);
       return coinglassData.data;
     }
   } catch (e: any) {
@@ -296,10 +298,10 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
       }
 
       const ohlcData = await fetchLatestOHLC(pair.symbol, { yahooSymbol: pair.yahooSymbol });
-      console.log(`[SignalUpdater] Received ${ohlcData?.length || 0} candles for ${pair.symbol}`);
+      console.log(`[SignalUpdater] ${pair.symbol}: fetched ${ohlcData?.length || 0} candles`);
       
       if (!ohlcData || ohlcData.length === 0) {
-        console.warn(`[SignalUpdater] No data (even simulated) for ${pair.symbol}`);
+        console.error(`[SignalUpdater] ${pair.symbol}: No data fetched from any source`);
         return null;
       }
 
