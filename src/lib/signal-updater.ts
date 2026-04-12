@@ -29,60 +29,16 @@ export interface LiveSignal {
  */
 async function fetchLatestOHLC(symbol: string, timeframe: string = "4h", config?: { yahooSymbol?: string }): Promise<any[]> {
   const yahooSymbol = config?.yahooSymbol || (isCryptoSymbol(symbol) ? `${symbol}-USD` : symbol);
+  const isCrypto = isCryptoSymbol(symbol);
   
-  // Try Yahoo Finance with a short timeout per request
+  // Try Yahoo Finance with retry logic from shared client
   try {
-    const fetchWithTimeout = (url: string) => 
-      fetch(url, { signal: AbortSignal.timeout(5000), next: { revalidate: 300 } });
-
-    // Map timeframe to Yahoo interval
-    const yahooInterval = timeframe === "1h" ? "1h" : "1h"; // Yahoo doesn't support 4h directly easily with range 1d
-    const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=1d&interval=${yahooInterval}`;
-    const latestUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=1d&interval=1m`;
-
-    const [res1, res2] = await Promise.all([
-      fetchWithTimeout(yahooUrl).catch(() => null),
-      fetchWithTimeout(latestUrl).catch(() => null)
-    ]);
-
-    let yahooData: any[] = [];
-    if (res1?.ok) {
-      const json = await res1.json();
-      console.log(`[SignalUpdater] ${symbol}: Yahoo 1h res ok`);
-      const result = json.chart.result?.[0];
-      if (result) {
-        yahooData = result.timestamp.map((t: number, i: number) => ({
-          timestamp: t,
-          close: result.indicators.quote[0].close[i],
-          open: result.indicators.quote[0].open[i],
-          high: result.indicators.quote[0].high[i],
-          low: result.indicators.quote[0].low[i],
-          volume: result.indicators.quote[0].volume[i],
-        })).filter((c: any) => c.close !== null);
-      }
-    }
-
-    let latestPrice = null;
-    if (res2?.ok) {
-      const json = await res2.json();
-      const result = json.chart.result?.[0];
-      if (result) {
-        latestPrice = result.indicators.quote[0].close.filter((p: any) => p !== null).pop();
-      }
-    }
-
-    if (yahooData.length > 0) {
-      return yahooData.slice(-8).map((c, i) => {
-        const isLast = i === yahooData.slice(-8).length - 1;
-        return [
-          c.timestamp * 1000,
-          c.open || 0,
-          c.high || 0,
-          c.low || 0,
-          (isLast && latestPrice) ? latestPrice : (c.close || 0),
-          c.volume || 0,
-        ];
-      });
+    const candles = await fetchYahooFinanceCandles(yahooSymbol, "5d", "1h", isCrypto);
+    if (candles && candles.length > 0) {
+      console.log(`[SignalUpdater] ${symbol}: Yahoo success with shared client`);
+      return candles.map(c => [
+        c.timestamp, c.open, c.high, c.low, c.close, c.volume
+      ]);
     }
   } catch (error: any) {
     console.warn(`[SignalUpdater] Yahoo Finance failed for ${symbol}:`, error.message);
@@ -259,7 +215,6 @@ const SYMBOLS = [
   { symbol: "XAUT", name: "Gold", emoji: "🪙", yahooSymbol: "GC=F", interval: 1 }, // Gold futures - 1h
   { symbol: "WTI", name: "Oil WTI", emoji: "🛢", yahooSymbol: "CL=F", interval: 4 }, // Oil futures - 4h
   { symbol: "XAG", name: "Silver", emoji: "🥈", yahooSymbol: "SLV", interval: 4 }, // Silver ETF - 4h
-  { symbol: "DEBUG", name: "Debug Pair", emoji: "🔍", interval: 1 }, // Debug
 ];
 
 /**
