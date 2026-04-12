@@ -29,52 +29,77 @@ export interface LiveSignal {
  */
 async function fetchLatestOHLC(symbol: string, config?: { yahooSymbol?: string }): Promise<any[]> {
   const yahooSymbol = config?.yahooSymbol || (isCryptoSymbol(symbol) ? `${symbol}-USD` : symbol);
-  console.log(`[SignalUpdater] Trying Yahoo Finance for ${symbol} (${yahooSymbol})...`);
-
-  // Parallel fetch for 1h candles and 1m latest price
+  
+  // Try Yahoo Finance with a short timeout per request
   try {
-    const [yahooData, latestPriceData] = await Promise.all([
-      fetchYahooFinanceCandles(yahooSymbol, "1d", "1h", isCryptoSymbol(symbol)),
-      fetchYahooFinanceCandles(yahooSymbol, "1d", "1m", isCryptoSymbol(symbol)).catch(() => null)
+    const fetchWithTimeout = (url: string) => 
+      fetch(url, { signal: AbortSignal.timeout(5000), next: { revalidate: 300 } });
+
+    const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=1d&interval=1h`;
+    const latestUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=1d&interval=1m`;
+
+    const [res1, res2] = await Promise.all([
+      fetchWithTimeout(yahooUrl).catch(() => null),
+      fetchWithTimeout(latestUrl).catch(() => null)
     ]);
 
-    const latestPrice = latestPriceData ? latestPriceData[latestPriceData.length - 1].close : null;
+    let yahooData: any[] = [];
+    if (res1?.ok) {
+      const json = await res1.json();
+      const result = json.chart.result?.[0];
+      if (result) {
+        yahooData = result.timestamp.map((t: number, i: number) => ({
+          timestamp: t,
+          close: result.indicators.quote[0].close[i],
+          open: result.indicators.quote[0].open[i],
+          high: result.indicators.quote[0].high[i],
+          low: result.indicators.quote[0].low[i],
+          volume: result.indicators.quote[0].volume[i],
+        })).filter((c: any) => c.close !== null);
+      }
+    }
 
-    const formatted = yahooData.slice(-8).map((c, i) => {
-      const isLast = i === yahooData.slice(-8).length - 1;
-      return [
-        c.timestamp * 1000,
-        c.open,
-        c.high,
-        c.low,
-        isLast && latestPrice ? latestPrice : c.close,
-        c.volume,
-      ];
-    });
+    let latestPrice = null;
+    if (res2?.ok) {
+      const json = await res2.json();
+      const result = json.chart.result?.[0];
+      if (result) {
+        latestPrice = result.indicators.quote[0].close.filter((p: any) => p !== null).pop();
+      }
+    }
 
-    if (formatted.length > 0) return formatted;
-  } catch (yahooError: any) {
-    console.error(`[SignalUpdater] Yahoo Finance error for ${symbol}:`, yahooError.message);
+    if (yahooData.length > 0) {
+      return yahooData.slice(-8).map((c, i) => {
+        const isLast = i === yahooData.slice(-8).length - 1;
+        return [
+          c.timestamp * 1000,
+          c.open || 0,
+          c.high || 0,
+          c.low || 0,
+          (isLast && latestPrice) ? latestPrice : (c.close || 0),
+          c.volume || 0,
+        ];
+      });
+    }
+  } catch (error: any) {
+    console.warn(`[SignalUpdater] Yahoo Finance failed for ${symbol}:`, error.message);
   }
 
-  // Fallback to Coinglass (8h)
-  console.log(`[SignalUpdater] Yahoo Finance failed for ${symbol}, trying Coinglass...`);
-  const coinglassSymbol = getCoinglassSymbol(symbol);
-  const coinglassData = await fetchCoinglassOHLC(coinglassSymbol, "8h", 50);
-  if (coinglassData?.data && coinglassData.data.length > 0) {
-    return coinglassData.data;
+  // Fallback to Coinglass (8h) - only if Yahoo fails
+  console.log(`[SignalUpdater] Trying Coinglass fallback for ${symbol}...`);
+  try {
+    const coinglassSymbol = getCoinglassSymbol(symbol);
+    const coinglassData = await fetchCoinglassOHLC(coinglassSymbol, "8h", 50);
+    if (coinglassData?.data && coinglassData.data.length > 0) {
+      return coinglassData.data;
+    }
+  } catch (e: any) {
+    console.error(`[SignalUpdater] Coinglass failed for ${symbol}:`, e.message);
   }
 
   // Final fallback: simulated data
-  console.warn(`[SignalUpdater] All sources failed for ${symbol}, using simulated data`);
-  const simulated = generateSimulatedData(symbol, "8h");
-  return simulated.map(d => [
-    d.timestamp.getTime(),
-    d.open,
-    d.high,
-    d.low,
-    d.close,
-    d.volume,
+  return generateSimulatedData(symbol, "8h").map(d => [
+    d.timestamp.getTime(), d.open, d.high, d.low, d.close, d.volume,
   ]);
 }
 
