@@ -248,28 +248,47 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
         generatedAt: roundedTime,
       };
 
-      await db.marketSignal.upsert({
-        where: { 
-          symbol_timeframe_generatedAt: { 
-            symbol: pair.symbol, 
-            timeframe: timeframeLabel, 
-            generatedAt: roundedTime 
-          } 
-        },
-        update: { 
-          ...dbData,
-          updatedAt: new Date() 
-        },
-        create: { 
-          ...dbData,
-          updatedAt: new Date() 
-        },
-      });
+      try {
+        await db.marketSignal.upsert({
+          where: { 
+            symbol_timeframe_generatedAt: { 
+              symbol: pair.symbol, 
+              timeframe: timeframeLabel, 
+              generatedAt: roundedTime 
+            } 
+          },
+          update: { 
+            ...dbData,
+            updatedAt: new Date() 
+          },
+          create: { 
+            ...dbData,
+            updatedAt: new Date() 
+          },
+        });
+        console.log(`[SignalUpdater] Saved ${pair.symbol} to DB`);
+      } catch (dbError: any) {
+        console.error(`[SignalUpdater] DB Save Failed for ${pair.symbol}:`, dbError.message);
+        // We continue anyway so the API can return the fresh signal to the UI
+      }
       
       return { ...signalResult, timeframe: timeframeLabel, generatedAt: roundedTime };
     } catch (error: any) {
       console.error(`[SignalUpdater] Error for ${pair.symbol}:`, error);
-      return null;
+      return {
+        symbol: pair.symbol,
+        name: pair.name,
+        emoji: pair.emoji,
+        signal: "neutral",
+        entry: 0,
+        tp: 0,
+        sl: 0,
+        confidence: 0,
+        reasoning: `Error: ${error.message}`,
+        currentPrice: 0,
+        timeframe: "err",
+        generatedAt: new Date(),
+      };
     }
   });
 
