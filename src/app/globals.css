@@ -720,3 +720,13 @@ html.theme-pro .btn-gradient:hover {
 .non-selectable {
   user-select: none;
 }
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

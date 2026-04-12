@@ -185,54 +185,45 @@ export default function MarketSignals({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setExpandedSymbol(isExpanded ? null : signal.symbol)}
               className={`group relative cursor-pointer overflow-hidden p-5 bg-gray-50 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.07] border border-transparent hover:border-gray-200 dark:hover:border-white/10 rounded-3xl transition-all duration-500 ${isExpanded ? 'ring-2 ring-primary/30 shadow-2xl scale-[1.02] z-10' : 'hover:shadow-xl'}`}
             >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
                 {/* Asset Identity */}
-                <div className="flex items-center gap-4 min-w-[180px]">
-                  <div className="w-14 h-14 bg-white dark:bg-white/5 rounded-2xl flex items-center justify-center text-3xl shadow-sm group-hover:scale-110 transition-transform duration-500 border border-gray-100 dark:border-white/5">
+                <div className="flex items-center gap-4 min-w-[140px]">
+                  <div className="w-12 h-12 md:w-14 md:h-14 bg-white dark:bg-white/5 rounded-2xl flex items-center justify-center text-2xl md:text-3xl shadow-sm group-hover:scale-110 transition-transform duration-500 border border-gray-100 dark:border-white/5">
                     {signal.emoji}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">{signal.symbol}</span>
-                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black tracking-widest border uppercase shadow-sm ${getBadgeClasses(signal.signal)}`}>
-                        {signal.signal === 'neutral' ? 'WAITING' : signal.signal}
+                  <div className="flex-1">
+                    <div className="flex items-center flex-wrap gap-2 mb-1">
+                      <span className="text-lg md:text-xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">{signal.symbol}</span>
+                      <span className={`px-2 py-0.5 rounded-lg text-[9px] md:text-[10px] font-black tracking-widest border uppercase shadow-sm ${getBadgeClasses(signal.signal)}`}>
+                        {signal.signal === 'neutral' ? 'NOT ACTIVE' : signal.signal}
                       </span>
                     </div>
                     <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{signal.name}</div>
                   </div>
                 </div>
 
-                {/* Animated Graph Placeholder */}
-                <div className="hidden lg:flex flex-1 max-w-[150px] h-10 items-end gap-1.5 px-2">
-                  {[...Array(6)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`flex-1 rounded-full transition-all duration-1000 ${signal.signal === 'buy' ? 'bg-emerald-500/20 group-hover:bg-emerald-500' : signal.signal === 'sell' ? 'bg-rose-500/20 group-hover:bg-rose-500' : 'bg-gray-500/20 group-hover:bg-gray-400'}`}
-                      style={{ height: `${20 + Math.random() * 80}%`, transitionDelay: `${i * 100}ms` }}
-                    />
-                  ))}
-                </div>
-
-                {/* Data Points */}
-                <div className="flex items-center justify-between md:justify-end gap-8 flex-1">
-                  <div className="text-center md:text-right">
-                    <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Confidence</div>
-                    <div className={`text-lg font-black ${confidenceColor} tabular-nums leading-none`}>
+                {/* Data Points Grid for Mobile */}
+                <div className="grid grid-cols-3 md:flex items-center justify-between md:justify-end gap-2 md:gap-8 flex-1">
+                  <div className="text-left md:text-right">
+                    <div className="text-[8px] md:text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Confidence</div>
+                    <div className={`text-sm md:text-lg font-black ${confidenceColor} tabular-nums leading-none`}>
                       {Math.round(signal.confidence)}%
                     </div>
                   </div>
                   <div className="text-center md:text-right">
-                    <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Target</div>
-                    <div className="text-lg font-black text-emerald-500 tabular-nums leading-none">
+                    <div className="text-[8px] md:text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Target</div>
+                    <div className="text-sm md:text-lg font-black text-emerald-500 tabular-nums leading-none">
                       {signal.tp > 1000 ? signal.tp.toLocaleString() : signal.tp.toFixed(signal.entry < 1 ? 4 : 2)}
                     </div>
                   </div>
-                  <div className="text-center md:text-right">
-                    <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Safety</div>
-                    <div className="text-lg font-black text-rose-500 tabular-nums leading-none">
+                  <div className="text-right">
+                    <div className="text-[8px] md:text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Safety</div>
+                    <div className="text-sm md:text-lg font-black text-rose-500 tabular-nums leading-none">
                       {signal.sl > 1000 ? signal.sl.toLocaleString() : signal.sl.toFixed(signal.entry < 1 ? 4 : 2)}
                     </div>
                   </div>

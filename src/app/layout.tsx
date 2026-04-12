@@ -9,6 +9,7 @@ import OnboardingProvider from "@/components/onboarding/OnboardingProvider";
 import { LanguageProvider } from "@/context/LanguageContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { MarketTicker } from "@/components/MarketTicker";
+import MobileBottomNav from "@/components/MobileBottomNav";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,7 +43,10 @@ export default function RootLayout({
                   <OnboardingProvider>
                     <ErrorBoundary>
                       <MarketTicker />
-                      {children}
+                      <div className="pb-16 md:pb-0">
+                        {children}
+                      </div>
+                      <MobileBottomNav />
                     </ErrorBoundary>
                   </OnboardingProvider>
                 </WatchlistProvider>

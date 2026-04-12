@@ -396,33 +396,37 @@ export default function Dashboard() {
         <div className="space-y-8">
 
       {/* Stats Cards - Futuristic */}
-      <div className="grid gap-4 md:gap-6 grid-cols-2 md:grid-cols-4 mb-6">
+      <div className="flex overflow-x-auto pb-4 md:grid md:grid-cols-4 gap-4 md:gap-6 scrollbar-hide snap-x snap-mandatory">
         {isPro && (
+          <div className="min-w-[280px] md:min-w-0 snap-center">
+            <StatCard
+              label="AI Confidence"
+              value="87%"
+              sublabel="Signal accuracy"
+              icon={
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              }
+              gradient="purple"
+              trend={{ value: "+5.3%", up: true }}
+            />
+          </div>
+        )}
+        <div className="min-w-[280px] md:min-w-0 snap-center">
           <StatCard
-            label="AI Confidence"
-            value="87%"
-            sublabel="Signal accuracy"
+            label="System Status"
+            value="Online"
+            sublabel="All systems go"
             icon={
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             }
-            gradient="purple"
-            trend={{ value: "+5.3%", up: true }}
+            gradient="emerald"
           />
-        )}
-        <StatCard
-          label="System Status"
-          value="Online"
-          sublabel="All systems go"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          }
-          gradient="emerald"
-        />
-        <div className={isPro ? "md:col-span-2" : "col-span-1 md:col-span-3"}>
+        </div>
+        <div className={`min-w-[320px] md:min-w-0 snap-center ${isPro ? "md:col-span-2" : "md:col-span-3"}`}>
           <MarketSentiment refreshInterval={3600000} />
         </div>
       </div>

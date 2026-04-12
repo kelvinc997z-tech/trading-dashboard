@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { motion } from "framer-motion";
 
 interface StatCardProps {
   label: string;
@@ -36,7 +37,11 @@ export default function StatCard({
     : "text-white";
 
   return (
-    <div className="relative overflow-hidden rounded-2xl p-6 backdrop-blur-xl bg-gray-900/50 border border-gray-700/50 shadow-lg hover:shadow-cyan-900/20 hover:border-cyan-500/30 transition-all duration-300 group">
+    <motion.div 
+      whileHover={{ y: -5, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="relative overflow-hidden rounded-2xl p-6 backdrop-blur-xl bg-gray-900/50 border border-gray-700/50 shadow-lg hover:shadow-cyan-900/20 hover:border-cyan-500/30 transition-all duration-300 group cursor-pointer"
+    >
       {/* Animated gradient background */}
       <div className={`absolute inset-0 bg-gradient-to-br ${gradientClasses[gradient]} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
       
