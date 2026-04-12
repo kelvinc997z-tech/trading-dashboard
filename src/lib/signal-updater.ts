@@ -278,6 +278,24 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
   // Process pairs in parallel to avoid Vercel timeouts
   const tasks = pairsToProcess.map(async (pair) => {
     try {
+      // Internal debug pair
+      if (pair.symbol === "DEBUG") {
+        return {
+          symbol: "DEBUG",
+          name: "Debug Pair",
+          emoji: "🔍",
+          signal: "neutral",
+          entry: 100,
+          tp: 110,
+          sl: 90,
+          confidence: 0.99,
+          reasoning: "System debug signal",
+          currentPrice: 100,
+          timeframe: "1h",
+          generatedAt: new Date(),
+        };
+      }
+
       const ohlcData = await fetchLatestOHLC(pair.symbol, { yahooSymbol: pair.yahooSymbol });
       console.log(`[SignalUpdater] Received ${ohlcData?.length || 0} candles for ${pair.symbol}`);
       
