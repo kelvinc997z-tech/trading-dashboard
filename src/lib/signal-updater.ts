@@ -230,16 +230,43 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
         volume: Number(candle[5]),
       }));
 
-      const signal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed, timeframeLabel);
+      const signalResult = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed, timeframeLabel);
       const roundedTime = new Date(new Date().setUTCHours(now.getUTCHours() - (now.getUTCHours() % pair.interval), 0, 0, 0));
 
+      // Explicitly pick fields for DB to avoid Prisma errors with extra fields
+      const dbData = {
+        symbol: signalResult.symbol,
+        name: signalResult.name,
+        emoji: signalResult.emoji,
+        signal: signalResult.signal,
+        entry: signalResult.entry,
+        tp: signalResult.tp,
+        sl: signalResult.sl,
+        confidence: signalResult.confidence,
+        reasoning: signalResult.reasoning,
+        timeframe: timeframeLabel,
+        generatedAt: roundedTime,
+      };
+
       await db.marketSignal.upsert({
-        where: { symbol_timeframe_generatedAt: { symbol: pair.symbol, timeframe: timeframeLabel, generatedAt: roundedTime } },
-        update: { ...signal, updatedAt: new Date() },
-        create: { ...signal, timeframe: timeframeLabel, generatedAt: roundedTime, updatedAt: new Date() },
+        where: { 
+          symbol_timeframe_generatedAt: { 
+            symbol: pair.symbol, 
+            timeframe: timeframeLabel, 
+            generatedAt: roundedTime 
+          } 
+        },
+        update: { 
+          ...dbData,
+          updatedAt: new Date() 
+        },
+        create: { 
+          ...dbData,
+          updatedAt: new Date() 
+        },
       });
       
-      return { ...signal, timeframe: timeframeLabel, generatedAt: roundedTime };
+      return { ...signalResult, timeframe: timeframeLabel, generatedAt: roundedTime };
     } catch (error: any) {
       console.error(`[SignalUpdater] Error for ${pair.symbol}:`, error);
       return null;
