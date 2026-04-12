@@ -1,191 +1,85 @@
-/**
- * Market Signal Generator (8h timeframe)
- * Fetches live price data and generates technical analysis signals
- * Runs every 8 hours via cron
- */
-
-import { db } from "@/lib/db";
+import { db } from "./db";
+import { isCryptoSymbol } from "./yahoo-finance";
 import { fetchCoinglassOHLC } from "./coinglass";
-import { generateSimulatedData } from "./market-outlook";
-import { fetchYahooFinanceCandles, isCryptoSymbol } from "./yahoo-finance";
-
-export interface LiveSignal {
-  symbol: string;
-  name: string;
-  emoji: string;
-  signal: "buy" | "sell" | "neutral";
-  entry: number;
-  tp: number;
-  sl: number;
-  confidence: number;
-  reasoning: string;
-  currentPrice: number;
-  timeframe?: string;
-  generatedAt?: Date;
-}
 
 /**
- * Fetch latest OHLC data (8h timeframe) from Yahoo Finance (Primary) or Coinglass (Fallback)
+ * Technical analysis helpers
  */
-async function fetchLatestOHLC(symbol: string, timeframe: string = "4h", config?: { yahooSymbol?: string }): Promise<any[]> {
-  const yahooSymbol = config?.yahooSymbol || (isCryptoSymbol(symbol) ? `${symbol}-USD` : symbol);
-  const isCrypto = isCryptoSymbol(symbol);
+function calculateSMA(data: number[], period: number): number {
+  if (data.length < period) return data[data.length - 1] || 0;
+  const slice = data.slice(-period);
+  return slice.reduce((a, b) => a + b, 0) / period;
+}
+
+function calculateATR(highs: number[], lows: number[], closes: number[], period: number): number {
+  if (closes.length < period + 1) {
+    const lastHigh = highs[highs.length - 1] || 0;
+    const lastLow = lows[lows.length - 1] || 0;
+    const lastClose = closes[closes.length - 1] || 1;
+    return (lastHigh - lastLow) || (lastClose * 0.01);
+  }
   
-  // Try Yahoo Finance with retry logic from shared client
-  try {
-    const candles = await fetchYahooFinanceCandles(yahooSymbol, "5d", "1h", isCrypto);
-    if (candles && candles.length > 0) {
-      console.log(`[SignalUpdater] ${symbol}: Yahoo success with shared client`);
-      return candles.map(c => [
-        c.timestamp, c.open, c.high, c.low, c.close, c.volume
-      ]);
-    }
-  } catch (error: any) {
-    console.warn(`[SignalUpdater] Yahoo Finance failed for ${symbol}:`, error.message);
-  }
-
-  // Fallback to Coinglass - only if Yahoo fails
-  console.log(`[SignalUpdater] ${symbol}: Trying Coinglass fallback (${timeframe})...`);
-  try {
-    const coinglassSymbol = getCoinglassSymbol(symbol);
-    const coinglassData = await fetchCoinglassOHLC(coinglassSymbol, timeframe, 50);
-    if (coinglassData?.data && coinglassData.data.length > 0) {
-      console.log(`[SignalUpdater] ${symbol}: Coinglass fallback success`);
-      return coinglassData.data;
-    }
-  } catch (e: any) {
-    console.error(`[SignalUpdater] Coinglass failed for ${symbol}:`, e.message);
-  }
-
-  // Final fallback: simulated data
-  return generateSimulatedData(symbol, timeframe).map(d => [
-    d.timestamp.getTime(), d.open, d.high, d.low, d.close, d.volume,
-  ]);
-}
-
-/**
- * Map our symbols to Coinglass format
- */
-function getCoinglassSymbol(symbol: string): string {
-  const map: Record<string, string> = {
-    "BTC": "BTC",
-    "ETH": "ETH",
-    "SOL": "SOL",
-    "XRP": "XRP",
-    "DOGE": "DOGE",
-    "XAUT": "XAUT",
-    "EUR": "EUR",
-    "JPY": "JPY",
-    "GBP": "GBP",
-    "WTI": "WTI",
-    "XAG": "XAG",
-  };
-  return map[symbol] || symbol;
-}
-
-/**
- * Calculate ATR from OHLC
- */
-function calculateATR(
-  data: Array<{ high: number; low: number; close: number }>,
-  period: number = 14
-): number {
-  if (data.length < period + 1) return 0;
-
-  const trueRanges: number[] = [];
-
-  for (let i = 1; i < data.length; i++) {
-    const high = data[i].high;
-    const low = data[i].low;
-    const prevClose = data[i - 1].close;
-
+  const trs = [];
+  for (let i = 1; i < closes.length; i++) {
     const tr = Math.max(
-      high - low,
-      Math.abs(high - prevClose),
-      Math.abs(low - prevClose)
+      highs[i] - lows[i],
+      Math.abs(highs[i] - closes[i - 1]),
+      Math.abs(lows[i] - closes[i - 1])
     );
-
-    trueRanges.push(tr);
+    trs.push(tr);
   }
-
-  const recentTR = trueRanges.slice(-period);
-  const sum = recentTR.reduce((acc, val) => acc + val, 0);
-  return sum / period;
+  
+  const slice = trs.slice(-period);
+  return slice.reduce((a, b) => a + b, 0) / period;
 }
 
-/**
- * Generate signal based on 8h OHLC data
- */
-function generateSignalFromOHLC(
-  symbol: string,
-  name: string,
-  emoji: string,
-  ohlcData: Array<{ time: string; open: number; high: number; low: number; close: number; volume: number }>,
-  timeframe: string = "8h"
-): LiveSignal {
-  if (!ohlcData || ohlcData.length === 0) {
-    return {
-      symbol,
-      name,
-      emoji,
-      signal: "neutral",
-      entry: 0,
-      tp: 0,
-      sl: 0,
-      confidence: 0,
-      reasoning: "No data available",
-      currentPrice: 0,
-      timeframe,
-      generatedAt: new Date(),
-    };
-  }
-
-  const latest = ohlcData[ohlcData.length - 1];
-  const previous = ohlcData.length > 1 ? ohlcData[ohlcData.length - 2] : latest;
-  const currentPrice = latest.close;
-
-  // Calculate ATR
-  const atr = calculateATR(
-    ohlcData.slice(-50).map(d => ({
-      high: d.high,
-      low: d.low,
-      close: d.close
-    })),
-    14
-  );
-
-  // Momentum signal (timeframe-based gain/loss)
-  const priceChange = currentPrice - previous.close;
-  const percentChange = (priceChange / previous.close) * 100;
+function generateSignalFromOHLC(symbol: string, name: string, emoji: string, candles: any[], timeframe: string) {
+  const closes = candles.map(c => c.close);
+  const highs = candles.map(c => c.high);
+  const lows = candles.map(c => c.low);
+  const currentPrice = closes[closes.length - 1];
+  
+  const sma20 = calculateSMA(closes, 20);
+  const sma50 = calculateSMA(closes, 50);
+  const atr = calculateATR(highs, lows, closes, 14);
+  
+  const lastClose = closes[closes.length - 1];
+  const prevClose = closes[closes.length - 2] || lastClose;
+  const percentChange = ((lastClose - prevClose) / prevClose) * 100;
 
   let signal: "buy" | "sell" | "neutral" = "neutral";
   let reasoning = "";
 
-  if (percentChange > 0.3) { // Lowered threshold for 1h/4h
+  // Strategy logic
+  if (currentPrice > sma20 && sma20 > sma50 && percentChange > 0.1) {
     signal = "buy";
-    reasoning = `Bullish momentum (${percentChange.toFixed(2)}% ${timeframe} gain)`;
+    reasoning = `Bullish momentum (${percentChange.toFixed(2)}% ${timeframe} gain) | Price > SMA20 > SMA50`;
+  } else if (currentPrice < sma20 && sma20 < sma50 && percentChange < -0.1) {
+    signal = "sell";
+    reasoning = `Bearish momentum (${percentChange.toFixed(2)}% ${timeframe} loss) | Price < SMA20 < SMA50`;
+  } else if (percentChange > 0.3) {
+    signal = "buy";
+    reasoning = `Strong bullish bounce (${percentChange.toFixed(2)}% ${timeframe} gain)`;
   } else if (percentChange < -0.3) {
     signal = "sell";
-    reasoning = `Bearish momentum (${percentChange.toFixed(2)}% ${timeframe} loss)`;
+    reasoning = `Strong bearish dip (${percentChange.toFixed(2)}% ${timeframe} loss)`;
   } else {
     signal = "neutral";
-    reasoning = `Consolidation (${percentChange.toFixed(2)}% ${timeframe} change)`;
+    reasoning = `Market consolidation (${percentChange.toFixed(2)}% ${timeframe} change)`;
   }
 
-  // ATR-based SL/TP (wider for 8h)
+  // ATR-based SL/TP
   const slDistance = atr * 2;
   const tpDistance = atr * 4;
 
   const sl = signal === "buy" ? currentPrice - slDistance : currentPrice + slDistance;
   const tp = signal === "buy" ? currentPrice + tpDistance : currentPrice - tpDistance;
 
-  // Confidence based on ATR and momentum strength
+  // Confidence calculation
   const atrPercent = (atr / currentPrice) * 100;
   const momentumStrength = Math.abs(percentChange);
   let confidence = 0.4 + Math.min(momentumStrength / 2, 0.3) + (100 - Math.min(atrPercent * 5, 30)) / 100;
   confidence = Math.max(0.1, Math.min(confidence, 0.99));
-
-  reasoning += ` | Source: Yahoo Finance`;
 
   return {
     symbol,
@@ -218,53 +112,115 @@ const SYMBOLS = [
 ];
 
 /**
- * Generate signals for all symbols and save to DB
+ * Fetch latest OHLC data
  */
+async function fetchLatestOHLC(symbol: string, timeframe: string = "4h", config?: { yahooSymbol?: string }): Promise<any[]> {
+  const yahooSymbol = config?.yahooSymbol || (isCryptoSymbol(symbol) ? `${symbol}-USD` : symbol);
+  
+  try {
+    const fetchWithTimeout = (url: string) => 
+      fetch(url, { signal: AbortSignal.timeout(8000), next: { revalidate: 300 } });
+
+    // Use range=5d to handle weekends and 60m interval
+    const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=5d&interval=60m`;
+    const latestUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=1d&interval=1m`;
+
+    const [res1, res2] = await Promise.all([
+      fetchWithTimeout(yahooUrl).catch(() => null),
+      fetchWithTimeout(latestUrl).catch(() => null)
+    ]);
+
+    let yahooData: any[] = [];
+    if (res1?.ok) {
+      const json = await res1.json();
+      const result = json.chart.result?.[0];
+      if (result && result.timestamp) {
+        yahooData = result.timestamp.map((t: number, i: number) => ({
+          timestamp: t,
+          close: result.indicators.quote[0].close[i],
+          open: result.indicators.quote[0].open[i],
+          high: result.indicators.quote[0].high[i],
+          low: result.indicators.quote[0].low[i],
+          volume: result.indicators.quote[0].volume[i],
+        })).filter((c: any) => c.close !== null);
+      }
+    }
+
+    let latestPrice = null;
+    if (res2?.ok) {
+      const json = await res2.json();
+      const result = json.chart.result?.[0];
+      if (result && result.indicators.quote[0].close) {
+        latestPrice = result.indicators.quote[0].close.filter((p: any) => p !== null).pop();
+      }
+    }
+
+    if (yahooData.length > 0) {
+      const count = timeframe === "4h" ? 48 : 24; 
+      return yahooData.slice(-count).map((c, i) => {
+        const isLast = i === yahooData.slice(-count).length - 1;
+        return [
+          c.timestamp * 1000,
+          c.open || 0,
+          c.high || 0,
+          c.low || 0,
+          (isLast && latestPrice) ? latestPrice : (c.close || 0),
+          c.volume || 0,
+        ];
+      });
+    }
+  } catch (error: any) {
+    console.warn(`[SignalUpdater] Yahoo Finance error for ${symbol}:`, error.message);
+  }
+
+  // Fallback to Coinglass (Crypto only)
+  if (isCryptoSymbol(symbol)) {
+    try {
+      const coinglassData = await fetchCoinglassOHLC(symbol, timeframe, 50);
+      if (coinglassData?.data && coinglassData.data.length > 0) {
+        return coinglassData.data;
+      }
+    } catch (e: any) {
+      console.error(`[SignalUpdater] Coinglass failed for ${symbol}:`, e.message);
+    }
+  }
+
+  // Final fallback: Simulated data
+  return generateSimulatedData(symbol, timeframe).map(d => [
+    d.timestamp.getTime(), d.open, d.high, d.low, d.close, d.volume,
+  ]);
+}
+
+function generateSimulatedData(symbol: string, timeframe: string) {
+  const data = [];
+  const now = new Date();
+  let basePrice = symbol === "BTC" ? 65000 : symbol === "WTI" ? 80 : symbol === "XAUT" ? 2300 : 100;
+  
+  for (let i = 48; i >= 0; i--) {
+    const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+    const change = (Math.random() - 0.5) * (basePrice * 0.005);
+    const open = basePrice;
+    const close = basePrice + change;
+    data.push({ timestamp: time, open, high: open + 1, low: open - 1, close, volume: 100 });
+    basePrice = close;
+  }
+  return data;
+}
+
 export async function generateAndSaveMarketSignals(force: boolean = false): Promise<any[]> {
   const now = new Date();
   const currentHour = now.getUTCHours();
-
-  // Filter pairs that should run this hour (or all if forced)
   const pairsToProcess = force ? SYMBOLS : SYMBOLS.filter(pair => currentHour % pair.interval === 0);
   
-  if (pairsToProcess.length === 0) {
-    console.log(`[SignalUpdater] No signals to update for hour ${currentHour} UTC`);
-    return [];
-  }
+  if (pairsToProcess.length === 0) return [];
 
-  console.log(`[SignalUpdater] Updating signals for: ${pairsToProcess.map(p => p.symbol).join(", ")}`);
-
-  // Process pairs in parallel to avoid Vercel timeouts
   const tasks = pairsToProcess.map(async (pair) => {
     try {
-      // Internal debug pair
-      if (pair.symbol === "DEBUG") {
-        return {
-          symbol: "DEBUG",
-          name: "Debug Pair",
-          emoji: "🔍",
-          signal: "neutral",
-          entry: 100,
-          tp: 110,
-          sl: 90,
-          confidence: 0.99,
-          reasoning: "System debug signal",
-          currentPrice: 100,
-          timeframe: "1h",
-          generatedAt: new Date(),
-        };
-      }
-
       const timeframeLabel = `${pair.interval}h`;
       const ohlcData = await fetchLatestOHLC(pair.symbol, timeframeLabel, { yahooSymbol: pair.yahooSymbol });
-      console.log(`[SignalUpdater] ${pair.symbol}: fetched ${ohlcData?.length || 0} candles`);
       
-      if (!ohlcData || ohlcData.length === 0) {
-        console.error(`[SignalUpdater] ${pair.symbol}: No data fetched from any source`);
-        return null;
-      }
+      if (!ohlcData || ohlcData.length === 0) return null;
 
-      // Transform format
       const transformed = ohlcData.map(candle => ({
         time: new Date(candle[0]).toISOString(),
         open: Number(candle[1]),
@@ -275,49 +231,17 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
       }));
 
       const signal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed, timeframeLabel);
-      
       const roundedTime = new Date(new Date().setUTCHours(now.getUTCHours() - (now.getUTCHours() % pair.interval), 0, 0, 0));
 
-      // Save to DB
       await db.marketSignal.upsert({
-        where: {
-          symbol_timeframe_generatedAt: {
-            symbol: pair.symbol,
-            timeframe: timeframeLabel,
-            generatedAt: roundedTime,
-          },
-        },
-        update: {
-          name: signal.name,
-          emoji: signal.emoji,
-          signal: signal.signal,
-          entry: signal.entry,
-          tp: signal.tp,
-          sl: signal.sl,
-          confidence: signal.confidence,
-          reasoning: signal.reasoning,
-          updatedAt: new Date(),
-        },
-        create: {
-          symbol: signal.symbol,
-          name: signal.name,
-          emoji: signal.emoji,
-          signal: signal.signal,
-          entry: signal.entry,
-          tp: signal.tp,
-          sl: signal.sl,
-          confidence: signal.confidence,
-          reasoning: signal.reasoning,
-          timeframe: timeframeLabel,
-          generatedAt: roundedTime,
-          updatedAt: new Date(),
-        },
+        where: { symbol_timeframe_generatedAt: { symbol: pair.symbol, timeframe: timeframeLabel, generatedAt: roundedTime } },
+        update: { ...signal, updatedAt: new Date() },
+        create: { ...signal, timeframe: timeframeLabel, generatedAt: roundedTime, updatedAt: new Date() },
       });
       
-      console.log(`[SignalUpdater] Successfully saved ${pair.symbol}`);
       return { ...signal, timeframe: timeframeLabel, generatedAt: roundedTime };
     } catch (error: any) {
-      console.error(`[SignalUpdater] CRITICAL ERROR for ${pair.symbol}:`, error);
+      console.error(`[SignalUpdater] Error for ${pair.symbol}:`, error);
       return null;
     }
   });
@@ -326,62 +250,33 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
   return results.filter(r => r !== null);
 }
 
-/**
- * Get latest signals (from DB or generate fresh)
- */
 export async function getLatestMarketSignals(forceRefresh: boolean = false) {
-  // Fetch signals from last 24h
   let latestSignals = await db.marketSignal.findMany({
-    where: {
-      generatedAt: {
-        gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-      }
-    },
+    where: { generatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
     orderBy: { generatedAt: "desc" },
   }).catch(() => []);
 
-  // If forceRefresh or no signals in DB, generate fresh ones
   if (forceRefresh || latestSignals.length === 0) {
-    console.log(`[SignalUpdater] Triggering generation (Reason: ${forceRefresh ? 'Force' : 'Empty DB'})`);
-    // Force generate all if DB is empty
-    await generateAndSaveMarketSignals(latestSignals.length === 0);
-    
-    // Refresh the list from DB
+    await generateAndSaveMarketSignals(true);
     latestSignals = await db.marketSignal.findMany({
-      where: {
-        generatedAt: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
-        }
-      },
+      where: { generatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
       orderBy: { generatedAt: "desc" },
     }).catch(() => []);
   }
 
-  // Pick the latest unique signal for each symbol
-  if (latestSignals.length > 0) {
-    const uniqueMap = new Map();
-    latestSignals.forEach(s => {
-      if (!uniqueMap.has(s.symbol)) {
-        uniqueMap.set(s.symbol, s);
-      }
-    });
-    return Array.from(uniqueMap.values());
-  }
-
-  // Final emergency fallback if DB is empty and generation failed
-  return SYMBOLS.map(s => ({
-    id: `fallback-${s.symbol}`,
-    symbol: s.symbol,
-    name: s.name,
-    emoji: s.emoji,
-    signal: "neutral" as const,
-    entry: 0,
-    tp: 0,
-    sl: 0,
-    confidence: 0,
-    reasoning: "Market data synchronization in progress...",
-    timeframe: "4h",
-    generatedAt: new Date(),
-    updatedAt: new Date(),
-  }));
+  const uniqueMap = new Map();
+  latestSignals.sort((a, b) => b.generatedAt.getTime() - a.generatedAt.getTime());
+  latestSignals.forEach(s => { if (!uniqueMap.has(s.symbol)) uniqueMap.set(s.symbol, s); });
+  
+  const result = Array.from(uniqueMap.values());
+  const priority = ["BTC", "WTI", "XAUT"];
+  
+  return result.sort((a, b) => {
+    const aIdx = priority.indexOf(a.symbol);
+    const bIdx = priority.indexOf(b.symbol);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    return a.symbol.localeCompare(b.symbol);
+  });
 }

@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { TechnicalGauge } from "@/components/TechnicalGauge";
+import { SentimentHeatmap } from "@/components/SentimentHeatmap";
+
 interface MarketSignal {
   symbol: string;
   name: string;
@@ -107,9 +110,18 @@ export default function MarketSignals({
 
   if (loading && signals.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 animate-pulse">
-        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-4"></div>
-        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Analyzing Markets...</span>
+      <div className="space-y-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="relative overflow-hidden bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/5 rounded-[2.5rem] p-6 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gray-200 dark:bg-white/10 rounded-2xl" />
+              <div className="space-y-2">
+                <div className="w-24 h-6 bg-gray-200 dark:bg-white/10 rounded-lg" />
+                <div className="w-16 h-3 bg-gray-200 dark:bg-white/10 rounded-lg" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -237,7 +249,7 @@ export default function MarketSignals({
                     transition={{ duration: 0.4, ease: "circOut" }}
                     className="overflow-hidden"
                   >
-                    <div className="pt-6 mt-6 border-t border-gray-200 dark:border-white/5 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="pt-6 mt-6 border-t border-gray-200 dark:border-white/5 grid grid-cols-1 md:grid-cols-4 gap-6">
                       <div className="md:col-span-2 space-y-3">
                         <div className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -247,6 +259,11 @@ export default function MarketSignals({
                           "{signal.reasoning}"
                         </p>
                       </div>
+                      
+                      <div className="flex items-center justify-center">
+                        <TechnicalGauge value={signal.confidence} label="Trend Strength" />
+                      </div>
+
                       <div className="bg-gray-100 dark:bg-white/5 rounded-2xl p-4 flex flex-col justify-between">
                         <div className="flex justify-between items-start mb-4">
                           <div>
@@ -294,6 +311,9 @@ export default function MarketSignals({
 
       {/* Background Polish */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      
+      {/* Heatmap Section */}
+      <SentimentHeatmap signals={signals} />
     </motion.div>
   );
 }

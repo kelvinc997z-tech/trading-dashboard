@@ -8,6 +8,7 @@ import { ContrastProvider } from "@/components/contrast/ContrastProvider";
 import OnboardingProvider from "@/components/onboarding/OnboardingProvider";
 import { LanguageProvider } from "@/context/LanguageContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { MarketTicker } from "@/components/MarketTicker";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -39,7 +40,10 @@ export default function RootLayout({
               <NotificationProvider>
                 <WatchlistProvider>
                   <OnboardingProvider>
-                    <ErrorBoundary>{children}</ErrorBoundary>
+                    <ErrorBoundary>
+                      <MarketTicker />
+                      {children}
+                    </ErrorBoundary>
                   </OnboardingProvider>
                 </WatchlistProvider>
               </NotificationProvider>
