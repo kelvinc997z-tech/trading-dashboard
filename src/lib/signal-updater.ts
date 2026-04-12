@@ -371,57 +371,51 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
  * Get latest signals (from DB or generate fresh)
  */
 export async function getLatestMarketSignals(forceRefresh: boolean = false) {
-  if (!forceRefresh) {
-    // Fetch latest signals for all symbols
-    const latestSignals = await db.marketSignal.findMany({
-      where: {
-        generatedAt: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Within last 24h
-        }
-      },
-      orderBy: { generatedAt: "desc" },
-    });
-
-    // Group by symbol and pick the most recent for each
-    const uniqueMap = new Map();
-    latestSignals.forEach(s => {
-      if (!uniqueMap.has(s.symbol)) {
-        uniqueMap.set(s.symbol, s);
-      }
-    });
-
-    if (uniqueMap.size > 0) {
-      return Array.from(uniqueMap.values());
-    }
-  }
-
-  // Generate fresh signals (will force all if DB was empty)
-  await generateAndSaveMarketSignals(latestSignals.length === 0);
-  
-  // Return the combined latest state from DB
-  const finalSignals = await db.marketSignal.findMany({
+  // Fetch signals from last 24h
+  let latestSignals = await db.marketSignal.findMany({
     where: {
       generatedAt: {
         gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
       }
     },
     orderBy: { generatedAt: "desc" },
-  });
+  }).catch(() => []);
 
-  if (finalSignals.length > 0) {
-    const map = new Map();
-    finalSignals.forEach(s => {
-      if (!map.has(s.symbol)) map.set(s.symbol, s);
+  // If forceRefresh or no signals in DB, generate fresh ones
+  if (forceRefresh || latestSignals.length === 0) {
+    console.log(`[SignalUpdater] Triggering generation (Reason: ${forceRefresh ? 'Force' : 'Empty DB'})`);
+    // Force generate all if DB is empty
+    await generateAndSaveMarketSignals(latestSignals.length === 0);
+    
+    // Refresh the list from DB
+    latestSignals = await db.marketSignal.findMany({
+      where: {
+        generatedAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+        }
+      },
+      orderBy: { generatedAt: "desc" },
+    }).catch(() => []);
+  }
+
+  // Pick the latest unique signal for each symbol
+  if (latestSignals.length > 0) {
+    const uniqueMap = new Map();
+    latestSignals.forEach(s => {
+      if (!uniqueMap.has(s.symbol)) {
+        uniqueMap.set(s.symbol, s);
+      }
     });
-    return Array.from(map.values());
+    return Array.from(uniqueMap.values());
   }
 
   // Final emergency fallback if DB is empty and generation failed
   return SYMBOLS.map(s => ({
+    id: `fallback-${s.symbol}`,
     symbol: s.symbol,
     name: s.name,
     emoji: s.emoji,
-    signal: "neutral",
+    signal: "neutral" as const,
     entry: 0,
     tp: 0,
     sl: 0,
