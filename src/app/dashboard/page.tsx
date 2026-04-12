@@ -85,6 +85,8 @@ const US_STOCKS = [
 const SHOW_CRYPTO_CHARTS = false;
 const SHOW_CRYPTO_PRICE_CARDS = false;
 
+export const dynamic = 'force-dynamic';
+
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [markets, setMarkets] = useState<Record<string, { price: number }>>({});
