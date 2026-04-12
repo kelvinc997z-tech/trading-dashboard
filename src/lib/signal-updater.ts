@@ -255,6 +255,7 @@ const SYMBOLS = [
   { symbol: "XAUT", name: "Gold", emoji: "🪙", yahooSymbol: "GC=F", interval: 1 }, // Gold futures - 1h
   { symbol: "WTI", name: "Oil WTI", emoji: "🛢", yahooSymbol: "CL=F", interval: 4 }, // Oil futures - 4h
   { symbol: "XAG", name: "Silver", emoji: "🥈", yahooSymbol: "SLV", interval: 4 }, // Silver ETF - 4h
+  { symbol: "DEBUG", name: "Debug Pair", emoji: "🔍", interval: 1 }, // Always active
 ];
 
 /**
