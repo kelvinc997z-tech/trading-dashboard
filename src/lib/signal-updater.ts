@@ -28,14 +28,16 @@ export interface LiveSignal {
  * Fetch latest OHLC data (8h timeframe) from Yahoo Finance (Primary) or Coinglass (Fallback)
  */
 async function fetchLatestOHLC(symbol: string, config?: { yahooSymbol?: string }): Promise<any[]> {
-  // Try Yahoo Finance first (1h candles, take last 8 = ~8h)
+  const yahooSymbol = config?.yahooSymbol || (isCryptoSymbol(symbol) ? `${symbol}-USD` : symbol);
+  console.log(`[SignalUpdater] Trying Yahoo Finance for ${symbol} (${yahooSymbol})...`);
+
+  // Parallel fetch for 1h candles and 1m latest price
   try {
-    const yahooSymbol = config?.yahooSymbol || (isCryptoSymbol(symbol) ? `${symbol}-USD` : symbol);
-    console.log(`[SignalUpdater] Trying Yahoo Finance for ${symbol} (${yahooSymbol})...`);
-    const yahooData = await fetchYahooFinanceCandles(yahooSymbol, "1d", "1h", isCryptoSymbol(symbol));
-    
-    // Also fetch absolute latest price (1m interval) for the most current 'entry' price
-    const latestPriceData = await fetchYahooFinanceCandles(yahooSymbol, "1d", "1m", isCryptoSymbol(symbol)).catch(() => null);
+    const [yahooData, latestPriceData] = await Promise.all([
+      fetchYahooFinanceCandles(yahooSymbol, "1d", "1h", isCryptoSymbol(symbol)),
+      fetchYahooFinanceCandles(yahooSymbol, "1d", "1m", isCryptoSymbol(symbol)).catch(() => null)
+    ]);
+
     const latestPrice = latestPriceData ? latestPriceData[latestPriceData.length - 1].close : null;
 
     const formatted = yahooData.slice(-8).map((c, i) => {
@@ -45,13 +47,12 @@ async function fetchLatestOHLC(symbol: string, config?: { yahooSymbol?: string }
         c.open,
         c.high,
         c.low,
-        isLast && latestPrice ? latestPrice : c.close, // Use 1m close for the latest candle's close
+        isLast && latestPrice ? latestPrice : c.close,
         c.volume,
       ];
     });
-    if (formatted.length > 0) {
-      return formatted;
-    }
+
+    if (formatted.length > 0) return formatted;
   } catch (yahooError: any) {
     console.error(`[SignalUpdater] Yahoo Finance error for ${symbol}:`, yahooError.message);
   }
@@ -235,86 +236,91 @@ const SYMBOLS = [
  * Generate signals for all symbols and save to DB
  */
 export async function generateAndSaveMarketSignals(): Promise<any[]> {
-  const results: LiveSignal[] = [];
   const now = new Date();
   const currentHour = now.getUTCHours();
 
-  for (const pair of SYMBOLS) {
-    try {
-      // Check if this symbol should run this hour (UTC)
-      if (currentHour % pair.interval !== 0) {
-        console.log(`[SignalUpdater] Skipping ${pair.symbol} (runs every ${pair.interval}h UTC, current hour: ${currentHour})`);
-        continue;
-      }
-
-      const ohlcData = await fetchLatestOHLC(pair.symbol, { yahooSymbol: pair.yahooSymbol });
-      console.log(`[SignalUpdater] Fetched ${ohlcData?.length || 0} OHLC candles for ${pair.symbol}`);
-
-      if (ohlcData.length > 0) {
-        // Transform format
-        const transformed = ohlcData.map(candle => ({
-          time: new Date(candle[0]).toISOString(),
-          open: Number(candle[1]),
-          high: Number(candle[2]),
-          low: Number(candle[3]),
-          close: Number(candle[4]),
-          volume: Number(candle[5]),
-        }));
-
-        // Use the specific interval as the timeframe name
-        const timeframeLabel = `${pair.interval}h`;
-        const signal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed, timeframeLabel);
-        
-        const roundedTime = new Date(new Date().setUTCHours(now.getUTCHours() - (now.getUTCHours() % pair.interval), 0, 0, 0));
-
-        // Save to DB
-        try {
-          await db.marketSignal.upsert({
-            where: {
-              symbol_timeframe_generatedAt: {
-                symbol: pair.symbol,
-                timeframe: timeframeLabel,
-                generatedAt: roundedTime,
-              },
-            },
-            update: {
-              name: signal.name,
-              emoji: signal.emoji,
-              signal: signal.signal,
-              entry: signal.entry,
-              tp: signal.tp,
-              sl: signal.sl,
-              confidence: signal.confidence,
-              reasoning: signal.reasoning,
-              updatedAt: new Date(),
-            },
-            create: {
-              symbol: signal.symbol,
-              name: signal.name,
-              emoji: signal.emoji,
-              signal: signal.signal,
-              entry: signal.entry,
-              tp: signal.tp,
-              sl: signal.sl,
-              confidence: signal.confidence,
-              reasoning: signal.reasoning,
-              timeframe: timeframeLabel,
-              generatedAt: roundedTime,
-              updatedAt: new Date(),
-            },
-          });
-          results.push({ ...signal, timeframe: timeframeLabel, generatedAt: roundedTime });
-          console.log(`[SignalUpdater] Saved ${timeframeLabel} signal for ${pair.symbol}`);
-        } catch (dbError: any) {
-          console.error(`[SignalUpdater] DB error for ${pair.symbol}:`, dbError.message);
-        }
-      }
-    } catch (error) {
-      console.error(`Error generating signal for ${pair.symbol}:`, error);
-    }
+  // Filter pairs that should run this hour
+  const pairsToProcess = SYMBOLS.filter(pair => currentHour % pair.interval === 0);
+  
+  if (pairsToProcess.length === 0) {
+    console.log(`[SignalUpdater] No signals to update for hour ${currentHour} UTC`);
+    return [];
   }
 
-  return results;
+  console.log(`[SignalUpdater] Updating signals for: ${pairsToProcess.map(p => p.symbol).join(", ")}`);
+
+  // Process pairs in parallel to avoid Vercel timeouts
+  const tasks = pairsToProcess.map(async (pair) => {
+    try {
+      const ohlcData = await fetchLatestOHLC(pair.symbol, { yahooSymbol: pair.yahooSymbol });
+      
+      if (!ohlcData || ohlcData.length === 0) {
+        console.warn(`[SignalUpdater] No data for ${pair.symbol}`);
+        return null;
+      }
+
+      // Transform format
+      const transformed = ohlcData.map(candle => ({
+        time: new Date(candle[0]).toISOString(),
+        open: Number(candle[1]),
+        high: Number(candle[2]),
+        low: Number(candle[3]),
+        close: Number(candle[4]),
+        volume: Number(candle[5]),
+      }));
+
+      // Use the specific interval as the timeframe name
+      const timeframeLabel = `${pair.interval}h`;
+      const signal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed, timeframeLabel);
+      
+      const roundedTime = new Date(new Date().setUTCHours(now.getUTCHours() - (now.getUTCHours() % pair.interval), 0, 0, 0));
+
+      // Save to DB
+      await db.marketSignal.upsert({
+        where: {
+          symbol_timeframe_generatedAt: {
+            symbol: pair.symbol,
+            timeframe: timeframeLabel,
+            generatedAt: roundedTime,
+          },
+        },
+        update: {
+          name: signal.name,
+          emoji: signal.emoji,
+          signal: signal.signal,
+          entry: signal.entry,
+          tp: signal.tp,
+          sl: signal.sl,
+          confidence: signal.confidence,
+          reasoning: signal.reasoning,
+          updatedAt: new Date(),
+        },
+        create: {
+          symbol: signal.symbol,
+          name: signal.name,
+          emoji: signal.emoji,
+          signal: signal.signal,
+          entry: signal.entry,
+          tp: signal.tp,
+          sl: signal.sl,
+          confidence: signal.confidence,
+          reasoning: signal.reasoning,
+          timeframe: timeframeLabel,
+          generatedAt: roundedTime,
+          updatedAt: new Date(),
+        },
+      });
+      
+      console.log(`[SignalUpdater] Successfully saved ${pair.symbol}`);
+      return { ...signal, timeframe: timeframeLabel, generatedAt: roundedTime };
+    } catch (error: any) {
+      console.error(`[SignalUpdater] Error for ${pair.symbol}:`, error.message);
+      return null;
+    }
+  });
+
+  const results = await Promise.all(tasks);
+  return results.filter(r => r !== null);
 }
 
 /**
