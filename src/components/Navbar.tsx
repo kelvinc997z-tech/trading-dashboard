@@ -25,6 +25,14 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
   const { t } = useLanguage();
   const [proMenuOpen, setProMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [tickerActive, setTickerActive] = useState(true);
+
+  useEffect(() => {
+    if (localStorage.getItem('ticker_hidden') === 'true') setTickerActive(false);
+    const handleTickerClose = () => setTickerActive(false);
+    window.addEventListener('ticker_closed', handleTickerClose);
+    return () => window.removeEventListener('ticker_closed', handleTickerClose);
+  }, []);
   
   const proLinks = [
     { href: "/dashboard/correlations", icon: PieChart, label: t("dashboard.correlation") },
@@ -39,7 +47,7 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
   ];
 
   return (
-    <nav className="sticky top-8 z-50 backdrop-blur-xl bg-gray-900/90 border-b border-gray-800">
+    <nav className={`sticky z-50 backdrop-blur-xl bg-gray-900/90 border-b border-gray-800 transition-all duration-300 ${tickerActive ? 'top-8' : 'top-0'}`}>
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           {/* Logo */}

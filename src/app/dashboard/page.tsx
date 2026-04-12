@@ -96,6 +96,14 @@ export default function Dashboard() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"charts" | "outlook" | "economic" | "performance" | "correlation">("charts");
+  const [tickerActive, setTickerActive] = useState(true);
+
+  useEffect(() => {
+    if (localStorage.getItem('ticker_hidden') === 'true') setTickerActive(false);
+    const handleTickerClose = () => setTickerActive(false);
+    window.addEventListener('ticker_closed', handleTickerClose);
+    return () => window.removeEventListener('ticker_closed', handleTickerClose);
+  }, []);
 
   // Get symbol from query params on mount
   useEffect(() => {
@@ -320,7 +328,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-900/95 dark:to-gray-950">
       {/* Header */}
-      <header className="sticky top-8 z-40 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800">
+      <header className={`sticky z-40 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 transition-all duration-300 ${tickerActive ? 'top-8' : 'top-0'}`}>
         <div className="container mx-auto px-4 md:px-6 py-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             {/* Left: Title */}
