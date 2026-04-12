@@ -68,6 +68,6 @@ export default function StatCard({
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
