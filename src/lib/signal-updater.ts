@@ -50,7 +50,6 @@ function generateSignalFromOHLC(symbol: string, name: string, emoji: string, can
   let signal: "buy" | "sell" | "neutral" = "neutral";
   let reasoning = "";
 
-  // Strategy logic
   if (currentPrice > sma20 && sma20 > sma50 && percentChange > 0.1) {
     signal = "buy";
     reasoning = `Bullish momentum (${percentChange.toFixed(2)}% ${timeframe} gain) | Price > SMA20 > SMA50`;
@@ -68,124 +67,62 @@ function generateSignalFromOHLC(symbol: string, name: string, emoji: string, can
     reasoning = `Market consolidation (${percentChange.toFixed(2)}% ${timeframe} change)`;
   }
 
-  // ATR-based SL/TP
   const slDistance = atr * 2;
   const tpDistance = atr * 4;
 
   const sl = signal === "buy" ? currentPrice - slDistance : currentPrice + slDistance;
   const tp = signal === "buy" ? currentPrice + tpDistance : currentPrice - tpDistance;
 
-  // Confidence calculation
   const atrPercent = (atr / currentPrice) * 100;
   const momentumStrength = Math.abs(percentChange);
   let confidence = 0.4 + Math.min(momentumStrength / 2, 0.3) + (100 - Math.min(atrPercent * 5, 30)) / 100;
-  confidence = Math.max(0.1, Math.min(confidence, 0.99)) * 100; // Return as 0-100 for UI
+  confidence = Math.max(0.1, Math.min(confidence, 0.99)) * 100;
 
   return {
-    symbol,
-    name,
-    emoji,
-    signal,
-    entry: currentPrice,
-    tp,
-    sl,
-    confidence,
-    reasoning,
-    currentPrice,
-    timeframe,
-    generatedAt: new Date(),
+    symbol, name, emoji, signal, entry: currentPrice, tp, sl, confidence, reasoning, currentPrice, timeframe, generatedAt: new Date(),
   };
 }
 
-/**
- * Symbol configuration
- */
 const SYMBOLS = [
   { symbol: "BTC", name: "Bitcoin", emoji: "₿", interval: 4 },
   { symbol: "ETH", name: "Ethereum", emoji: "Ξ", interval: 4 },
   { symbol: "SOL", name: "Solana", emoji: "◎", interval: 4 },
   { symbol: "XRP", name: "Ripple", emoji: "✕", interval: 4 },
   { symbol: "DOGE", name: "Dogecoin", emoji: "Ð", interval: 4 },
-  { symbol: "XAUT", name: "Gold", emoji: "🪙", yahooSymbol: "GC=F", interval: 1 }, // Gold futures - 1h
-  { symbol: "WTI", name: "Oil WTI", emoji: "🛢", yahooSymbol: "CL=F", interval: 4 }, // Oil futures - 4h
-  { symbol: "XAG", name: "Silver", emoji: "🥈", yahooSymbol: "SLV", interval: 4 }, // Silver ETF - 4h
+  { symbol: "XAUT", name: "Gold", emoji: "🪙", yahooSymbol: "GC=F", interval: 1 },
+  { symbol: "WTI", name: "Oil WTI", emoji: "🛢", yahooSymbol: "CL=F", interval: 4 },
+  { symbol: "XAG", name: "Silver", emoji: "🥈", yahooSymbol: "SLV", interval: 4 },
 ];
 
-/**
- * Fetch latest OHLC data
- */
 async function fetchLatestOHLC(symbol: string, timeframe: string = "4h", config?: { yahooSymbol?: string }): Promise<any[]> {
   const yahooSymbol = config?.yahooSymbol || (isCryptoSymbol(symbol) ? `${symbol}-USD` : symbol);
   
   try {
     const fetchWithTimeout = (url: string) => 
-      fetch(url, { signal: AbortSignal.timeout(8000), next: { revalidate: 300 } });
+      fetch(url, { signal: AbortSignal.timeout(5000), next: { revalidate: 300 } });
 
-    // Use range=5d to handle weekends and 60m interval
     const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=5d&interval=60m`;
-    const latestUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=1d&interval=1m`;
+    const res = await fetchWithTimeout(yahooUrl).catch(() => null);
 
-    const [res1, res2] = await Promise.all([
-      fetchWithTimeout(yahooUrl).catch(() => null),
-      fetchWithTimeout(latestUrl).catch(() => null)
-    ]);
-
-    let yahooData: any[] = [];
-    if (res1?.ok) {
-      const json = await res1.json();
+    if (res?.ok) {
+      const json = await res.json();
       const result = json.chart.result?.[0];
       if (result && result.timestamp) {
-        yahooData = result.timestamp.map((t: number, i: number) => ({
-          timestamp: t,
-          close: result.indicators.quote[0].close[i],
-          open: result.indicators.quote[0].open[i],
-          high: result.indicators.quote[0].high[i],
-          low: result.indicators.quote[0].low[i],
-          volume: result.indicators.quote[0].volume[i],
-        })).filter((c: any) => c.close !== null);
+        return result.timestamp.map((t: number, i: number) => [
+          t * 1000,
+          result.indicators.quote[0].open[i] || 0,
+          result.indicators.quote[0].high[i] || 0,
+          result.indicators.quote[0].low[i] || 0,
+          result.indicators.quote[0].close[i] || 0,
+          result.indicators.quote[0].volume[i] || 0,
+        ]).filter((c: any) => c[4] !== 0);
       }
-    }
-
-    let latestPrice = null;
-    if (res2?.ok) {
-      const json = await res2.json();
-      const result = json.chart.result?.[0];
-      if (result && result.indicators.quote[0].close) {
-        latestPrice = result.indicators.quote[0].close.filter((p: any) => p !== null).pop();
-      }
-    }
-
-    if (yahooData.length > 0) {
-      const count = timeframe === "4h" ? 48 : 24; 
-      return yahooData.slice(-count).map((c, i) => {
-        const isLast = i === yahooData.slice(-count).length - 1;
-        return [
-          c.timestamp * 1000,
-          c.open || 0,
-          c.high || 0,
-          c.low || 0,
-          (isLast && latestPrice) ? latestPrice : (c.close || 0),
-          c.volume || 0,
-        ];
-      });
     }
   } catch (error: any) {
-    console.warn(`[SignalUpdater] Yahoo Finance error for ${symbol}:`, error.message);
+    console.warn(`[SignalUpdater] Yahoo error for ${symbol}:`, error.message);
   }
 
-  // Fallback to Coinglass (Crypto only)
-  if (isCryptoSymbol(symbol)) {
-    try {
-      const coinglassData = await fetchCoinglassOHLC(symbol, timeframe, 50);
-      if (coinglassData?.data && coinglassData.data.length > 0) {
-        return coinglassData.data;
-      }
-    } catch (e: any) {
-      console.error(`[SignalUpdater] Coinglass failed for ${symbol}:`, e.message);
-    }
-  }
-
-  // Final fallback: Simulated data
+  // Simulated data as reliable fallback
   return generateSimulatedData(symbol, timeframe).map(d => [
     d.timestamp.getTime(), d.open, d.high, d.low, d.close, d.volume,
   ]);
@@ -195,7 +132,6 @@ function generateSimulatedData(symbol: string, timeframe: string) {
   const data = [];
   const now = new Date();
   let basePrice = symbol === "BTC" ? 65000 : symbol === "WTI" ? 80 : symbol === "XAUT" ? 2300 : 100;
-  
   for (let i = 48; i >= 0; i--) {
     const time = new Date(now.getTime() - i * 60 * 60 * 1000);
     const change = (Math.random() - 0.5) * (basePrice * 0.005);
@@ -214,20 +150,12 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
   
   if (pairsToProcess.length === 0) return [];
 
-  console.log(`[SignalUpdater] Updating signals for: ${pairsToProcess.map(p => p.symbol).join(", ")}`);
-
-  const results = [];
-  for (const pair of pairsToProcess) {
+  // Use Promise.all for speed to fit in Vercel timeout
+  const tasks = pairsToProcess.map(async (pair) => {
     try {
-      console.log(`[SignalUpdater] Processing ${pair.symbol}...`);
       const timeframeLabel = `${pair.interval}h`;
       const ohlcData = await fetchLatestOHLC(pair.symbol, timeframeLabel, { yahooSymbol: pair.yahooSymbol });
       
-      if (!ohlcData || ohlcData.length === 0) {
-        console.warn(`[SignalUpdater] No data for ${pair.symbol}`);
-        continue;
-      }
-
       const transformed = ohlcData.map(candle => ({
         time: new Date(candle[0]).toISOString(),
         open: Number(candle[1]),
@@ -254,37 +182,22 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
         generatedAt: roundedTime,
       };
 
-      try {
-        await db.marketSignal.upsert({
-          where: { symbol_timeframe_generatedAt: { symbol: pair.symbol, timeframe: timeframeLabel, generatedAt: roundedTime } },
-          update: { ...dbData, updatedAt: new Date() },
-          create: { ...dbData, updatedAt: new Date() },
-        });
-      } catch (e: any) {
-        console.warn(`[SignalUpdater] DB error for ${pair.symbol}: ${e.message}`);
-      }
+      // Try to save but don't fail the whole task if DB is slow/down
+      db.marketSignal.upsert({
+        where: { symbol_timeframe_generatedAt: { symbol: pair.symbol, timeframe: timeframeLabel, generatedAt: roundedTime } },
+        update: { ...dbData, updatedAt: new Date() },
+        create: { ...dbData, updatedAt: new Date() },
+      }).catch(e => console.error(`[SignalUpdater] DB error for ${pair.symbol}:`, e.message));
       
-      results.push({ ...signalResult, timeframe: timeframeLabel, generatedAt: roundedTime });
+      return { ...signalResult, timeframe: timeframeLabel, generatedAt: roundedTime };
     } catch (error: any) {
       console.error(`[SignalUpdater] Error for ${pair.symbol}:`, error.message);
-      results.push({
-        symbol: pair.symbol,
-        name: pair.name,
-        emoji: pair.emoji,
-        signal: "neutral",
-        entry: 0,
-        tp: 0,
-        sl: 0,
-        confidence: 0,
-        reasoning: `Error: ${error.message}`,
-        currentPrice: 0,
-        timeframe: "err",
-        generatedAt: new Date(),
-      } as any);
+      return null;
     }
-  }
+  });
 
-  return results;
+  const results = await Promise.all(tasks);
+  return results.filter(r => r !== null);
 }
 
 export async function getLatestMarketSignals(forceRefresh: boolean = false) {
@@ -294,20 +207,14 @@ export async function getLatestMarketSignals(forceRefresh: boolean = false) {
   }).catch(() => []);
 
   if (forceRefresh || latestSignals.length === 0) {
-    await generateAndSaveMarketSignals(true);
-    latestSignals = await db.marketSignal.findMany({
-      where: { generatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
-      orderBy: { generatedAt: "desc" },
-    }).catch(() => []);
+    // Return fresh results immediately to the UI even if DB save is pending
+    return await generateAndSaveMarketSignals(true);
   }
 
   const uniqueMap = new Map();
-  latestSignals.sort((a, b) => b.generatedAt.getTime() - a.generatedAt.getTime());
   latestSignals.forEach(s => { if (!uniqueMap.has(s.symbol)) uniqueMap.set(s.symbol, s); });
-  
   const result = Array.from(uniqueMap.values());
   const priority = ["BTC", "WTI", "XAUT"];
-  
   return result.sort((a, b) => {
     const aIdx = priority.indexOf(a.symbol);
     const bIdx = priority.indexOf(b.symbol);
