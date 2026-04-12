@@ -319,8 +319,6 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
         volume: Number(candle[5]),
       }));
 
-      // Use the specific interval as the timeframe name
-      const timeframeLabel = `${pair.interval}h`;
       const signal = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed, timeframeLabel);
       
       const roundedTime = new Date(new Date().setUTCHours(now.getUTCHours() - (now.getUTCHours() % pair.interval), 0, 0, 0));
