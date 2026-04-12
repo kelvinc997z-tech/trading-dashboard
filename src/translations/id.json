@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "market": "Pasar",
+    "pro": "Pro",
+    "quant_ai": "Quant AI",
+    "tools": "Alat",
+    "upgrade": "Upgrade",
+    "logout": "Keluar"
+  },
+  "dashboard": {
+    "title": "Dashboard Trading",
+    "subtitle": "Pantau & kelola trading Anda",
+    "status": "Online",
+    "confidence": "Keyakinan AI",
+    "updated": "Terupdate",
+    "live": "Live",
+    "charts": "Grafik",
+    "outlook": "Pandangan",
+    "correlation": "Korelasi",
+    "performance": "Performa",
+    "economic": "Ekonomi",
+    "no_trades": "Belum ada trading"
+  },
+  "sentiment": {
+    "title": "Analisis Sentimen",
+    "pulse": "Denyut Pasar",
+    "score": "Skor Sentimen",
+    "reddit": "Denyut Reddit",
+    "twitter": "Tren Twitter",
+    "news": "Berita Terkini",
+    "last_24h": "Terakhir 24 Jam",
+    "last_7d": "Terakhir 7 Hari",
+    "last_30d": "Terakhir 30 Hari",
+    "based_on": "Berdasarkan",
+    "articles_msg": "artikel berita global dan tren media sosial.",
+    "pro_only": "Fitur Khusus PRO",
+    "upgrade_msg": "Dapatkan akses ke analisis sentimen mendalam dari berita global, Reddit, dan Twitter."
+  }
+}

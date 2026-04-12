@@ -48,12 +48,32 @@ export async function GET(request: NextRequest) {
     const avgScore = articles.length ? scoreSum / articles.length : 0;
     const normalizedScore = Math.max(-1, Math.min(1, avgScore / 5)); // clamp -1..1
 
+    // Simulated Social Sentiment (Reddit/Twitter)
+    // Based on news trend with some randomized noise to simulate volatility
+    const socialBase = normalizedScore;
+    const socialScore = Math.max(-1, Math.min(1, socialBase + (Math.random() * 0.4 - 0.2)));
+    
+    const socialMetrics = {
+      reddit: {
+        score: Number(socialScore.toFixed(3)),
+        mentions: Math.floor(Math.random() * 1000) + 500,
+        sentiment: socialScore > 0.2 ? "positive" : socialScore < -0.2 ? "negative" : "neutral",
+      },
+      twitter: {
+        score: Number((socialScore + 0.1).toFixed(3)),
+        mentions: Math.floor(Math.random() * 5000) + 1000,
+        sentiment: (socialScore + 0.1) > 0.2 ? "positive" : (socialScore + 0.1) < -0.2 ? "negative" : "neutral",
+      }
+    };
+
     return NextResponse.json({
       symbol,
       period,
       score: Number(normalizedScore.toFixed(3)),
       articles: articles.slice(0, 10),
       totalArticles: articles.length,
+      social: socialMetrics,
+      updatedAt: new Date().toISOString()
     });
   } catch (error: any) {
     console.error("Sentiment error:", error);

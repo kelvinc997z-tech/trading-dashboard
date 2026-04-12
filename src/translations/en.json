@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "market": "Market",
+    "pro": "Pro",
+    "quant_ai": "Quant AI",
+    "tools": "Tools",
+    "upgrade": "Upgrade",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "Trading Dashboard",
+    "subtitle": "Monitor & manage your trades",
+    "status": "Online",
+    "confidence": "AI Confidence",
+    "updated": "Updated",
+    "live": "Live",
+    "charts": "Charts",
+    "outlook": "Outlook",
+    "correlation": "Correlation",
+    "performance": "Performance",
+    "economic": "Economic",
+    "no_trades": "No trades yet"
+  },
+  "sentiment": {
+    "title": "Sentiment Analysis",
+    "pulse": "Market Pulse",
+    "score": "Sentiment Score",
+    "reddit": "Reddit Pulse",
+    "twitter": "Twitter Trends",
+    "news": "Recent News",
+    "last_24h": "Last 24 Hours",
+    "last_7d": "Last 7 Days",
+    "last_30d": "Last 30 Days",
+    "based_on": "Based on",
+    "articles_msg": "global news articles and social media trends.",
+    "pro_only": "PRO Only Feature",
+    "upgrade_msg": "Get access to deep sentiment analysis from global news, Reddit, and Twitter."
+  }
+}

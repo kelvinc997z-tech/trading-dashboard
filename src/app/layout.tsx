@@ -6,6 +6,7 @@ import { WatchlistProvider } from "@/components/watchlist/WatchlistProvider";
 import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 import { ContrastProvider } from "@/components/contrast/ContrastProvider";
 import OnboardingProvider from "@/components/onboarding/OnboardingProvider";
+import { LanguageProvider } from "@/context/LanguageContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -33,15 +34,17 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
-          <ContrastProvider>
-            <NotificationProvider>
-              <WatchlistProvider>
-                <OnboardingProvider>
-          <ErrorBoundary>{children}</ErrorBoundary>
-        </OnboardingProvider>
-              </WatchlistProvider>
-            </NotificationProvider>
-          </ContrastProvider>
+          <LanguageProvider>
+            <ContrastProvider>
+              <NotificationProvider>
+                <WatchlistProvider>
+                  <OnboardingProvider>
+                    <ErrorBoundary>{children}</ErrorBoundary>
+                  </OnboardingProvider>
+                </WatchlistProvider>
+              </NotificationProvider>
+            </ContrastProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>
