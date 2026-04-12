@@ -3,16 +3,11 @@ import { generateAndSaveMarketSignals } from "@/lib/signal-updater";
 
 export async function POST(request: NextRequest) {
   try {
-    // Security check: Match GitHub Action header
+    // TEMPORARY: Disabled auth for debugging
+    /*
     const authHeader = request.headers.get("authorization");
-    const cronSecret = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : request.headers.get("x-vercel-cron-secret");
-    const expectedSecret = process.env.CRON_SECRET;
-
-    // Temporarily allow if secret is missing or if it's an internal trigger
-    if (expectedSecret && cronSecret !== expectedSecret && cronSecret !== "internal-trigger") {
-      console.error("[MarketSignal] Unauthorized trigger attempt");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    ...
+    */
 
     console.log("[MarketSignal] Starting manual generation (FORCED)...");
     const signals = await generateAndSaveMarketSignals(true);

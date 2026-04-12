@@ -79,7 +79,7 @@ function generateSignalFromOHLC(symbol: string, name: string, emoji: string, can
   const atrPercent = (atr / currentPrice) * 100;
   const momentumStrength = Math.abs(percentChange);
   let confidence = 0.4 + Math.min(momentumStrength / 2, 0.3) + (100 - Math.min(atrPercent * 5, 30)) / 100;
-  confidence = Math.max(0.1, Math.min(confidence, 0.99));
+  confidence = Math.max(0.1, Math.min(confidence, 0.99)) * 100; // Return as 0-100 for UI
 
   return {
     symbol,
@@ -214,12 +214,19 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
   
   if (pairsToProcess.length === 0) return [];
 
-  const tasks = pairsToProcess.map(async (pair) => {
+  console.log(`[SignalUpdater] Updating signals for: ${pairsToProcess.map(p => p.symbol).join(", ")}`);
+
+  const results = [];
+  for (const pair of pairsToProcess) {
     try {
+      console.log(`[SignalUpdater] Processing ${pair.symbol}...`);
       const timeframeLabel = `${pair.interval}h`;
       const ohlcData = await fetchLatestOHLC(pair.symbol, timeframeLabel, { yahooSymbol: pair.yahooSymbol });
       
-      if (!ohlcData || ohlcData.length === 0) return null;
+      if (!ohlcData || ohlcData.length === 0) {
+        console.warn(`[SignalUpdater] No data for ${pair.symbol}`);
+        continue;
+      }
 
       const transformed = ohlcData.map(candle => ({
         time: new Date(candle[0]).toISOString(),
@@ -233,7 +240,6 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
       const signalResult = generateSignalFromOHLC(pair.symbol, pair.name, pair.emoji, transformed, timeframeLabel);
       const roundedTime = new Date(new Date().setUTCHours(now.getUTCHours() - (now.getUTCHours() % pair.interval), 0, 0, 0));
 
-      // Explicitly pick fields for DB to avoid Prisma errors with extra fields
       const dbData = {
         symbol: signalResult.symbol,
         name: signalResult.name,
@@ -250,32 +256,18 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
 
       try {
         await db.marketSignal.upsert({
-          where: { 
-            symbol_timeframe_generatedAt: { 
-              symbol: pair.symbol, 
-              timeframe: timeframeLabel, 
-              generatedAt: roundedTime 
-            } 
-          },
-          update: { 
-            ...dbData,
-            updatedAt: new Date() 
-          },
-          create: { 
-            ...dbData,
-            updatedAt: new Date() 
-          },
+          where: { symbol_timeframe_generatedAt: { symbol: pair.symbol, timeframe: timeframeLabel, generatedAt: roundedTime } },
+          update: { ...dbData, updatedAt: new Date() },
+          create: { ...dbData, updatedAt: new Date() },
         });
-        console.log(`[SignalUpdater] Saved ${pair.symbol} to DB`);
-      } catch (dbError: any) {
-        console.error(`[SignalUpdater] DB Save Failed for ${pair.symbol}:`, dbError.message);
-        // We continue anyway so the API can return the fresh signal to the UI
+      } catch (e: any) {
+        console.warn(`[SignalUpdater] DB error for ${pair.symbol}: ${e.message}`);
       }
       
-      return { ...signalResult, timeframe: timeframeLabel, generatedAt: roundedTime };
+      results.push({ ...signalResult, timeframe: timeframeLabel, generatedAt: roundedTime });
     } catch (error: any) {
-      console.error(`[SignalUpdater] Error for ${pair.symbol}:`, error);
-      return {
+      console.error(`[SignalUpdater] Error for ${pair.symbol}:`, error.message);
+      results.push({
         symbol: pair.symbol,
         name: pair.name,
         emoji: pair.emoji,
@@ -288,12 +280,11 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
         currentPrice: 0,
         timeframe: "err",
         generatedAt: new Date(),
-      };
+      } as any);
     }
-  });
+  }
 
-  const results = await Promise.all(tasks);
-  return results.filter(r => r !== null);
+  return results;
 }
 
 export async function getLatestMarketSignals(forceRefresh: boolean = false) {
