@@ -255,7 +255,6 @@ const SYMBOLS = [
   { symbol: "XAUT", name: "Gold", emoji: "🪙", yahooSymbol: "GC=F", interval: 1 }, // Gold futures - 1h
   { symbol: "WTI", name: "Oil WTI", emoji: "🛢", yahooSymbol: "CL=F", interval: 4 }, // Oil futures - 4h
   { symbol: "XAG", name: "Silver", emoji: "🥈", yahooSymbol: "SLV", interval: 4 }, // Silver ETF - 4h
-  { symbol: "DEBUG", name: "Debug Pair", emoji: "🔍", interval: 1 }, // Always active
 ];
 
 /**
@@ -396,22 +395,40 @@ export async function getLatestMarketSignals(forceRefresh: boolean = false) {
     }
   }
 
-  // Generate fresh signals (will only generate those due for current hour)
-  const generated = await generateAndSaveMarketSignals();
+  // Generate fresh signals (will force all if DB was empty)
+  const generated = await generateAndSaveMarketSignals(uniqueMap.size === 0);
   
   // Return the combined latest state from DB
-  return db.marketSignal.findMany({
+  const finalSignals = await db.marketSignal.findMany({
     where: {
       generatedAt: {
         gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
       }
     },
     orderBy: { generatedAt: "desc" },
-  }).then(signals => {
+  });
+
+  if (finalSignals.length > 0) {
     const map = new Map();
-    signals.forEach(s => {
+    finalSignals.forEach(s => {
       if (!map.has(s.symbol)) map.set(s.symbol, s);
     });
     return Array.from(map.values());
-  });
+  }
+
+  // Final emergency fallback if DB is empty and generation failed
+  return SYMBOLS.map(s => ({
+    symbol: s.symbol,
+    name: s.name,
+    emoji: s.emoji,
+    signal: "neutral",
+    entry: 0,
+    tp: 0,
+    sl: 0,
+    confidence: 0,
+    reasoning: "Market data synchronization in progress...",
+    timeframe: "4h",
+    generatedAt: new Date(),
+    updatedAt: new Date(),
+  }));
 }
