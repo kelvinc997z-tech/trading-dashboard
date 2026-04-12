@@ -396,7 +396,7 @@ export async function getLatestMarketSignals(forceRefresh: boolean = false) {
   }
 
   // Generate fresh signals (will force all if DB was empty)
-  const generated = await generateAndSaveMarketSignals(uniqueMap.size === 0);
+  await generateAndSaveMarketSignals(latestSignals.length === 0);
   
   // Return the combined latest state from DB
   const finalSignals = await db.marketSignal.findMany({
