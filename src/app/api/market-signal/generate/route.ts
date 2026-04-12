@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("[MarketSignal] Starting manual generation...");
-    const signals = await generateAndSaveMarketSignals();
+    console.log("[MarketSignal] Starting manual generation (FORCED)...");
+    const signals = await generateAndSaveMarketSignals(true);
 
     return NextResponse.json({
       success: true,

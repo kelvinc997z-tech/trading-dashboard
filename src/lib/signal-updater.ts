@@ -260,12 +260,12 @@ const SYMBOLS = [
 /**
  * Generate signals for all symbols and save to DB
  */
-export async function generateAndSaveMarketSignals(): Promise<any[]> {
+export async function generateAndSaveMarketSignals(force: boolean = false): Promise<any[]> {
   const now = new Date();
   const currentHour = now.getUTCHours();
 
-  // Filter pairs that should run this hour
-  const pairsToProcess = SYMBOLS.filter(pair => currentHour % pair.interval === 0);
+  // Filter pairs that should run this hour (or all if forced)
+  const pairsToProcess = force ? SYMBOLS : SYMBOLS.filter(pair => currentHour % pair.interval === 0);
   
   if (pairsToProcess.length === 0) {
     console.log(`[SignalUpdater] No signals to update for hour ${currentHour} UTC`);
