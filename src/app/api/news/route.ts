@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 // Simple sentiment analysis
 const positiveWords = new Set(['bull','bullish','gain','gains','up','rise','rising','soar','soaring','positive','good','great','excellent','strong','support','increase','increased','increasing','growth','grow','growing','higher','high','rally','recovery','rebound','uptrend','buy','buying','demand','adoption','breakthrough','innovation','profit','profits','earnings','success','boost','optimistic','confidence','stable','steady','climb','record','peak','surging','upside']);
 const negativeWords = new Set(['bear','bearish','loss','losses','down','fall','falling','drop','dropping','plunge','plummet','negative','bad','weak','weakness','resistance','decrease','decreased','decreasing','decline','declining','lower','low','sell','selling','pressure','crash','crisis','fear','worried','uncertainty','downtrend','panic','risk','warning','caution','avoid','worse','worst','concern','worries','slump','tumble','slide','depressed','hit','damage']);
