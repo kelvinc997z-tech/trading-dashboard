@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { logOut } from "@/lib/auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   BarChart2,
