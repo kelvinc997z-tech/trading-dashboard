@@ -102,7 +102,7 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
                       <Link
                         key={link.href}
                         href={link.href}
-                        className="flex items-center gap-3 px-4 py-.text-gray-300 hover:bg-gray-700/50 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700/50 transition-colors"
                         onClick={() => setProMenuOpen(false)}
                       >
                         <link.icon className="w-4 h-4" />
