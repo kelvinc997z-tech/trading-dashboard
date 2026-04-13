@@ -19,7 +19,13 @@ interface SentimentData {
   };
 }
 
-export default function MarketSentiment() {
+interface MarketSentimentProps {
+  refreshInterval?: number; // ms
+}
+
+export default function MarketSentiment({
+  refreshInterval = 1800000 // 30 mins
+}: MarketSentimentProps) {
   const { t } = useLanguage();
   const [sentiment, setSentiment] = useState<SentimentData | null>(null);
   const [loading, setLoading] = useState(true);
