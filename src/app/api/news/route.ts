@@ -18,9 +18,19 @@ function analyzeSentiment(text: string): 'bullish'|'bearish'|'neutral' {
 
 async function fetchYahooNews(query: string) {
   try {
-    const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&newsCount=10`;
-    const res = await fetch(url, { next: { revalidate: 300 } });
-    if (!res.ok) return [];
+    const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&newsCount=15`;
+    const res = await fetch(url, { 
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      },
+      next: { revalidate: 600 } 
+    });
+    
+    if (!res.ok) {
+      console.error(`Yahoo News API error for ${query}: ${res.status}`);
+      return [];
+    }
+    
     const data = await res.json();
     return (data.news || []).map((item: any) => ({
       id: item.uuid || item.link,
@@ -28,8 +38,8 @@ async function fetchYahooNews(query: string) {
       summary: item.summary || "",
       source: item.publisher || "Yahoo Finance",
       url: item.link,
-      publishedAt: new Date(item.provider_publish_time * 1000).toISOString(),
-      category: query.includes("BTC") ? "crypto" : query.includes("Gold") ? "commodities" : "macro",
+      publishedAt: new Date(item.providerPublishTime * 1000).toISOString(),
+      category: query.toLowerCase().includes("btc") ? "crypto" : query.toLowerCase().includes("gold") ? "commodities" : "macro",
       sentiment: analyzeSentiment(item.title + " " + (item.summary || "")),
     }));
   } catch (e) {

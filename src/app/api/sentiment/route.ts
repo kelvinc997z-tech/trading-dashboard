@@ -31,7 +31,12 @@ export async function GET(request: NextRequest) {
     
     // Fallback to Yahoo Finance Search if Finnhub fails or for better relevance
     const yahooUrl = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(symbol)}&newsCount=15`;
-    const yRes = await fetch(yahooUrl, { next: { revalidate: 3600 } });
+    const yRes = await fetch(yahooUrl, { 
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      },
+      next: { revalidate: 3600 } 
+    });
     
     if (yRes.ok) {
       const yData = await yRes.json();
@@ -48,8 +53,8 @@ export async function GET(request: NextRequest) {
           headline: item.title,
           summary: item.summary || "",
           source: item.publisher || "Yahoo Finance",
-          datetime: item.provider_publish_time,
-          sentiment: sentimentScore > 0 ? "positive" : sentimentScore < 0 ? "negative" : "neutral",
+          datetime: item.providerPublishTime || item.datetime,
+          sentiment: sentimentScore > 0 ? "positive" : sentimentScore < -0.1 ? "negative" : "neutral",
         });
       }
     } else {
