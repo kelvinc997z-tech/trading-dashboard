@@ -266,7 +266,77 @@ export async function verifyEmail(token: string) {
   }
 }
 
-export async function login(formData: FormData) {
+export async function googleLogin(code: string) {
+  try {
+    const client_id = process.env.GOOGLE_CLIENT_ID;
+    const client_secret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirect_uri = process.env.GOOGLE_REDIRECT_URI || "https://tradingsignal.cloud/api/auth/google/callback";
+
+    if (!client_id || !client_secret) {
+      throw new Error("Missing Google credentials");
+    }
+
+    // Exchange code for tokens
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id,
+        client_secret,
+        redirect_uri,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      const error = await tokenRes.text();
+      console.error("Google token error:", error);
+      throw new Error("Failed to exchange Google code");
+    }
+
+    const { access_token } = await tokenRes.json();
+
+    // Get user info
+    const userRes = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+
+    if (!userRes.ok) throw new Error("Failed to get Google user info");
+    const googleUser = await userRes.json();
+
+    const { email, name, id: googleId } = googleUser;
+
+    // Find or create user
+    let user = await db.user.findUnique({ where: { email } });
+
+    if (!user) {
+      user = await db.user.create({
+        data: {
+          email,
+          name: name || null,
+          password: await bcrypt.hash(Math.random().toString(36), 10), // random password for OAuth users
+          verified: true, // Google emails are already verified
+          role: "free",
+        },
+      });
+    }
+
+    const token = jwt.sign({ 
+      email: user.email, 
+      id: user.id,
+      role: user.role || "free",
+      twoFactorVerified: true,
+    }, JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    return { success: true, token };
+  } catch (error: any) {
+    console.error("Google login error:", error);
+    return { error: error.message || "Google authentication failed" };
+  }
+}
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const twoFactorToken = formData.get("twoFactorToken") as string | null;
