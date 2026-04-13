@@ -80,7 +80,7 @@ export async function fetchYahooFinanceCandles(
     // For stocks/futures, only append .US if it's a plain symbol (no dots, dashes, or equals)
     // and explicitly requested or if we want to maintain the previous behavior for stocks.
     // However, symbols like SLV, GC=F, CL=F should NOT have .US appended.
-    if (!formattedSymbol.includes('.') && !formattedSymbol.includes('-') && !formattedSymbol.includes('=')) {
+    if (!formattedSymbol.includes('.') && !formattedSymbol.includes('-') && !formattedSymbol.includes('=') && !formattedSymbol.startsWith('^')) {
       // If it's a common ETF or known symbol that shouldn't have .US, skip it.
       const skipSuffix = ['SLV', 'GLD', 'USO']; 
       if (!skipSuffix.includes(formattedSymbol)) {
