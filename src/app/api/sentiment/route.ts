@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     const negativeWords = ["bear", "loss", "drop", "fall", "decline", "negative", "down", "crash", "weak", "sell", "risk", "fear"];
 
     const articles: any[] = [];
+    let scoreSum = 0;
     
     // Fallback to Yahoo Finance Search if Finnhub fails or for better relevance
     const yahooUrl = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(symbol)}&newsCount=15`;
