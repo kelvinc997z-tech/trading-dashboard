@@ -33,14 +33,17 @@ export async function register(formData: FormData) {
       return { error: "Email and password are required" };
     }
     
+    console.log("Checking existing user for:", email);
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
       return { error: "An account with this email already exists" };
     }
     
+    console.log("Hashing password...");
     const hashed = await bcrypt.hash(password, 10);
     const verificationToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
     
+    console.log("Creating user in DB...");
     try {
       await db.user.create({
         data: {
@@ -54,8 +57,10 @@ export async function register(formData: FormData) {
       });
     } catch (dbError: any) {
       console.error("Database error during registration:", dbError);
-      return { error: "Failed to create account. Please try again." };
+      return { error: `Database error: ${dbError.message || "Failed to create account"}` };
     }
+    
+    console.log("Sending verification email...");
     
     // Send verification email (non-blocking, don't fail registration if email fails)
     try {
