@@ -305,7 +305,7 @@ export async function googleLogin(code: string) {
     if (!userRes.ok) throw new Error("Failed to get Google user info");
     const googleUser = await userRes.json();
 
-    const { email, name, id: googleId } = googleUser;
+    const { email, name } = googleUser;
 
     // Find or create user
     let user = await db.user.findUnique({ where: { email } });
@@ -337,6 +337,8 @@ export async function googleLogin(code: string) {
     return { error: error.message || "Google authentication failed" };
   }
 }
+
+export async function login(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const twoFactorToken = formData.get("twoFactorToken") as string | null;
