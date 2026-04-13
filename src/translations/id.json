@@ -20,10 +20,16 @@
     "correlation": "Korelasi",
     "performance": "Performa",
     "economic": "Ekonomi",
-    "no_trades": "Belum ada trading"
+    "no_trades": "Belum ada trading",
+    "market_outlook": "Pandangan Pasar",
+    "strategic_rationale": "Rasional Strategis"
   },
   "sentiment": {
     "title": "Analisis Sentimen",
+    "market_sentiment": "Sentimen Pasar",
+    "fear_greed": "Indeks Ketakutan & Keserakahan",
+    "optimistic_msg": "Optimisme pasar meningkat",
+    "pessimistic_msg": "Kekhawatiran pasar membayangi",
     "pulse": "Denyut Pasar",
     "score": "Skor Sentimen",
     "reddit": "Denyut Reddit",

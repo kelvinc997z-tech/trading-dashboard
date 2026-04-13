@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { TechnicalGauge } from "@/components/TechnicalGauge";
 import { SentimentHeatmap } from "@/components/SentimentHeatmap";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface MarketSignal {
   symbol: string;
@@ -29,6 +30,7 @@ export default function MarketSignals({
   limit = 8,
   refreshInterval = 4 * 60 * 60 * 1000 // 4 hours
 }: MarketSignalsProps) {
+  const { t } = useLanguage();
   const [signals, setSignals] = useState<MarketSignal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -151,7 +153,9 @@ export default function MarketSignals({
             📊
           </div>
           <div>
-            <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1">Market Outlook</h3>
+            <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1">
+              {t("dashboard.market_outlook") || "Market Outlook"}
+            </h3>
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -244,7 +248,9 @@ export default function MarketSignals({
                       <div className="md:col-span-2 space-y-3">
                         <div className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                          <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Strategic Rationale</h4>
+                          <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                            {t("dashboard.strategic_rationale") || "Strategic Rationale"}
+                          </h4>
                         </div>
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-300 leading-relaxed italic">
                           "{signal.reasoning}"

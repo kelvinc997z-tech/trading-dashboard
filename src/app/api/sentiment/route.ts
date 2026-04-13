@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
   const symbol = searchParams.get("symbol")?.replace("/", "");
   const period = searchParams.get("period") || "1d";
 
-  if (!symbol || !FINNHUB_API_KEY) {
-    return NextResponse.json({ error: "Missing symbol or Finnhub API key" }, { status: 400 });
+  if (!symbol) {
+    return NextResponse.json({ error: "Missing symbol" }, { status: 400 });
   }
 
   try {
@@ -26,23 +26,53 @@ export async function GET(request: NextRequest) {
     const positiveWords = ["bull", "gain", "rise", "growth", "positive", "up", "surge", "soar", "rally", "strong", "buy"];
     const negativeWords = ["bear", "loss", "drop", "fall", "decline", "negative", "down", "crash", "weak", "sell", "risk", "fear"];
 
-    let scoreSum = 0;
     const articles: any[] = [];
-
-    for (const item of news.slice(0, 20)) { // top 20
-      const text = (item.headline + " " + (item.summary || "")).toLowerCase();
-      let pos = 0, neg = 0;
-      for (const w of positiveWords) if (text.includes(w)) pos++;
-      for (const w of negativeWords) if (text.includes(w)) neg++;
-      const sentiment = pos - neg;
-      scoreSum += sentiment;
-      articles.push({
-        headline: item.headline,
-        summary: item.summary,
-        source: item.source,
-        datetime: item.datetime,
-        sentiment: sentiment > 0 ? "positive" : sentiment < 0 ? "negative" : "neutral",
-      });
+    
+    // Fallback to Yahoo Finance Search if Finnhub fails or for better relevance
+    const yahooUrl = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(symbol)}&newsCount=15`;
+    const yRes = await fetch(yahooUrl, { next: { revalidate: 3600 } });
+    
+    if (yRes.ok) {
+      const yData = await yRes.json();
+      const newsItems = yData.news || [];
+      
+      for (const item of newsItems) {
+        const text = (item.title + " " + (item.summary || "")).toLowerCase();
+        let pos = 0, neg = 0;
+        for (const w of positiveWords) if (text.includes(w)) pos++;
+        for (const w of negativeWords) if (text.includes(w)) neg++;
+        const sentimentScore = pos - neg;
+        scoreSum += sentimentScore;
+        articles.push({
+          headline: item.title,
+          summary: item.summary || "",
+          source: item.publisher || "Yahoo Finance",
+          datetime: item.provider_publish_time,
+          sentiment: sentimentScore > 0 ? "positive" : sentimentScore < 0 ? "negative" : "neutral",
+        });
+      }
+    } else {
+      // Fallback to generic Finnhub news if Yahoo fails
+      const url = `https://finnhub.io/api/v1/news?category=general&token=${FINNHUB_API_KEY}`;
+      const res = await fetch(url, { next: { revalidate: 3600 } });
+      if (res.ok) {
+        const news = await res.json();
+        for (const item of news.slice(0, 15)) {
+          const text = (item.headline + " " + (item.summary || "")).toLowerCase();
+          let pos = 0, neg = 0;
+          for (const w of positiveWords) if (text.includes(w)) pos++;
+          for (const w of negativeWords) if (text.includes(w)) neg++;
+          const sentimentScore = pos - neg;
+          scoreSum += sentimentScore;
+          articles.push({
+            headline: item.headline,
+            summary: item.summary,
+            source: item.source,
+            datetime: item.datetime,
+            sentiment: sentimentScore > 0 ? "positive" : sentimentScore < 0 ? "negative" : "neutral",
+          });
+        }
+      }
     }
 
     const avgScore = articles.length ? scoreSum / articles.length : 0;

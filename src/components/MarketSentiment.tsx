@@ -2,44 +2,35 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface SentimentData {
   overall: {
-    score: number;
+    value?: number; // 0-100
+    score: number;  // -1..1
     trend: "bullish" | "bearish" | "neutral";
+    classification?: string;
     updatedAt: string;
+    details?: {
+      crypto: number;
+      traditional: number;
+      vix: number | null;
+    };
   };
-  symbols?: Array<{
-    symbol: string;
-    score: number;
-    trend: "bullish" | "bearish" | "neutral";
-    source?: string;
-  }>;
 }
 
-interface MarketSentimentProps {
-  refreshInterval?: number; // ms
-}
-
-export default function MarketSentiment({
-  refreshInterval = 3600000 // 1 hour (Fear & Greed updates hourly)
-}: MarketSentimentProps) {
+export default function MarketSentiment() {
+  const { t } = useLanguage();
   const [sentiment, setSentiment] = useState<SentimentData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const fetchSentiment = async () => {
     try {
       const res = await fetch('/api/market-sentiment');
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
       const data = await res.json();
       setSentiment(data);
-      setError(null);
-    } catch (err: any) {
-      console.error('[MarketSentiment]', err.message);
-      setError(err.message);
+    } catch (err) {
+      console.error('[MarketSentiment]', err);
     } finally {
       setLoading(false);
     }
@@ -47,140 +38,133 @@ export default function MarketSentiment({
 
   useEffect(() => {
     fetchSentiment();
-    const interval = setInterval(fetchSentiment, refreshInterval);
+    const interval = setInterval(fetchSentiment, 1800000); // 30 mins
     return () => clearInterval(interval);
-  }, [refreshInterval]);
-
-  const getSentimentLabel = (trend: string) => {
-    switch (trend) {
-      case "bullish": return "BULLISH";
-      case "bearish": return "BEARISH";
-      default: return "NEUTRAL";
-    }
-  };
-
-  const getFearGreedLabel = (score: number): string => {
-    if (score >= 0.5) return "Extreme Greed";
-    if (score >= 0.2) return "Greed";
-    if (score >= -0.2) return "Neutral";
-    if (score >= -0.5) return "Fear";
-    return "Extreme Fear";
-  };
+  }, []);
 
   if (loading && !sentiment) {
     return (
-      <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-        <span className="text-sm text-gray-500">Loading market sentiment...</span>
-      </div>
+      <div className="animate-pulse bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 h-48 border border-gray-100 dark:border-gray-800" />
     );
   }
 
-  if (error && !sentiment) {
-    return (
-      <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
-        <p className="text-xs text-red-600 dark:text-red-400">Failed to load market sentiment</p>
-      </div>
-    );
-  }
-
-  // If no sentiment after loading (API returned null/empty), show placeholder
-  if (!sentiment) {
-    return (
-      <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-        <span className="text-sm text-gray-500">No sentiment data available</span>
-      </div>
-    );
-  }
-
-  const overall = sentiment?.overall ?? { score: 0, trend: "neutral" as const, updatedAt: "" };
-
-  const score = overall.score ?? 0;
-  const trend = overall.trend ?? "neutral";
-
-  const getSentimentColor = (score: number, trend: string) => {
-    if (trend === "bullish" || score > 0.3) return "text-green-500";
-    if (trend === "bearish" || score < -0.3) return "text-red-500";
-    return "text-amber-500";
+  const overall = sentiment?.overall || { value: 50, score: 0, trend: "neutral", classification: "neutral", updatedAt: new Date().toISOString() };
+  const displayValue = overall.value ?? Math.round(((overall.score + 1) / 2) * 100);
+  
+  const getStatusColor = (val: number) => {
+    if (val >= 75) return "text-emerald-500";
+    if (val >= 55) return "text-green-400";
+    if (val >= 45) return "text-amber-500";
+    if (val >= 25) return "text-orange-500";
+    return "text-rose-600";
   };
 
-  const getSentimentBg = (score: number, trend: string) => {
-    if (trend === "bullish" || score > 0.3) return "bg-green-500/10 border-green-500/20";
-    if (trend === "bearish" || score < -0.3) return "bg-red-500/10 border-red-500/20";
-    return "bg-amber-500/10 border-amber-500/20";
+  const getStatusBg = (val: number) => {
+    if (val >= 75) return "bg-emerald-500/10 border-emerald-500/20";
+    if (val >= 55) return "bg-green-500/10 border-green-500/20";
+    if (val >= 45) return "bg-amber-500/10 border-amber-500/20";
+    if (val >= 25) return "bg-orange-500/10 border-orange-500/20";
+    return "bg-rose-500/10 border-rose-500/20";
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl p-4"
+      className="glass-card p-6 rounded-2xl border border-gray-200 dark:border-gray-800/50"
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-gray-900 dark:text-white">🧠 Market Sentiment</span>
-          <span className="text-xs text-gray-500">Fear & Greed Index</span>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-black tracking-tight dark:text-white uppercase">
+            {t("sentiment.market_sentiment") || "Market Sentiment"}
+          </h3>
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+            {t("sentiment.fear_greed") || "Fear & Greed Index"}
+          </p>
         </div>
-        <span className="text-xs text-gray-500">
-          {new Date(overall.updatedAt).toLocaleTimeString()}
-        </span>
+        <div className="text-right">
+          <div className="text-[10px] font-bold text-gray-400 uppercase">
+            {t("common.updated") || "Updated"}
+          </div>
+          <div className="text-xs font-mono dark:text-gray-300">
+            {new Date(overall.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center gap-6 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mb-4">
-        <div className="flex-1">
-          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Overall Market</div>
-          <div className="flex items-baseline gap-3">
-            <motion.div
-              key={score}
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              className={`text-4xl font-bold ${getSentimentColor(score, trend)}`}
-            >
-              {Math.round(score * 100)}
-            </motion.div>
-            <div className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getSentimentBg(score, trend).split(' ')[0]}`}>
-              {getSentimentLabel(trend)}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className={`text-6xl font-black ${getStatusColor(displayValue)}`}>
+              {displayValue}
+            </div>
+            <div>
+              <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase border mb-1 ${getStatusBg(displayValue)} ${getStatusColor(displayValue)}`}>
+                {overall.classification?.toUpperCase() || "NEUTRAL"}
+              </div>
+              <div className="text-xs text-gray-500 font-medium">
+                {displayValue >= 50 ? (t("sentiment.optimistic_msg") || "Optimisme pasar meningkat") : (t("sentiment.pessimistic_msg") || "Kekhawatiran pasar membayangi")}
+              </div>
             </div>
           </div>
-          <div className="text-sm text-gray-500 mt-2">{getFearGreedLabel(score)}</div>
+
+          <div className="grid grid-cols-2 gap-2 pt-2">
+            <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
+              <div className="text-[10px] font-bold text-gray-400 uppercase mb-1">Crypto</div>
+              <div className="text-sm font-bold dark:text-white">{overall.details?.crypto || "--"}</div>
+            </div>
+            <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
+              <div className="text-[10px] font-bold text-gray-400 uppercase mb-1">Macro (VIX)</div>
+              <div className="text-sm font-bold dark:text-white">{overall.details?.traditional || "--"}</div>
+            </div>
+          </div>
         </div>
 
-        <div className="relative w-32 h-32">
+        <div className="relative aspect-[2/1] w-full max-w-[240px] mx-auto">
           <svg viewBox="0 0 100 50" className="w-full h-full">
-            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" strokeWidth="8" className="text-gray-300 dark:text-gray-600" />
-            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="url(#gradient)" strokeWidth="8" strokeDasharray={`${((score + 1) / 2) * 125.66} 125.66`} strokeLinecap="round" />
+            {/* Background Arc */}
+            <path 
+              d="M 10 50 A 40 40 0 0 1 90 50" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="10" 
+              className="text-gray-100 dark:text-gray-800" 
+            />
+            {/* Colored Arc */}
+            <path 
+              d="M 10 50 A 40 40 0 0 1 90 50" 
+              fill="none" 
+              stroke="url(#sentiment-grad)" 
+              strokeWidth="10" 
+              strokeDasharray={`${(displayValue / 100) * 125.66} 125.66`} 
+              strokeLinecap="round" 
+              className="transition-all duration-1000 ease-out"
+            />
             <defs>
-              <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#ef4444" />
-                <stop offset="50%" stopColor="#e5e7eb" />
-                <stop offset="100%" stopColor="#22c55e" />
+              <linearGradient id="sentiment-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#f43f5e" />
+                <stop offset="50%" stopColor="#f59e0b" />
+                <stop offset="100%" stopColor="#10b981" />
               </linearGradient>
             </defs>
-            <line x1="50" y1="50" x2={50 + 40 * Math.cos(Math.PI - (score + 1) * Math.PI / 2)} y2={50 - 40 * Math.sin(Math.PI - (score + 1) * Math.PI / 2)} stroke="currentColor" strokeWidth="2" className="text-gray-900 dark:text-white" />
-            <circle cx="50" cy="50" r="4" className="fill-gray-900 dark:fill-white" />
+            {/* Needle */}
+            <motion.line 
+              x1="50" y1="50" 
+              x2={50 + 35 * Math.cos(Math.PI - (displayValue / 100) * Math.PI)} 
+              y2={50 - 35 * Math.sin(Math.PI - (displayValue / 100) * Math.PI)} 
+              stroke="currentColor" 
+              strokeWidth="3" 
+              strokeLinecap="round"
+              className="text-gray-900 dark:text-white transition-all duration-1000 ease-out"
+            />
+            <circle cx="50" cy="50" r="5" className="fill-gray-900 dark:fill-white" />
           </svg>
+          <div className="absolute bottom-0 left-0 w-full flex justify-between px-2 text-[8px] font-black text-gray-400 uppercase tracking-tighter">
+            <span>Fear</span>
+            <span>Greed</span>
+          </div>
         </div>
       </div>
-
-      {sentiment.symbols && sentiment.symbols.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">By Asset</div>
-          {sentiment.symbols.slice(0, 4).map((s, idx) => (
-            <div key={s.symbol} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-900 dark:text-white">{s.symbol}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${getSentimentBg(s.score, s.trend).split(' ')[0]}`}>
-                  {getSentimentLabel(s.trend)}
-                </span>
-              </div>
-              <div className={`font-mono text-sm ${getSentimentColor(s.score, s.trend)}`}>
-                {Math.round(s.score * 100)}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </motion.div>
   );
 }

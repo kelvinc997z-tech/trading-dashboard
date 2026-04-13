@@ -20,10 +20,16 @@
     "correlation": "Correlation",
     "performance": "Performance",
     "economic": "Economic",
-    "no_trades": "No trades yet"
+    "no_trades": "No trades yet",
+    "market_outlook": "Market Outlook",
+    "strategic_rationale": "Strategic Rationale"
   },
   "sentiment": {
     "title": "Sentiment Analysis",
+    "market_sentiment": "Market Sentiment",
+    "fear_greed": "Fear & Greed Index",
+    "optimistic_msg": "Market optimism is rising",
+    "pessimistic_msg": "Market fears are looming",
     "pulse": "Market Pulse",
     "score": "Sentiment Score",
     "reddit": "Reddit Pulse",
