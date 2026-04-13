@@ -73,7 +73,7 @@ export async function register(formData: FormData) {
     return { success: true };
   } catch (error: any) {
     console.error("Registration error:", error);
-    return { error: "An unexpected error occurred. Please try again." };
+    return { error: `Registration error: ${error.message || error.toString()}` };
   }
 }
 
