@@ -12,13 +12,13 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { plan } = body;
+  const { plan, billingPeriod } = body;
 
-  if (!["monthly", "yearly"].includes(plan)) {
+  if (plan !== "pro") {
     return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
   }
 
-  const amount = plan === "monthly" ? 150000 : 1500000; // in IDR
+  const amount = billingPeriod === "monthly" ? 200000 : 1800000;
 
   // Create payment record
   const payment = await db.payment.create({
@@ -27,13 +27,13 @@ export async function POST(request: NextRequest) {
       plan,
       amount,
       method: "whatsapp",
-      whatsappMessage: `New ${plan} subscription request from ${session.user.email}`,
+      whatsappMessage: `New ${plan} (${billingPeriod}) subscription request from ${session.user.email}`,
       status: "pending",
     },
   });
 
   // Build WhatsApp message template for user to send to admin
-  const message = `Halo, saya ingin upgrade ke ${plan.toUpperCase()} di Trading Dashboard.\n\nEmail: ${session.user.email}\nPlan: ${plan}\nAmount: Rp ${amount.toLocaleString()}\nPayment ID: ${payment.id}\n\nMohon konfirmasi setelah transfer. Terima kasih.`;
+  const message = `Halo, saya ingin upgrade ke PRO (${billingPeriod}) di Trading Dashboard.\n\nEmail: ${session.user.email}\nPlan: PRO (${billingPeriod})\nAmount: Rp ${amount.toLocaleString()}\nPayment ID: ${payment.id}\n\nMohon konfirmasi setelah transfer. Terima kasih.`;
 
   const waUrl = `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 

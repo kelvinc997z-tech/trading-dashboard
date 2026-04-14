@@ -46,12 +46,10 @@ export async function POST(request: NextRequest) {
   // For simplicity: if amount matches monthly price → 30 days, else → 365 days (yearly)
   
   const monthlyPrices: Record<string, number> = {
-    lite: 175000,
-    pro: 250000,
+    pro: 200000,
   };
   
   const yearlyPrices: Record<string, number> = {
-    lite: 1470000,
     pro: 1800000,
   };
   

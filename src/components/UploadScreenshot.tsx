@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { storage, STORAGE_BUCKET } from '@/lib/supabase';
 
 interface UploadWidgetProps {
   type: 'screenshot' | 'chart' | 'avatar';

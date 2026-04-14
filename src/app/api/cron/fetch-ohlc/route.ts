@@ -6,7 +6,8 @@ import { fetchCoinGeckoOHLC } from "@/lib/coingecko";
 // POST /api/cron/fetch-ohlc
 // Cron job to fetch OHLC data with provider fallback (Binance -> CoinGecko)
 export async function POST(request: NextRequest) {
-  const cronSecret = request.headers.get("x-vercel-cron-secret");
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : request.headers.get("x-vercel-cron-secret");
   const expectedSecret = process.env.CRON_SECRET;
 
   if (expectedSecret && cronSecret !== expectedSecret) {

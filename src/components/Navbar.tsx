@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { logOut } from "@/lib/auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   BarChart2,
@@ -19,25 +19,36 @@ import {
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationProvider";
 import ContrastToggle from "@/components/contrast/ContrastToggle";
+import LanguageToggle from "@/components/LanguageToggle";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Navbar({ user }: { user: { email: string; role?: string } }) {
+  const { t } = useLanguage();
   const [proMenuOpen, setProMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [tickerActive, setTickerActive] = useState(true);
+
+  useEffect(() => {
+    if (localStorage.getItem('ticker_hidden') === 'true') setTickerActive(false);
+    const handleTickerClose = () => setTickerActive(false);
+    window.addEventListener('ticker_closed', handleTickerClose);
+    return () => window.removeEventListener('ticker_closed', handleTickerClose);
+  }, []);
   
   const proLinks = [
-    { href: "/dashboard/correlations", icon: PieChart, label: "Correlations" },
-    { href: "/dashboard/sentiment", icon: MessageSquare, label: "Sentiment" },
-    { href: "/dashboard/performance", icon: TrendingUp, label: "Performance" },
+    { href: "/dashboard/correlations", icon: PieChart, label: t("dashboard.correlation") },
+    { href: "/dashboard/sentiment", icon: MessageSquare, label: t("sentiment.title") },
+    { href: "/dashboard/performance", icon: TrendingUp, label: t("dashboard.performance") },
   ];
 
   // Only show these for pro users
   const tradingTools = [
     { href: "/trading-journal", icon: BookOpen, label: "Journal" },
-    { href: "/economic-calendar", icon: Calendar, label: "Calendar" },
+    { href: "/economic-calendar", icon: Calendar, label: t("dashboard.economic") },
   ];
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-xl bg-gray-900/90 border-b border-gray-800">
+    <nav className={`sticky z-50 backdrop-blur-xl bg-gray-900/90 border-b border-gray-800 transition-all duration-300 ${tickerActive ? 'top-8' : 'top-0'}`}>
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           {/* Logo */}
@@ -64,7 +75,7 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
               href="/dashboard"
               className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all"
             >
-              Dashboard
+              {t("nav.dashboard")}
             </Link>
             
             <Link
@@ -72,18 +83,18 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
               className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all flex items-center gap-2"
             >
               <BarChart2 className="w-4 h-4" />
-              Market
+              {t("nav.market")}
             </Link>
 
             {/* Pro Dropdown */}
             {user?.role === "pro" && (
               <div className="relative">
-                <button
+                  <button
                   onClick={() => setProMenuOpen(!proMenuOpen)}
                   className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all flex items-center gap-2"
                 >
                   <Crown className="w-4 h-4 text-yellow-500" />
-                  Pro
+                  {t("nav.pro")}
                   <ChevronDown className={`w-3 h-3 transition-transform ${proMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {proMenuOpen && (
@@ -92,7 +103,7 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
                       <Link
                         key={link.href}
                         href={link.href}
-                        className="flex items-center gap-3 px-4 py-.text-gray-300 hover:bg-gray-700/50 transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700/50 transition-colors"
                         onClick={() => setProMenuOpen(false)}
                       >
                         <link.icon className="w-4 h-4" />
@@ -110,7 +121,7 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
               className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all flex items-center gap-2"
             >
               <Brain className="w-4 h-4 text-cyan-400" />
-              Quant AI
+              {t("nav.quant_ai")}
             </Link>
 
             <Link
@@ -129,7 +140,7 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
                   className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all flex items-center gap-2"
                 >
                   <BarChart2 className="w-4 h-4" />
-                  Tools
+                  {t("nav.tools")}
                   <ChevronDown className={`w-3 h-3 transition-transform ${mobileMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {mobileMenuOpen && (
@@ -156,7 +167,7 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
                 href="/pricing"
                 className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-yellow-600 to-orange-600 text-white shadow-lg hover:from-yellow-500 hover:to-orange-500 transition-all"
               >
-                Upgrade
+                {t("nav.upgrade")}
               </Link>
             ) : (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-600/30">
@@ -168,6 +179,7 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
 
           {/* Right Controls */}
           <div className="flex items-center gap-3">
+            <LanguageToggle />
             <NotificationBell />
             <ContrastToggle />
             <div className="hidden sm:block text-right">

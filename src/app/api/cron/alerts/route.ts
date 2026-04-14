@@ -8,8 +8,10 @@ const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function GET(request: Request) {
   // Verify cron secret
-  const secret = request.headers.get('x-cron-secret');
-  if (!CRON_SECRET || secret !== CRON_SECRET) {
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : request.headers.get("x-cron-secret");
+
+  if (!CRON_SECRET || cronSecret !== CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchCoinGeckoPrices, toCoinGeckoId } from "@/lib/coingecko";
 
 interface CryptoPriceData {
   symbol: string;
   price: number;
   change24h: number;
-  lastUpdated: number;
 }
 
 interface CryptoPriceTickerProps {
@@ -25,21 +23,23 @@ export default function CryptoPriceTicker({
 
   const fetchPrices = async () => {
     try {
-      const data = await fetchCoinGeckoPrices(symbols);
-      
-      const newPrices: CryptoPriceData[] = symbols.map(symbol => {
-        const coinId = toCoinGeckoId(symbol);
-        if (!coinId || !data[coinId]) {
-          return null;
-        }
-        const coinData = data[coinId];
-        return {
-          symbol: symbol.toUpperCase(),
-          price: coinData.usd,
-          change24h: coinData.usd_24h_change || 0,
-          lastUpdated: coinData.last_updated_at * 1000,
-        };
-      }).filter((p): p is CryptoPriceData => p !== null);
+      // Fetch all symbols in parallel from dedicated crypto quote API (real-time Binance)
+      const promises = symbols.map(symbol =>
+        fetch(`/api/crypto-quote?symbol=${encodeURIComponent(symbol)}`)
+          .then(res => res.ok ? res.json() : null)
+          .catch(() => null)
+      );
+      const results = await Promise.all(promises);
+
+      const newPrices: CryptoPriceData[] = results
+        .filter((data): data is { symbol: string; price: number; changePercent: number } => {
+          return data && typeof data.price === 'number' && typeof data.changePercent === 'number';
+        })
+        .map(data => ({
+          symbol: data.symbol,
+          price: data.price,
+          change24h: data.changePercent,
+        }));
 
       setPrices(newPrices);
       setError(null);
@@ -94,9 +94,6 @@ export default function CryptoPriceTicker({
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
           Live Crypto
-        </span>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          (CoinGecko)
         </span>
       </div>
       

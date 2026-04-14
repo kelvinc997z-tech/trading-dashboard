@@ -77,25 +77,25 @@ export async function fetchYahooFinanceCandles(
       formattedSymbol = `${formattedSymbol}-USD`;
     }
   } else {
-    // For stocks, try both plain and with .US suffix if not already present
-    if (!formattedSymbol.includes('.') && !formattedSymbol.includes('-')) {
-      formattedSymbol = `${formattedSymbol}.US`;
+    // For stocks/futures, only append .US if it's a plain symbol (no dots, dashes, or equals)
+    // and explicitly requested or if we want to maintain the previous behavior for stocks.
+    // However, symbols like SLV, GC=F, CL=F should NOT have .US appended.
+    if (!formattedSymbol.includes('.') && !formattedSymbol.includes('-') && !formattedSymbol.includes('=') && !formattedSymbol.startsWith('^')) {
+      // If it's a common ETF or known symbol that shouldn't have .US, skip it.
+      const skipSuffix = ['SLV', 'GLD', 'USO']; 
+      if (!skipSuffix.includes(formattedSymbol)) {
+        formattedSymbol = `${formattedSymbol}.US`;
+      }
     }
   }
 
   const url = `https://query2.finance.yahoo.com/v8/finance/chart/${formattedSymbol}?range=${range}&interval=${interval}`;
 
-  const headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'application/json',
-    'Accept-Language': 'en-US,en;q=0.9',
-  };
-
   // Retry logic with exponential backoff
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(url, { headers, next: { revalidate: 3600 } }); // cache 1 hour for stocks
+      const res = await fetch(url, { next: { revalidate: 300 } });
       
       if (!res.ok) {
         if (res.status === 429) {

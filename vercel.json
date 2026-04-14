@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/fetch-ohlc",
       "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/market-signal/generate",
+      "schedule": "0 5 * * *"
     }
   ]
 }

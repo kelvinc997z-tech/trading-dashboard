@@ -6,6 +6,10 @@ import { WatchlistProvider } from "@/components/watchlist/WatchlistProvider";
 import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 import { ContrastProvider } from "@/components/contrast/ContrastProvider";
 import OnboardingProvider from "@/components/onboarding/OnboardingProvider";
+import { LanguageProvider } from "@/context/LanguageContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { MarketTicker } from "@/components/MarketTicker";
+import MobileBottomNav from "@/components/MobileBottomNav";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,13 +36,23 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
-          <ContrastProvider>
-            <NotificationProvider>
-              <WatchlistProvider>
-                <OnboardingProvider>{children}</OnboardingProvider>
-              </WatchlistProvider>
-            </NotificationProvider>
-          </ContrastProvider>
+          <LanguageProvider>
+            <ContrastProvider>
+              <NotificationProvider>
+                <WatchlistProvider>
+                  <OnboardingProvider>
+                    <ErrorBoundary>
+                      <MarketTicker />
+                      <div className="pb-16 md:pb-0">
+                        {children}
+                      </div>
+                      <MobileBottomNav />
+                    </ErrorBoundary>
+                  </OnboardingProvider>
+                </WatchlistProvider>
+              </NotificationProvider>
+            </ContrastProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

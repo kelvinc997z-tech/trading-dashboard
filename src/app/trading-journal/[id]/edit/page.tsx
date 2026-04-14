@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
@@ -7,262 +9,136 @@ import Link from "next/link";
 export default function EditTradePage() {
   const router = useRouter();
   const params = useParams();
-  const id = params.id as string;
-  const [form, setForm] = useState({
-    symbol: "XAUT/USD",
-    side: "buy",
-    entry: "",
-    size: "1",
-    exit: "",
-    stopLoss: "",
-    takeProfit: "",
-    pnl: "",
-    pnlPct: "",
-    date: "",
-    exitDate: "",
-    notes: "",
-    tags: "",
-  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState<any>(null);
 
   useEffect(() => {
-    async function fetchTrade() {
-      const res = await fetch(`/api/trades/${id}`);
-      if (!res.ok) {
-        alert("Failed to load trade");
-        router.back();
-        return;
-      }
-      const data = await res.json();
-      const toDateTimeLocal = (dt: string) => {
-        const d = new Date(dt);
-        return d.toISOString().slice(0, 16);
-      };
-      setForm({
-        symbol: data.symbol,
-        side: data.side,
-        entry: data.entry,
-        size: data.size?.toString() || "1",
-        exit: data.exit || "",
-        stopLoss: data.stopLoss || "",
-        takeProfit: data.takeProfit || "",
-        pnl: data.pnl || "",
-        pnlPct: data.pnlPct || "",
-        date: toDateTimeLocal(data.date),
-        exitDate: data.exitDate ? toDateTimeLocal(data.exitDate) : "",
-        notes: data.notes || "",
-        tags: data.tags || "",
+    fetch(`/api/trades/${params.id}`)
+      .then(res => res.json())
+      .then(data => {
+        setFormData({
+          ...data,
+          date: new Date(data.date).toISOString().split("T")[0]
+        });
+        setLoading(false);
       });
-      setLoading(false);
-    }
-    fetchTrade();
-  }, [id]);
+  }, [params.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    try {
-      const payload = {
-        ...form,
-        entry: parseFloat(form.entry),
-        size: parseFloat(form.size),
-        exit: form.exit ? parseFloat(form.exit) : null,
-        stopLoss: form.stopLoss ? parseFloat(form.stopLoss) : null,
-        takeProfit: form.takeProfit ? parseFloat(form.takeProfit) : null,
-        pnl: form.pnl ? parseFloat(form.pnl) : null,
-        pnlPct: form.pnlPct ? parseFloat(form.pnlPct) : null,
-        date: new Date(form.date).toISOString(),
-        exitDate: form.exitDate ? new Date(form.exitDate).toISOString() : null,
-      };
-      const res = await fetch(`/api/trades/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed");
+    const res = await fetch(`/api/trades/${params.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...formData,
+        entry: parseFloat(formData.entry),
+        size: parseFloat(formData.size),
+        exit: formData.exit ? parseFloat(formData.exit) : undefined,
+        pnl: formData.pnl ? parseFloat(formData.pnl) : undefined,
+      }),
+    });
+    if (res.ok) {
       router.push("/trading-journal");
-    } catch (err) {
-      alert("Error updating trade");
-    } finally {
+    } else {
       setSaving(false);
+      alert("Failed to update trade");
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
-      </div>
-    );
-  }
+  if (loading) return <div className="p-6">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="container mx-auto px-4 max-w-2xl">
-        {/* Back to Home */}
-        <div className="mb-6">
-          <Link href="/dashboard" className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Home
-          </Link>
+    <div className="container mx-auto p-6 max-w-2xl">
+      <div className="flex items-center gap-4 mb-6">
+        <Link href="/trading-journal" className="text-gray-500 hover:text-gray-700">Back</Link>
+        <h1 className="text-2xl font-bold">Edit Trade</h1>
+      </div>
+
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Symbol</label>
+            <input
+              required
+              type="text"
+              value={formData.symbol}
+              onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
+              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Status</label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700"
+            >
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
         </div>
 
-        <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Edit Trade</h1>
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Symbol</label>
-              <select
-                value={form.symbol}
-                onChange={(e) => setForm({ ...form, symbol: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              >
-                <option value="XAUT/USD">XAUT/USD (Tether Gold)</option>
-                <option value="BTC/USD">BTC/USD</option>
-                <option value="ETH/USD">ETH/USD</option>
-                <option value="SOL/USD">SOL/USD</option>
-                <option value="XRP/USD">XRP/USD</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Side</label>
-              <select
-                value={form.side}
-                onChange={(e) => setForm({ ...form, side: e.target.value as "buy" | "sell" })}
-                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              >
-                <option value="buy">Buy</option>
-                <option value="sell">Sell</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Entry Price</label>
-              <input
-                type="number"
-                step="any"
-                required
-                value={form.entry}
-                onChange={(e) => setForm({ ...form, entry: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Size (contracts)</label>
-              <input
-                type="number"
-                step="any"
-                required
-                value={form.size}
-                onChange={(e) => setForm({ ...form, size: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Exit Price (optional)</label>
-              <input
-                type="number"
-                step="any"
-                value={form.exit}
-                onChange={(e) => setForm({ ...form, exit: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Stop Loss (optional)</label>
-              <input
-                type="number"
-                step="any"
-                value={form.stopLoss}
-                onChange={(e) => setForm({ ...form, stopLoss: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Take Profit (optional)</label>
-              <input
-                type="number"
-                step="any"
-                value={form.takeProfit}
-                onChange={(e) => setForm({ ...form, takeProfit: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">P&L (USD, optional)</label>
-              <input
-                type="number"
-                step="any"
-                value={form.pnl}
-                onChange={(e) => setForm({ ...form, pnl: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">P&L % (optional)</label>
-              <input
-                type="number"
-                step="any"
-                value={form.pnlPct}
-                onChange={(e) => setForm({ ...form, pnlPct: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Entry Date</label>
-              <input
-                type="datetime-local"
-                required
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Exit Date (optional)</label>
-              <input
-                type="datetime-local"
-                value={form.exitDate}
-                onChange={(e) => setForm({ ...form, exitDate: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              />
-            </div>
-          </div>
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Notes (optional)</label>
-            <textarea
-              rows={3}
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Tags (comma separated, optional)</label>
+            <label className="block text-sm font-medium mb-1">Entry Price</label>
             <input
-              type="text"
-              placeholder="e.g. scalping, BTC"
-              value={form.tags}
-              onChange={(e) => setForm({ ...form, tags: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              required
+              type="number"
+              step="any"
+              value={formData.entry}
+              onChange={(e) => setFormData({ ...formData, entry: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700"
             />
           </div>
-          <div className="flex gap-4 pt-4">
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50"
-            >
-              {saving ? "Saving..." : "Update Trade"}
-            </button>
-            <Link href="/trading-journal" className="px-6 py-2 border rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-700">
-              Cancel
-            </Link>
+          <div>
+            <label className="block text-sm font-medium mb-1">Size</label>
+            <input
+              required
+              type="number"
+              step="any"
+              value={formData.size}
+              onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700"
+            />
           </div>
-        </form>
-      </div>
+        </div>
+
+        {formData.status === "closed" && (
+          <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div>
+              <label className="block text-sm font-medium mb-1">Exit Price</label>
+              <input
+                type="number"
+                step="any"
+                value={formData.exit || ""}
+                onChange={(e) => setFormData({ ...formData, exit: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Final P&L ($)</label>
+              <input
+                type="number"
+                step="any"
+                value={formData.pnl || ""}
+                onChange={(e) => setFormData({ ...formData, pnl: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700"
+              />
+            </div>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="w-full bg-primary text-white py-2 rounded-lg font-bold hover:bg-primary/90 disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Update Trade"}
+        </button>
+      </form>
     </div>
   );
 }

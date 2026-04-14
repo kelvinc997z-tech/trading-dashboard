@@ -12,7 +12,6 @@ import AdvancedChart from "@/components/AdvancedChart";
 import MassiveStockChart from "@/components/MassiveStockChart";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import CryptoPriceTicker from "@/components/CryptoPriceTicker";
-import CryptoPriceCard from "@/components/CryptoPriceCard";
 import EconomicCalendarWidget from "@/components/EconomicCalendarWidget";
 import PerformanceClient from "@/app/dashboard/performance/PerformanceClient";
 import CorrelationMatrix from "@/components/CorrelationMatrix";
@@ -20,6 +19,11 @@ import WatchlistOutlook from "@/components/WatchlistOutlook";
 import StatCard from "@/components/ui/StatCard";
 import GlassCard from "@/components/ui/GlassCard";
 import ConfidenceBar from "@/components/ConfidenceBar";
+import StockTicker from "@/components/StockTicker";
+import MarketSignals from "@/components/MarketSignals";
+import NewsUpdate from "@/components/NewsUpdate";
+import TechnicalAnalysis from "@/components/TechnicalAnalysis";
+import MarketSentiment from "@/components/MarketSentiment";
 
 interface DbTrade {
   id: string;
@@ -77,6 +81,12 @@ const US_STOCKS = [
   { symbol: "TSM", name: "Taiwan Semiconductor Manufacturing" },
 ];
 
+// Set to true to show crypto charts
+const SHOW_CRYPTO_CHARTS = false;
+const SHOW_CRYPTO_PRICE_CARDS = false;
+
+export const dynamic = 'force-dynamic';
+
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [markets, setMarkets] = useState<Record<string, { price: number }>>({});
@@ -86,6 +96,14 @@ export default function Dashboard() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"charts" | "outlook" | "economic" | "performance" | "correlation">("charts");
+  const [tickerActive, setTickerActive] = useState(true);
+
+  useEffect(() => {
+    if (localStorage.getItem('ticker_hidden') === 'true') setTickerActive(false);
+    const handleTickerClose = () => setTickerActive(false);
+    window.addEventListener('ticker_closed', handleTickerClose);
+    return () => window.removeEventListener('ticker_closed', handleTickerClose);
+  }, []);
 
   // Get symbol from query params on mount
   useEffect(() => {
@@ -305,10 +323,12 @@ export default function Dashboard() {
     .filter(t => t.status === "open")
     .reduce((sum, t) => sum + (t.unrealizedPnl || 0), 0);
 
+  const isPro = user?.role === "pro";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-900/95 dark:to-gray-950">
       {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800">
+      <header className={`sticky z-40 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 transition-all duration-300 ${tickerActive ? 'top-8' : 'top-0'}`}>
         <div className="container mx-auto px-4 md:px-6 py-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             {/* Left: Title */}
@@ -386,55 +406,39 @@ export default function Dashboard() {
         <div className="space-y-8">
 
       {/* Stats Cards - Futuristic */}
-      <div className="grid gap-4 md:gap-6 grid-cols-2 md:grid-cols-4 mb-6">
-        <StatCard
-          label="Open Positions"
-          value={openTradesCount}
-          sublabel="Active trades"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          }
-          gradient="blue"
-          trend={{ value: "+2.4%", up: true }}
-        />
-        <StatCard
-          label="Today's P&L"
-          value={realizedToday.toFixed(2)}
-          sublabel="Net profit"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-          gradient="emerald"
-          positive={realizedToday >= 0}
-          trend={{ value: realizedToday >= 0 ? "+4.2%" : "-1.8%", up: realizedToday >= 0 }}
-        />
-        <StatCard
-          label="AI Confidence"
-          value="87%"
-          sublabel="Signal accuracy"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          }
-          gradient="purple"
-          trend={{ value: "+5.3%", up: true }}
-        />
-        <StatCard
-          label="System Status"
-          value="Online"
-          sublabel="All systems go"
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          }
-          gradient="emerald"
-        />
+      <div className="flex overflow-x-auto pb-4 md:grid md:grid-cols-4 gap-4 md:gap-6 scrollbar-hide snap-x snap-mandatory">
+        {isPro && (
+          <div className="min-w-[280px] md:min-w-0 snap-center">
+            <StatCard
+              label="AI Confidence"
+              value="87%"
+              sublabel="Signal accuracy"
+              icon={
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              }
+              gradient="purple"
+              trend={{ value: "+5.3%", up: true }}
+            />
+          </div>
+        )}
+        <div className="min-w-[280px] md:min-w-0 snap-center">
+          <StatCard
+            label="System Status"
+            value="Online"
+            sublabel="All systems go"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            }
+            gradient="emerald"
+          />
+        </div>
+        <div className={`min-w-[320px] md:min-w-0 snap-center ${isPro ? "md:col-span-2" : "md:col-span-3"}`}>
+          <MarketSentiment refreshInterval={3600000} />
+        </div>
       </div>
 
       {/* Dashboard Tabs - Simplified */}
@@ -455,27 +459,31 @@ export default function Dashboard() {
                 id: "outlook", 
                 label: "Outlook", 
                 icon: Eye,
-                desc: "Watchlist signals"
+                desc: "Watchlist signals",
+                pro: true
               },
               { 
                 id: "correlation", 
                 label: "Correlation", 
                 icon: BarChart2,
-                desc: "Asset relationships"
+                desc: "Asset relationships",
+                pro: true
               },
               { 
                 id: "performance", 
                 label: "Performance", 
                 icon: PieChart,
-                desc: "Your stats"
+                desc: "Your stats",
+                pro: false // Make it accessible
               },
               { 
                 id: "economic", 
                 label: "Economic", 
                 icon: Calendar,
-                desc: "Today's events"
+                desc: "Today's events",
+                pro: true
               },
-            ].map((tab) => (
+            ].filter(tab => !tab.pro || isPro).map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
@@ -508,7 +516,7 @@ export default function Dashboard() {
       {/* Multiple Pair Charts - Separate Categories */}
       {activeTab === "charts" && (
         <>
-          {/* Crypto Charts */}
+          {/* Crypto Section */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -531,19 +539,17 @@ export default function Dashboard() {
             
             {/* Live Crypto Price Ticker */}
             <div className="mb-4">
-              <CryptoPriceTicker symbols={['BTC', 'ETH', 'SOL', 'XRP', 'DOGE']} refreshInterval={30000} />
+              <CryptoPriceTicker symbols={['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'XAUT']} refreshInterval={30000} />
             </div>
+          </motion.div>
 
-            {/* Crypto Price Cards */}
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Crypto Prices</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {['BTC', 'ETH', 'SOL', 'XRP', 'DOGE'].map(symbol => (
-                  <CryptoPriceCard key={symbol} symbol={symbol} refreshInterval={30000} />
-                ))}
-              </div>
-            </div>
-
+          {/* Crypto Charts */}
+          {SHOW_CRYPTO_CHARTS && <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-8"
+          >
             <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {CRYPTO_PAIRS.map((pair, idx) => (
                 <motion.div
@@ -592,75 +598,64 @@ export default function Dashboard() {
               ))}
             </div>
           </motion.div>
+}
 
-          {/* US Stocks Charts } */}
+          {/* Stock Ticker */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.3 }}
-            className="mt-10"
+            transition={{ duration: 0.3 }}
+            className="mb-4"
           >
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
-              <div>
-                <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500">
-                  US Stocks
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Major equity markets with technical analysis
-                </p>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-400 text-sm font-medium border border-blue-500/30 self-start sm:self-auto">
-                {US_STOCKS.length} stocks
-              </span>
-            </div>
-            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-              {US_STOCKS.map((pair, idx) => (
-                <motion.div
-                  key={pair.symbol}
-                  id={`chart-${pair.symbol.toLowerCase()}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + idx * 0.05 }}
-                >
-                  <GlassCard gradient="purple" className="h-full flex flex-col">
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{pair.symbol}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{pair.name}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold border border-blue-500/20">
-                          {timeframe}
-                        </span>
-                        {user?.role === "pro" && (
-                          <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-yellow-500/10 to-orange-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-semibold border border-yellow-500/20">
-                            PRO
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 min-h-[200px] chart-container rounded-xl p-1 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 to-gray-900/50">
-                      {isLoading ? (
-                        <div className="h-40 sm:h-48 skeleton rounded-lg" />
-                      ) : (
-                        <div className="h-40 sm:h-48">
-                          <MassiveStockChart symbol={pair.symbol} timeframe={timeframe} height={160} />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* AI Confidence Bar for Pro users */}
-                    {user?.role === "pro" && (
-                      <div className="mt-4 pt-4 border-t border-gray-700/50">
-                        <ConfidenceBar value={72 + Math.random() * 15} label="AI Signal Strength" size="md" />
-                      </div>
-                    )}
-                  </GlassCard>
-                </motion.div>
-              ))}
-            </div>
+            <StockTicker refreshInterval={30000} />
           </motion.div>
+
+          {/* Market Signals */}
+          {isPro && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="mb-6"
+            >
+              <MarketSignals limit={5} refreshInterval={60000} />
+            </motion.div>
+          )}
+
+          {/* Real-time Technical Analysis */}
+          {isPro && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="mb-6"
+            >
+              <TechnicalAnalysis refreshInterval={60000} />
+            </motion.div>
+          )}
+
+          {/* News Update */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6"
+          >
+            <NewsUpdate limit={5} refreshInterval={300000} />
+          </motion.div>
+
+          {/* Market Sentiment */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6"
+          >
+            <MarketSentiment refreshInterval={3600000} />
+          </motion.div>
+
+
+
         </>
       )}
 
@@ -689,131 +684,133 @@ export default function Dashboard() {
         </div>
       )}
 
-      <GlassCard gradient="cyan" className="p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-700/50 bg-gradient-to-r from-gray-800/80 to-gray-900/80">
-                {[
-                  "Time", "Pair", "Side", "Size", "Entry", "TP", "SL", "P&L", "AI"
-                ].map((header) => (
-                  <th key={header} className="px-6 py-4 text-left text-xs font-semibold text-cyan-400 uppercase tracking-wider">
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700/50">
-              {trades.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
-                      </svg>
-                      <p className="text-gray-500 dark:text-gray-400">No trades yet</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500">Start trading to see your history here</p>
-                    </div>
-                  </td>
+      {isPro && (
+        <GlassCard gradient="cyan" className="p-0 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-700/50 bg-gradient-to-r from-gray-800/80 to-gray-900/80">
+                  {[
+                    "Time", "Pair", "Side", "Size", "Entry", "TP", "SL", "P&L", "AI"
+                  ].map((header) => (
+                    <th key={header} className="px-6 py-4 text-left text-xs font-semibold text-cyan-400 uppercase tracking-wider">
+                      {header}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                trades.map((trade, idx) => {
-                  const isOpen = trade.status === "open";
-                  const displayPnl = isOpen
-                    ? trade.unrealizedPnl ?? 0
-                    : trade.pnl ?? 0;
-                  const pnlClass = displayPnl >= 0 ? "text-emerald-400" : "text-rose-400";
-                  const pnlBg = displayPnl >= 0 
-                    ? "bg-emerald-500/10 dark:bg-emerald-500/20" 
-                    : "bg-rose-500/10 dark:bg-rose-500/20";
+              </thead>
+              <tbody className="divide-y divide-gray-700/50">
+                {trades.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
+                        </svg>
+                        <p className="text-gray-500 dark:text-gray-400">No trades yet</p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500">Start trading to see your history here</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  trades.map((trade, idx) => {
+                    const isOpen = trade.status === "open";
+                    const displayPnl = isOpen
+                      ? trade.unrealizedPnl ?? 0
+                      : trade.pnl ?? 0;
+                    const pnlClass = displayPnl >= 0 ? "text-emerald-400" : "text-rose-400";
+                    const pnlBg = displayPnl >= 0 
+                      ? "bg-emerald-500/10 dark:bg-emerald-500/20" 
+                      : "bg-rose-500/10 dark:bg-rose-500/20";
 
-                  // AI signal badge color
-                  const aiSignalColor = trade.side === "buy" ? "text-cyan-400" : "text-purple-400";
-                  const aiSignalBg = trade.side === "buy" ? "bg-cyan-500/10 border-cyan-500/20" : "bg-purple-500/10 border-purple-500/20";
+                    // AI signal badge color
+                    const aiSignalColor = trade.side === "buy" ? "text-cyan-400" : "text-purple-400";
+                    const aiSignalBg = trade.side === "buy" ? "bg-cyan-500/10 border-cyan-500/20" : "bg-purple-500/10 border-purple-500/20";
 
-                  return (
-                    <motion.tr
-                      key={trade.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.03 }}
-                      className="hover:bg-gray-800/30 transition-colors group border-b border-gray-800/50 last:border-0"
-                    >
-                      <td className="px-6 py-4 font-medium text-white">
-                        {trade.time}
-                        {isOpen && (
-                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            Open
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-semibold text-white">{trade.pair}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold ${
-                          trade.side === "buy" 
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                            : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                        }`}>
-                          {trade.side === "buy" ? (
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                            </svg>
-                          ) : (
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                          {trade.side.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-mono text-white">
-                        {trade.size.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 font-mono text-white">
-                        {trade.entry.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4">
-                        {trade.takeProfit ? (
-                          <span className={`px-2 py-1 rounded text-xs font-mono font-medium border ${aiSignalBg}`}>
-                            {trade.takeProfit.toFixed(2)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {trade.stopLoss ? (
-                          <span className="px-2 py-1 rounded text-xs font-mono text-orange-400 border border-orange-500/30">
-                            {trade.stopLoss.toFixed(2)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg ${pnlBg} font-mono font-semibold ${pnlClass}`}>
-                          {displayPnl >= 0 ? "+" : ""}{displayPnl.toFixed(2)}
+                    return (
+                      <motion.tr
+                        key={trade.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.03 }}
+                        className="hover:bg-gray-800/30 transition-colors group border-b border-gray-800/50 last:border-0"
+                      >
+                        <td className="px-6 py-4 font-medium text-white">
+                          {trade.time}
                           {isOpen && (
-                            <span className="text-xs opacity-75">(unreal)</span>
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              Open
+                            </span>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {/* AI Prediction badge */}
-                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${aiSignalBg} ${aiSignalColor}`}>
-                          {trade.side === "buy" ? "BULL" : "BEAR"}
-                        </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </GlassCard>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-semibold text-white">{trade.pair}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                            trade.side === "buy" 
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                          }`}>
+                            {trade.side === "buy" ? (
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                            {trade.side.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-mono text-white">
+                          {trade.size.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 font-mono text-white">
+                          {trade.entry.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4">
+                          {trade.takeProfit ? (
+                            <span className={`px-2 py-1 rounded text-xs font-mono font-medium border ${aiSignalBg}`}>
+                              {trade.takeProfit.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {trade.stopLoss ? (
+                            <span className="px-2 py-1 rounded text-xs font-mono text-orange-400 border border-orange-500/30">
+                              {trade.stopLoss.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg ${pnlBg} font-mono font-semibold ${pnlClass}`}>
+                            {displayPnl >= 0 ? "+" : ""}{displayPnl.toFixed(2)}
+                            {isOpen && (
+                              <span className="text-xs opacity-75">(unreal)</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {/* AI Prediction badge */}
+                          <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${aiSignalBg} ${aiSignalColor}`}>
+                            {trade.side === "buy" ? "BULL" : "BEAR"}
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+      )}
 
       {/* Install PWA Prompt */}
       <InstallPWAButton />

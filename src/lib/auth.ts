@@ -33,14 +33,17 @@ export async function register(formData: FormData) {
       return { error: "Email and password are required" };
     }
     
+    console.log("Checking existing user for:", email);
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
       return { error: "An account with this email already exists" };
     }
     
+    console.log("Hashing password...");
     const hashed = await bcrypt.hash(password, 10);
     const verificationToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
     
+    console.log("Creating user in DB...");
     try {
       await db.user.create({
         data: {
@@ -54,8 +57,10 @@ export async function register(formData: FormData) {
       });
     } catch (dbError: any) {
       console.error("Database error during registration:", dbError);
-      return { error: "Failed to create account. Please try again." };
+      return { error: `Database error: ${dbError.message || "Failed to create account"}` };
     }
+    
+    console.log("Sending verification email...");
     
     // Send verification email (non-blocking, don't fail registration if email fails)
     try {
@@ -68,7 +73,7 @@ export async function register(formData: FormData) {
     return { success: true };
   } catch (error: any) {
     console.error("Registration error:", error);
-    return { error: "An unexpected error occurred. Please try again." };
+    return { error: `Registration error: ${error.message || error.toString()}` };
   }
 }
 
@@ -263,6 +268,104 @@ export async function verifyEmail(token: string) {
     return { success: true };
   } catch (e) {
     return { error: "Invalid token" };
+  }
+}
+
+export async function googleLogin(code: string) {
+  try {
+    console.log("Starting Google Login with code...");
+    const client_id = process.env.GOOGLE_CLIENT_ID;
+    const client_secret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirect_uri = process.env.GOOGLE_REDIRECT_URI || "https://tradingsignal.cloud/api/auth/google/callback";
+
+    if (!client_id || !client_secret) {
+      console.error("Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET");
+      throw new Error("Missing Google credentials");
+    }
+
+    // Exchange code for tokens
+    console.log("Exchanging code for tokens...");
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id,
+        client_secret,
+        redirect_uri,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      const error = await tokenRes.text();
+      console.error("Google token error response:", error);
+      throw new Error("Failed to exchange Google code");
+    }
+
+    const tokenData = await tokenRes.json();
+    const access_token = tokenData.access_token;
+
+    // Get user info
+    console.log("Fetching Google user info...");
+    const userRes = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+
+    if (!userRes.ok) {
+      const error = await userRes.text();
+      console.error("Google user info error:", error);
+      throw new Error("Failed to get Google user info");
+    }
+    
+    const googleUser = await userRes.json();
+    console.log("Google user identified:", googleUser.email);
+
+    const { email, name } = googleUser;
+
+    // Find or create user
+    console.log("Database lookup for user:", email);
+    let user;
+    try {
+      user = await db.user.findUnique({ where: { email } });
+    } catch (dbErr: any) {
+      console.error("Database error during Google user lookup:", dbErr);
+      throw new Error(`Database error: ${dbErr.message}`);
+    }
+
+    if (!user) {
+      console.log("Creating new user for Google login...");
+      try {
+        user = await db.user.create({
+          data: {
+            email,
+            name: name || null,
+            password: await bcrypt.hash(Math.random().toString(36), 10), // random password for OAuth users
+            verified: true, // Google emails are already verified
+            role: "free",
+          },
+        });
+      } catch (dbErr: any) {
+        console.error("Database error during Google user creation:", dbErr);
+        throw new Error(`Database error: ${dbErr.message}`);
+      }
+    }
+
+    console.log("Generating JWT for user:", user.id);
+    const token = jwt.sign({ 
+      email: user.email, 
+      id: user.id,
+      role: user.role || "free",
+      twoFactorVerified: true,
+    }, JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    console.log("Google Login successful!");
+    return { success: true, token };
+  } catch (error: any) {
+    console.error("Google login critical error:", error);
+    return { error: error.message || "Google authentication failed" };
   }
 }
 

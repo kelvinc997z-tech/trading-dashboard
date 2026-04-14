@@ -54,6 +54,7 @@ export function toCoinGeckoId(symbol: string): string | null {
     'WIF': 'wif',
     'BOME': 'book-of-meme',
     'NOT': 'notcoin',
+    'XAUT': 'tether-gold',
   };
 
   const upper = symbol.toUpperCase().replace(/[^A-Z]/g, '');

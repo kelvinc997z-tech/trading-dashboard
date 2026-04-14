@@ -253,3 +253,24 @@ model Indicator {
   @@unique([symbol, timeframe, timestamp])
   @@index([symbol, timeframe])
 }
+
+// Cached Market Signals (updated every 8 hours)
+model MarketSignal {
+  id          String   @id @default(cuid())
+  symbol      String
+  name        String
+  emoji       String
+  signal      String   // "buy" | "sell" | "neutral"
+  entry       Float    // entry price
+  tp          Float    // take profit
+  sl          Float    // stop loss
+  confidence  Float    // 0-1
+  reasoning   String
+  timeframe   String   @default("8h") // signal timeframe
+  generatedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([symbol, timeframe, generatedAt])
+  @@index([symbol, timeframe])
+  @@index([generatedAt])
+}
