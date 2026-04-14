@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wallet, Loader2, CheckCircle2 } from "lucide-react";
+import { Wallet, Globe, Loader2, CheckCircle2 } from "lucide-react";
 import { ethers } from "ethers";
 
 export default function SettingsPage() {
@@ -28,29 +28,33 @@ export default function SettingsPage() {
     }
   };
 
-  const linkWallet = async () => {
-    const { ethereum } = window as any;
-    if (!ethereum) {
-      setMessage("Please install a Web3 wallet like MetaMask");
-      return;
-    }
-
+  const linkWallet = async (type: "evm" | "solana") => {
+    const { ethereum, solana } = window as any;
+    
     setActionLoading(true);
     try {
-      const provider = new ethers.BrowserProvider(ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      const address = accounts[0];
+      let address = "";
+      if (type === "evm") {
+        if (!ethereum) throw new Error("MetaMask not found");
+        const provider = new ethers.BrowserProvider(ethereum);
+        const accounts = await provider.send("eth_requestAccounts", []);
+        address = accounts[0];
+      } else {
+        if (!solana || !solana.isSolflare) throw new Error("Solflare not found");
+        const resp = await solana.connect();
+        address = resp.publicKey.toString();
+      }
 
       const res = await fetch("/api/user/link-wallet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address }),
+        body: JSON.stringify({ address, type }),
       });
 
       const data = await res.json();
       if (res.ok) {
         setWalletAddress(address);
-        setMessage("Wallet linked successfully!");
+        setMessage(`${type === "evm" ? "MetaMask" : "Solflare"} wallet linked successfully!`);
       } else {
         setMessage(data.error || "Failed to link wallet");
       }
@@ -73,13 +77,13 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
         <p className="text-gray-500">Manage your account settings and preferences.</p>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
+          <h2 className="text-xl font-semibold flex items-center gap-2 text-gray-900 dark:text-white">
             <Wallet className="w-5 h-5" />
             Web3 Wallet
           </h2>
@@ -95,30 +99,34 @@ export default function SettingsPage() {
                   <p className="text-xs text-emerald-700 dark:text-emerald-300 font-mono">{walletAddress}</p>
                 </div>
               </div>
-              <button
-                onClick={linkWallet}
-                disabled={actionLoading}
-                className="text-sm text-primary hover:underline"
-              >
-                Change
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => linkWallet("evm")} disabled={actionLoading} className="text-xs text-primary hover:underline">Change MetaMask</button>
+                <button onClick={() => linkWallet("solana")} disabled={actionLoading} className="text-xs text-purple-500 hover:underline">Change Solflare</button>
+              </div>
             </div>
           ) : (
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500 mb-4">No wallet linked yet.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
-                onClick={linkWallet}
+                onClick={() => linkWallet("evm")}
                 disabled={actionLoading}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
-                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
-                Link Web3 Wallet
+                <Wallet className="w-5 h-5 text-orange-500" />
+                <span className="font-medium text-gray-900 dark:text-white">Link MetaMask (EVM)</span>
+              </button>
+              <button
+                onClick={() => linkWallet("solana")}
+                disabled={actionLoading}
+                className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+              >
+                <Globe className="w-5 h-5 text-purple-500" />
+                <span className="font-medium text-gray-900 dark:text-white">Link Solflare (Solana)</span>
               </button>
             </div>
           )}
           
           {message && (
-            <p className={`text-sm text-center ${message.includes("success") ? "text-emerald-500" : "text-red-500"}`}>
+            <p className={`text-sm text-center font-medium ${message.includes("success") ? "text-emerald-500" : "text-red-500"}`}>
               {message}
             </p>
           )}
