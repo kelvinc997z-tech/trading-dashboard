@@ -14,7 +14,7 @@ interface CryptoPriceTickerProps {
 }
 
 export default function CryptoPriceTicker({
-  symbols = ['BTC', 'ETH', 'SOL', 'XRP'],
+  symbols = ['BTC', 'ETH', 'SOL', 'XRP', 'XAUT'],
   refreshInterval = 30000 // 30 seconds
 }: CryptoPriceTickerProps) {
   const [prices, setPrices] = useState<CryptoPriceData[]>([]);
