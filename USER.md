@@ -2,11 +2,11 @@
 
 _Learn about the person you're helping. Update this as you go._
 
-- **Name:**
-- **What to call them:**
-- **Pronouns:** _(optional)_
-- **Timezone:**
-- **Notes:**
+- **Name:** Kevin
+- **What to call them:** Kevin
+- **Pronouns:** 
+- **Timezone:** Asia/Jakarta (GMT+7)
+- **Notes:** Contact: +6285172300170
 
 ## Context
 

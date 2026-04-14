@@ -1,0 +1,12 @@
+{
+  "payment": {
+    "title": "Upgrade ke Akun Pro",
+    "orderSummary": "Ringkasan Pesanan",
+    "qrisTitle": "Bayar dengan QRIS",
+    "qrisSubtitle": "Scan dengan GoPay, OVO, Dana, atau Aplikasi Bank",
+    "total": "Total",
+    "duration": "Durasi",
+    "monthly": "Langganan Bulanan",
+    "renewal": "Otomatis (bisa dibatalkan kapan saja)"
+  }
+}

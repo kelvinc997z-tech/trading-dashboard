@@ -103,25 +103,8 @@ export default function PricingPage() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await fetch("/api/payment/request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: selectedPlan, billingPeriod }),
-      });
-      if (!res.ok) throw new Error("Failed to create request");
-      const { requestId, whatsappMessage } = await res.json();
-
-      const waUrl = `https://wa.me/6281367351643?text=${encodeURIComponent(whatsappMessage)}`;
-      window.open(waUrl, "_blank");
-
-      alert(`Payment request for ${currentPlan.name} (${billingPeriod}) recorded! Complete payment via WhatsApp.`);
-    } catch (e) {
-      alert("Failed to process request");
-    } finally {
-      setLoading(false);
-    }
+    // Redirect to payment page instead of WhatsApp directly
+    window.location.href = "/payment";
   };
 
   return (

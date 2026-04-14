@@ -1,0 +1,12 @@
+{
+  "payment": {
+    "title": "Upgrade to Pro Account",
+    "orderSummary": "Order Summary",
+    "qrisTitle": "Pay with QRIS",
+    "qrisSubtitle": "Scan with GoPay, OVO, Dana, or Bank App",
+    "total": "Total",
+    "duration": "Duration",
+    "monthly": "Monthly subscription",
+    "renewal": "Auto (can cancel anytime)"
+  }
+}

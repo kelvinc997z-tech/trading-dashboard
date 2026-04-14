@@ -15,6 +15,7 @@ import {
   MessageSquare,
   TrendingUp,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationProvider";
 import ContrastToggle from "@/components/contrast/ContrastToggle";
@@ -110,6 +111,14 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
             >
               <Brain className="w-4 h-4 text-cyan-400" />
               Quant AI
+            </Link>
+
+            <Link
+              href="/dashboard/settings"
+              className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all flex items-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              Settings
             </Link>
 
             {/* Trading Tools - Pro only */}

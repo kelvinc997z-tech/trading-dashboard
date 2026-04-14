@@ -11,22 +11,13 @@ export default function PaymentPage() {
   const router = useRouter();
 
   const handlePayment = async () => {
-    setProcessing(true);
-    try {
-      const res = await fetch("/api/upgrade", { method: "POST" });
-      if (res.ok) {
-        setSuccess(true);
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 2000);
-      } else {
-        alert("Payment failed. Please try again.");
-        setProcessing(false);
-      }
-    } catch (err) {
-      alert("Network error. Please try again.");
-      setProcessing(false);
-    }
+    // For now, redirect to WhatsApp for payment confirmation after showing QRIS
+    const currentPlan = "PRO";
+    const billingPeriod = "monthly";
+    const amount = "250.000";
+    const whatsappMessage = `Halo Admin, saya ingin konfirmasi pembayaran untuk upgrade ke akun ${currentPlan} (${billingPeriod}) sebesar IDR ${amount}.`;
+    const waUrl = `https://wa.me/6281367351643?text=${encodeURIComponent(whatsappMessage)}`;
+    window.open(waUrl, "_blank");
   };
 
   if (success) {
@@ -76,7 +67,7 @@ export default function PaymentPage() {
                   <p className="font-medium">Pro Account</p>
                   <p className="text-sm text-gray-500">Monthly subscription</p>
                 </div>
-                <div className="text-2xl font-bold">IDR 450.000</div>
+                <div className="text-2xl font-bold">IDR 250.000</div>
               </div>
               <div className="flex justify-between items-center">
                 <span>Duration</span>
@@ -89,7 +80,20 @@ export default function PaymentPage() {
               <div className="pt-4 border-t">
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Total</span>
-                  <span>IDR 450.000</span>
+                  <span>IDR 250.000</span>
+                </div>
+              </div>
+
+              {/* QRIS Section */}
+              <div className="mt-8 pt-8 border-t">
+                <h3 className="text-lg font-semibold mb-4 text-center">Pay with QRIS</h3>
+                <div className="bg-white p-4 rounded-xl flex flex-col items-center">
+                  <img 
+                    src="/qris.jpg" 
+                    alt="QRIS Payment" 
+                    className="w-full max-w-[250px] aspect-square object-contain"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-2">Scan with GoPay, OVO, Dana, or Bank App</p>
                 </div>
               </div>
             </div>
@@ -166,7 +170,7 @@ export default function PaymentPage() {
             ) : (
               <>
                 <Crown className="w-6 h-6" />
-                Pay IDR 450.000 - Upgrade Now
+                Pay IDR 250.000 - Upgrade Now
               </>
             )}
           </button>

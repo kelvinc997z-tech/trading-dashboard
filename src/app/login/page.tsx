@@ -3,11 +3,14 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Wallet } from "lucide-react";
+import { ethers } from "ethers";
 
 function LoginForm() {
   const [isLogin, setIsLogin] = useState(true);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
   useEffect(() => {
     const mode = searchParams.get("mode");
@@ -27,6 +30,63 @@ function LoginForm() {
   const [requires2FA, setRequires2FA] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const connectWallet = async () => {
+    if (!window.ethereum) {
+      setMessage("Please install a Web3 wallet like MetaMask");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      const address = accounts[0];
+      setWalletAddress(address);
+      
+      // Attempt login with wallet
+      const res = await fetch("/api/auth/web3", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address }),
+      });
+      
+      const data = await res.json();
+      if (res.ok && data.success) {
+        window.location.href = "/dashboard";
+        return;
+      } else {
+        setMessage(data.error || "Wallet not linked to an account.");
+      }
+    } catch (err: any) {
+      console.error("Wallet error:", err);
+      setMessage(err.message || "Failed to connect wallet");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [resetEmail, setResetEmail] = useState("");
+  const [showReset, setShowReset] = useState(false);
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail }),
+      });
+      const data = await res.json();
+      setMessage(data.message || data.error);
+      if (res.ok) setShowReset(false);
+    } catch (err) {
+      setMessage("Failed to send reset email");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +153,27 @@ function LoginForm() {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <div className="mt-8 space-y-4">
+          <button
+            onClick={connectWallet}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+          >
+            <Wallet className="w-5 h-5" />
+            {loading ? "Connecting..." : walletAddress ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Sign in with Web3 Wallet"}
+          </button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">Or continue with email</span>
+            </div>
+          </div>
+        </div>
+
+        <form className="mt-4 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             {!isLogin && (
               <>
@@ -204,21 +284,51 @@ function LoginForm() {
             </button>
           </div>
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <button
               type="button"
               onClick={() => {
                 const newMode = isLogin ? "signup" : "login";
                 router.push(`/login?mode=${newMode}`);
               }}
-              className="text-sm text-primary hover:text-primary/80"
+              className="text-sm text-primary hover:text-primary/80 block w-full"
               disabled={loading}
             >
               {isLogin
                 ? "Don't have an account? Sign up"
                 : "Already have an account? Sign in"}
             </button>
+            {isLogin && (
+              <button
+                type="button"
+                onClick={() => setShowReset(!showReset)}
+                className="text-xs text-gray-500 hover:text-primary"
+              >
+                Forgot Password?
+              </button>
+            )}
           </div>
+
+          {showReset && (
+            <div className="mt-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg animate-in fade-in slide-in-from-top-2">
+              <h3 className="text-sm font-medium mb-2">Reset Password</h3>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="flex-1 px-3 py-1 text-sm border border-gray-300 dark:border-gray-700 rounded dark:bg-gray-700"
+                />
+                <button
+                  onClick={handleResetPassword}
+                  className="px-3 py-1 bg-primary text-white text-sm rounded hover:bg-primary/90"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          )}
         </form>
       </div>
     </div>

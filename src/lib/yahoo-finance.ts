@@ -95,7 +95,7 @@ export async function fetchYahooFinanceCandles(
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(url, { headers, next: { revalidate: 300 } });
+      const res = await fetch(url, { headers, next: { revalidate: 3600 } }); // cache 1 hour for stocks
       
       if (!res.ok) {
         if (res.status === 429) {

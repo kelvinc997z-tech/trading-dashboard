@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { login } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
+  const email = formData.get("email") as string;
+  const isUpgradeRequest = formData.get("isUpgradeRequest") === "true";
+
+  if (isUpgradeRequest && email) {
+    try {
+      await db.user.update({
+        where: { email },
+        data: { role: "pro" }
+      });
+      return NextResponse.json({ success: true, message: "User upgraded to PRO" });
+    } catch (error) {
+      return NextResponse.json({ error: "Failed to upgrade user" }, { status: 500 });
+    }
+  }
+
   const result = await login(formData);
   if (result.success) {
     const response = NextResponse.json({ success: true });
