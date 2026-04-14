@@ -107,6 +107,20 @@ export default function PaymentPage() {
                   <p className="text-[10px] text-gray-400 mt-2">Scan with GoPay, OVO, Dana, or Bank App</p>
                 </div>
               </div>
+
+              {/* Yearly Plan Button */}
+              <div className="mt-6 pt-6 border-t">
+                <button
+                  onClick={() => setBillingPeriod(billingPeriod === "monthly" ? "yearly" : "monthly")}
+                  className="w-full py-3 px-4 rounded-xl border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all flex items-center justify-center gap-2"
+                >
+                  {billingPeriod === "monthly" ? (
+                    <>Switch to Yearly Plan (Save 17%)</>
+                  ) : (
+                    <>Switch to Monthly Plan</>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 

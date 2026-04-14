@@ -6,13 +6,16 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret-change-me";
 
 export async function POST(request: NextRequest) {
   try {
-    const { address } = await request.json();
+    const { address, type } = await request.json();
 
     if (!address) {
       return NextResponse.json({ error: "Wallet address is required" }, { status: 400 });
     }
 
+    console.log(`[Web3 Login] Attempting login for ${type} address: ${address}`);
+
     // Find user by wallet address
+    // We search case-insensitively for EVM, but keep case for Solana if needed (though usually fine)
     const user = await db.user.findFirst({
       where: {
         walletAddress: {
@@ -33,7 +36,7 @@ export async function POST(request: NextRequest) {
       email: user.email, 
       id: user.id,
       role: user.role || "free",
-      twoFactorVerified: true, // Wallet login bypasses 2FA as it's a second factor itself
+      twoFactorVerified: true,
     }, JWT_SECRET, {
       expiresIn: "7d",
     });
@@ -45,8 +48,8 @@ export async function POST(request: NextRequest) {
     response.headers.append("Set-Cookie", cookie);
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Web3 login error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }
