@@ -5,15 +5,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Newspaper, 
   MessageSquare, 
-  Twitter, 
   TrendingUp, 
   TrendingDown, 
   RefreshCw, 
   Search,
   Zap,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  X
 } from "lucide-react";
+
+const TwitterIcon = X;
 
 interface Article {
   headline: string;
@@ -220,7 +222,7 @@ export default function SentimentClient() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-sky-500/10 rounded-lg text-sky-500">
-                    <Twitter className="w-5 h-5" />
+                    <TwitterIcon className="w-5 h-5" />
                   </div>
                   <span className="font-bold">{t("sentiment.twitter")}</span>
                 </div>
