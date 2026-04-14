@@ -29,14 +29,15 @@ export default function SettingsPage() {
   };
 
   const linkWallet = async () => {
-    if (!window.ethereum) {
+    const { ethereum } = window as any;
+    if (!ethereum) {
       setMessage("Please install a Web3 wallet like MetaMask");
       return;
     }
 
     setActionLoading(true);
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
       const address = accounts[0];
 
