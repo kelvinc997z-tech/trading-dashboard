@@ -164,16 +164,19 @@ export default function Navbar({ user }: { user: { email: string; role?: string 
             {/* Upgrade/Pricing */}
             {user?.role !== "pro" ? (
               <Link
-                href="/pricing"
+                href="/payment"
                 className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-yellow-600 to-orange-600 text-white shadow-lg hover:from-yellow-500 hover:to-orange-500 transition-all"
               >
                 {t("nav.upgrade")}
               </Link>
             ) : (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-600/30">
+              <Link
+                href="/payment"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-600/30 hover:bg-yellow-600/30 transition-all"
+              >
                 <Crown className="w-4 h-4 text-yellow-500" />
                 <span className="text-sm font-semibold text-yellow-500">PRO</span>
-              </div>
+              </Link>
             )}
           </div>
 
