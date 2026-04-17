@@ -271,12 +271,13 @@ export async function verifyEmail(token: string) {
   }
 }
 
-export async function googleLogin(code: string) {
+export async function googleLogin(code: string, origin?: string) {
   try {
     console.log("Starting Google Login with code...");
     const client_id = process.env.GOOGLE_CLIENT_ID;
     const client_secret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirect_uri = process.env.GOOGLE_REDIRECT_URI || "https://tradingsignal.cloud/api/auth/google/callback";
+    const defaultRedirect = origin ? `${origin}/api/auth/google/callback` : "https://tradingsignal.cloud/api/auth/google/callback";
+    const redirect_uri = process.env.GOOGLE_REDIRECT_URI || defaultRedirect;
 
     if (!client_id || !client_secret) {
       console.error("Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET");

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=No code provided", request.url));
   }
 
-  const result = await googleLogin(code);
+  const result = await googleLogin(code, request.nextUrl.origin);
 
   if (result.success && result.token) {
     const response = NextResponse.redirect(new URL("/dashboard", request.url));

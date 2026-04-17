@@ -40,6 +40,9 @@ export const MarketTicker = () => {
             { symbol: 'BTC', price: 69420.50, change: 1.25 },
             { symbol: 'ETH', price: 3450.12, change: -0.42 },
             { symbol: 'SOL', price: 145.67, change: 3.12 },
+            { symbol: 'NVDA', price: 875.40, change: 2.15 },
+            { symbol: 'AAPL', price: 185.20, change: -0.45 },
+            { symbol: 'AMD', price: 170.10, change: 1.05 },
             { symbol: 'XAUT', price: 2340.50, change: 0.08 },
             { symbol: 'WTI', price: 85.20, change: -1.15 },
           ];

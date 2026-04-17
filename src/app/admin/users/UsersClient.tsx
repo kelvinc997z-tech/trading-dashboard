@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Search, Shield, User, CheckCircle, XCircle, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface UserData {
   id: string;
@@ -130,17 +131,22 @@ export default function UsersClient({ initialUsers }: { initialUsers: UserData[]
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => toggleRole(user.id, user.role)}
-                      disabled={loading === user.id}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        user.role === "pro" 
-                          ? "bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400" 
-                          : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400"
-                      } disabled:opacity-50`}
-                    >
-                      {loading === user.id ? "Wait..." : user.role === "pro" ? "DOWNGRADE" : "UPGRADE"}
-                    </button>
+                    {user.role === "pro" ? (
+                      <button
+                        onClick={() => toggleRole(user.id, user.role)}
+                        disabled={loading === user.id}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 disabled:opacity-50"
+                      >
+                        {loading === user.id ? "Wait..." : "DOWNGRADE"}
+                      </button>
+                    ) : (
+                      <Link
+                        href="/payment"
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400"
+                      >
+                        UPGRADE
+                      </Link>
+                    )}
                   </td>
                 </tr>
               ))}
