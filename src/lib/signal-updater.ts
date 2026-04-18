@@ -185,12 +185,15 @@ export async function generateAndSaveMarketSignals(force: boolean = false): Prom
         generatedAt: roundedTime,
       };
 
-      // Try to save but don't fail the whole task if DB is slow/down
-      db.marketSignal.upsert({
+      // Save to database
+      await db.marketSignal.upsert({
         where: { symbol_timeframe_generatedAt: { symbol: pair.symbol, timeframe: timeframeLabel, generatedAt: roundedTime } },
         update: { ...dbData, updatedAt: new Date() },
         create: { ...dbData, updatedAt: new Date() },
-      }).catch(e => console.error(`[SignalUpdater] DB error for ${pair.symbol}:`, e.message));
+      }).catch(e => {
+        console.error(`[SignalUpdater] DB error for ${pair.symbol}:`, e.message);
+        // Don't throw, just log. We still want to return the signal result to the UI.
+      });
       
       return { ...signalResult, timeframe: timeframeLabel, generatedAt: roundedTime };
     } catch (error: any) {
